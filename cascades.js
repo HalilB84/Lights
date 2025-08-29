@@ -4,7 +4,7 @@ import * as THREE from 'three';
 
 const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer(); ///webgl 1 btw
 document.body.appendChild(renderer.domElement);
 
 const scale = 1;
@@ -101,6 +101,9 @@ const jfaB = rtB.clone();
 let currentRT = rtA;
 let previousRT = rtB;
 
+const cascadeRT = rtA.clone();
+const cascadePT = rtB.clone();
+
 
 const geometry = new THREE.PlaneGeometry(2, 2); //this is the mesh that will be rendered to the screen. 2,2 because we want it to cover clip space -1 to 1 both x and y
 
@@ -128,7 +131,7 @@ const paintMaterial = new THREE.ShaderMaterial({
         // This is the shader that paints and accumates the color to the texture, used it when I was looking at the tutorial but now its just overriden by the canvas texture, 
         // I am keeping it here because right now it shows a 10px circle where the mouse is which is fun. 
 
-        vec4 color = texture2D(prevTexture, vUv).rgba;
+        vec4 color = texture(prevTexture, vUv).rgba;
     
         vec2 uvPx = gl_FragCoord.xy; //gives the pixel coordinate of the framgent, well kinda, it gives the center of the fragment
         vec2 mousePx = mouse;
@@ -151,14 +154,13 @@ const paintMaterial = new THREE.ShaderMaterial({
 
 const seedMaterial = new THREE.ShaderMaterial({
   uniforms: {
-    inputTexture: {value: null}
+    inputTexture: {value: null},
   },
   vertexShader: paintMaterial.vertexShader,
   fragmentShader: `
     precision highp float;
     varying vec2 vUv;
     uniform sampler2D inputTexture;
-
     void main() {
       //this is the shader that converts the input texture to a seed texture
       //to calculate the nearest seed in the jfa phase, we need to know the location of the seed in the input texture
@@ -166,7 +168,7 @@ const seedMaterial = new THREE.ShaderMaterial({
       
       vec4 color = texture(inputTexture, vUv);
       if(color.r != 0. || color.g != 0. || color.b != 0.) { // There is a seed here
-        gl_FragColor = vec4(vUv.x, vUv.y, gl_FragCoord.x + 0.5, gl_FragCoord.y + 0.5); // vUv.x and vUv.y are the uv coordinates of where this pixel is in, 0.5 is just added to give a nice color scheme
+        gl_FragColor = vec4(vUv.x, vUv.y, 0.5, 1.); // vUv.x and vUv.y are the uv coordinates of where this pixel is in, 0.5 is just added to give a nice color scheme
       } else {
         gl_FragColor = vec4(0.0); //if the color is black, it means there is no seed here thus this will be one of the pixels that shoot rays
       }
@@ -206,7 +208,7 @@ const jfaMaterial = new THREE.ShaderMaterial({
                         float dist = dot(diff, diff);
                         if(dist < nearestDist){
                             nearestDist = dist;
-                            nearestSeed = sampleValue; 
+                            nearestSeed = sampleValue; //vec4(sampleUV.r, sampleUV.g, 0.5, 1.); this breaks the chain
                         }
                      }
                 }
@@ -218,25 +220,19 @@ const jfaMaterial = new THREE.ShaderMaterial({
 
 const distanceMaterial = new THREE.ShaderMaterial({
   uniforms:{
-    inputTexture: {value: null},
-    resolution: {value: new THREE.Vector2(width, height)}
+    inputTexture: {value: null}
   },
   vertexShader: paintMaterial.vertexShader,
   fragmentShader: `
     varying vec2 vUv;
     uniform sampler2D inputTexture;
-    uniform vec2 resolution;
 
     void main() { 
 
       vec2 nearestSeed = texture(inputTexture, vUv).xy;  //YAY we now know where the nearest seed is so just calculate the distance to it
-      float dist = distance(nearestSeed, vUv); //Not sure why we would clamp it tho (in the tutorial)? because 0,0 to 1,1 is ~1.4
-
-      vec2 nearestSeedPx = texture(inputTexture, vUv).zw;
-      vec2 curPx = vec2(gl_FragCoord.x + 0.5, gl_FragCoord.y + 0.5);
-      float distPX = distance(nearestSeedPx, curPx);
+      float dist = distance(nearestSeed, vUv); 
       
-      gl_FragColor = vec4(dist, distPX, 0., 1.);
+      gl_FragColor = vec4(vec3(dist), 1.);
     }
   `
 })
@@ -245,8 +241,11 @@ const rayMaterial = new THREE.ShaderMaterial({
   uniforms: {
     iTexture: {value: null},
     distanceTexture: {value: null},
-    rayCount: {value: 16},
-    resolution: {value: new THREE.Vector2(width, height)}
+    lastTexture: {value: null},
+    rayCount: {value: null},
+    resolution: {value: new THREE.Vector2(width, height)},
+    baseRayCount: {value: 4},
+    start: {value: 0.125}
   },
   vertexShader: paintMaterial.vertexShader,
   fragmentShader: 
@@ -255,74 +254,93 @@ const rayMaterial = new THREE.ShaderMaterial({
     varying vec2 vUv;
     uniform sampler2D iTexture;
     uniform sampler2D distanceTexture;
+    uniform sampler2D lastTexture;
     uniform int rayCount;
     uniform vec2 resolution;
+    uniform int baseRayCount;
+    uniform float start;
+
     const float PI = 3.14159265;
     const float TAU = 2.0 * PI;
-    const float EPS = 0.0001; 
 
     bool outOfBounds(vec2 uv) {
       return uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0;
     }
 
-    float rand(vec2 co) {
-      return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-    }
-
     vec4 raymarch(){
+
+      vec2 coord = floor(vUv * resolution); //pixel loc of fragment
+      float intervalStart = rayCount == baseRayCount ? 0.00 : start;
+      float intervalEnd = rayCount == baseRayCount ? start : sqrt(2.0); //IT DOESNT FUCKING WORK I DONT KNOW HOW TO
+
+      vec2 effectiveUv = rayCount == baseRayCount ? vUv : (floor(coord / 2.0) * 2.0) / resolution; //snap 2 by 2 pixel groups to top left
+
       vec4 light = texture(iTexture, vUv);
-      if(light.r != 0. || light.g != 0. || light.b != 0.) { //if we are at a seed location, we dont need to raymarch 
-        return light / 1.5; //lighter color so doesnt mix up with the lighting
+      if(light.r != 0. || light.g != 0. || light.b != 0.) { 
+        return light; 
       }
 
       float oneOverRayCount = 1.0 / float(rayCount); 
       float tauOverRayCount = TAU * oneOverRayCount;
 
-      float noise = rand(vUv); //noise is based on where the uv coordinate of that pixel
       vec4 radiance = vec4(0.0); //total light that will be accumulated
+      //vec2 scale = min(resolution.x, resolution.y) / resolution; //1000 x 500 -> (0.5 x 1)
       vec2 scale = min(resolution.x, resolution.y) * (1.0 / resolution); 
 
-      //calcualte and shoot rayCount rays that are equidstant from each other, expensive
+      vec2 oneOverSize = 1.0 / resolution;
+      float minStepSize = min(oneOverSize.x, oneOverSize.y) * 0.5;
+
+
       for(int i = 0; i < rayCount; i++) {
-        float angle = tauOverRayCount * (float(i)); //if we dont add noise all rays will be in the same direction which will introduce patterns
-        vec2 rayDirection = vec2(cos(angle), -sin(angle));// * scale; //unit circle, if you dont add scale then it will be an elipse, this is still broken btw it partially works.
+        float index = float(i);
+        float angleStep = (index );
+        float angle = tauOverRayCount * angleStep;
+        vec2 rayDirection = vec2(cos(angle), -sin(angle)) * scale; //contniue testing with square res until i figure this out
 
-
-        // I AM ACTUALLY GOING TO CRY I CANT NOT FIGURE OUT HOW TO PROPERLY SCALE THE RAYS 
-
-        vec2 sampleUv = vUv; //start at the current uv coordinate
+        vec2 sampleUv = effectiveUv + rayDirection * intervalStart;
         vec4 radDelta = vec4(0.0);
-        
-        for (int step = 1; step < 32; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
-          float dist = texture(distanceTexture, sampleUv).r;
-          float distPX = texture(distanceTexture, sampleUv).g;
-          
 
-          sampleUv += (rayDirection * distPX) / resolution;
-          
-        
+        float traveled = intervalStart;
 
-          //sampleUv += rayDirection * dist; //move the pixel in the direction of the ray, dist is the distance to the nearest seed so we now we can at least move that much
-          //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes 
-  
+        for (int step = 1; step < 32; step++) {
 
-          if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
-          
-          if (distPX == 0.0) { //Not sure why we would need EPS? since if we are at a seed location, dist is guaranteed to be 0.0
-            // at this point we now we hit a seed, so get its color and add it to the radiance
-            vec4 sampleColor = texture(iTexture, sampleUv);
-            radDelta += sampleColor;
+        float dist = texture(distanceTexture, sampleUv).r;
+
+          sampleUv += rayDirection * dist;
+
+          if (outOfBounds(sampleUv)) break;
+
+          if (dist < minStepSize) {
+            vec4 colorSample = texture(iTexture, sampleUv);
+            radDelta += vec4(pow(colorSample.rgb, vec3(2.2)), 1.0);
             break;
           }
+          
+          traveled += dist;
+
+          //if (distance(sampleUv, effectiveUv) >= intervalEnd) break;
+          if (traveled >= intervalEnd) break;
         }
 
-        radiance += radDelta;
-      }
+        // Only merge on non-opaque areas
+        if (rayCount == baseRayCount && radDelta.a == 0.0) {
+          vec4 upperSample = texture(lastTexture, vUv);
 
-      return vec4((radiance * oneOverRayCount).rgb, 1.0); //finally we return the color of the pixel by averaging the light 
+          radDelta += vec4(pow(upperSample.rgb, vec3(2.2)), upperSample.a);
+
+        }
+
+        // Accumulate total radiance
+        radiance += radDelta;
     }
 
-    void main() {
+    vec3 final = (radiance.rgb * oneOverRayCount);
+
+    return vec4(pow(final, vec3(1.0 / 2.2)), 1.0);
+        
+    }  
+
+    void main() {      
       gl_FragColor = raymarch();
     }
   `
@@ -339,8 +357,8 @@ function animate() {
 
   mesh.material = new THREE.MeshBasicMaterial({ map: textTexture }); //you cant just pass the text texture to prevRT so this is the way
 
-  //renderer.setRenderTarget(previousRT); 
-  //renderer.clear();
+  renderer.setRenderTarget(previousRT); 
+  renderer.clear();
   //renderer.render(scene, camera);
 
   // paint phase
@@ -384,12 +402,34 @@ function animate() {
 
 
   //display phase
+
   mesh.material = rayMaterial;
+
+  rayMaterial.uniforms.iTexture.value = currentRT.texture;
+  rayMaterial.uniforms.distanceTexture.value = curJFA.texture;
+  rayMaterial.uniforms.lastTexture.value = null;
+
+  for(let i = 2; i >= 1; i--) {
+    rayMaterial.uniforms.rayCount.value = Math.pow(rayMaterial.uniforms.baseRayCount.value, i);
+
+    if(i == 1) {
+      renderer.setRenderTarget(null);
+      rayMaterial.uniforms.lastTexture.value = cascadeRT.texture;
+      renderer.render(scene, camera);
+    }
+    else{
+      renderer.setRenderTarget(cascadeRT);
+      renderer.render(scene, camera);
+    }
+  }
+
+
+  /*mesh.material = rayMaterial;
   rayMaterial.uniforms.iTexture.value = currentRT.texture;
   rayMaterial.uniforms.distanceTexture.value = curJFA.texture;
   renderer.setRenderTarget(null); //actual screen
 
-  renderer.render(scene, camera);
+  renderer.render(scene, camera);*/
 
   //swap for next frame
   [currentRT, previousRT] = [previousRT, currentRT]; //tbd
