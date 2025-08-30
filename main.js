@@ -7,7 +7,7 @@ const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 const renderer = new THREE.WebGLRenderer();
 document.body.appendChild(renderer.domElement);
 
-const scale = 1;
+const scale = 4;
 const canvas = renderer.domElement;
 const width = Math.floor(window.innerWidth / scale); //make sure the scaled and non scaled are perfectly divisible bc I do not want to deal with how webgl handles this right now
 const height = Math.floor(window.innerHeight / scale);
@@ -190,7 +190,7 @@ const jfaMaterial = new THREE.ShaderMaterial({
 
         void main() {
             vec4 nearestSeed = vec4(0.0); 
-            float nearestDist = 9.9; // Distance to the nearest seed, we start at 9.9 because that obv larger than any distance in the uv space
+            float nearestDist = 9999999.9; // Distance to the nearest seed, we start at 9.9 because that obv larger than any distance in the uv space
 
             //prove why the algo works
             for(float y = -1.; y <= 1.; y += 1.){ 
@@ -203,9 +203,13 @@ const jfaMaterial = new THREE.ShaderMaterial({
 
                      if(loc.x != 0. || loc.y != 0.) {
                         vec2 diff = loc - vUv;
+
+                        vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
                         float dist = dot(diff, diff);
-                        if(dist < nearestDist){
-                            nearestDist = dist;
+                        float dist_sq = dot(diff_px, diff_px);
+
+                        if(dist_sq  < nearestDist){
+                            nearestDist = dist_sq;
                             nearestSeed = sampleValue; 
                         }
                      }
@@ -230,13 +234,14 @@ const distanceMaterial = new THREE.ShaderMaterial({
     void main() { 
 
       vec2 nearestSeed = texture(inputTexture, vUv).xy;  //YAY we now know where the nearest seed is so just calculate the distance to it
-      float dist = distance(nearestSeed, vUv); //Not sure why we would clamp it tho (in the tutorial)? because 0,0 to 1,1 is ~1.4
 
-      vec2 nearestSeedPx = texture(inputTexture, vUv).zw;
-      vec2 curPx = vec2(gl_FragCoord.x + 0.5, gl_FragCoord.y + 0.5);
-      float distPX = distance(nearestSeedPx, curPx);
+      vec2 nearPx = nearestSeed * resolution;
+      vec2 curPx = vUv * resolution;
+      float dist = length(nearPx - curPx);
+
+      float dist2 = distance(nearestSeed, vUv);
       
-      gl_FragColor = vec4(dist, distPX, 0., 1.);
+      gl_FragColor = vec4(dist, dist2, 0., 1.);
     }
   `
 })
@@ -280,12 +285,11 @@ const rayMaterial = new THREE.ShaderMaterial({
 
       float noise = rand(vUv); //noise is based on where the uv coordinate of that pixel
       vec4 radiance = vec4(0.0); //total light that will be accumulated
-      vec2 scale = min(resolution.x, resolution.y) * (1.0 / resolution); 
-
       //calcualte and shoot rayCount rays that are equidstant from each other, expensive
+
       for(int i = 0; i < rayCount; i++) {
-        float angle = tauOverRayCount * (float(i)); //if we dont add noise all rays will be in the same direction which will introduce patterns
-        vec2 rayDirection = vec2(cos(angle), -sin(angle));// * scale; //unit circle, if you dont add scale then it will be an elipse, this is still broken btw it partially works.
+        float angle = tauOverRayCount * (float(i) + noise); //if we dont add noise all rays will be in the same direction which will introduce patterns
+        vec2 rayDirection = vec2(cos(angle), -sin(angle)); //unit circle, if you dont add scale then it will be an elipse, this is still broken btw it partially works.
 
 
         // I AM ACTUALLY GOING TO CRY I CANT NOT FIGURE OUT HOW TO PROPERLY SCALE THE RAYS 
@@ -295,12 +299,9 @@ const rayMaterial = new THREE.ShaderMaterial({
         
         for (int step = 1; step < 32; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
           float dist = texture(distanceTexture, sampleUv).r;
-          float distPX = texture(distanceTexture, sampleUv).g;
           
-
-          sampleUv += (rayDirection * distPX) / resolution;
+          sampleUv += (rayDirection * dist) / resolution;
           
-        
 
           //sampleUv += rayDirection * dist; //move the pixel in the direction of the ray, dist is the distance to the nearest seed so we now we can at least move that much
           //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes 
@@ -308,7 +309,7 @@ const rayMaterial = new THREE.ShaderMaterial({
 
           if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
           
-          if (distPX == 0.0) { //Not sure why we would need EPS? since if we are at a seed location, dist is guaranteed to be 0.0
+          if (dist < 0.001) { 
             // at this point we now we hit a seed, so get its color and add it to the radiance
             vec4 sampleColor = texture(iTexture, sampleUv);
             radDelta += sampleColor;
@@ -339,9 +340,9 @@ function animate() {
 
   mesh.material = new THREE.MeshBasicMaterial({ map: textTexture }); //you cant just pass the text texture to prevRT so this is the way
 
-  //renderer.setRenderTarget(previousRT); 
-  //renderer.clear();
-  //renderer.render(scene, camera);
+  renderer.setRenderTarget(previousRT); 
+  renderer.clear();
+  renderer.render(scene, camera);
 
   // paint phase
   mesh.material = paintMaterial;

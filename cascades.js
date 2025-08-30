@@ -192,7 +192,7 @@ const jfaMaterial = new THREE.ShaderMaterial({
 
         void main() {
             vec4 nearestSeed = vec4(0.0); 
-            float nearestDist = 9.9; // Distance to the nearest seed, we start at 9.9 because that obv larger than any distance in the uv space
+            float nearestDist = 9999999.9; // Distance to the nearest seed, we start at 9.9 because that obv larger than any distance in the uv space
 
             //prove why the algo works
             for(float y = -1.; y <= 1.; y += 1.){ 
@@ -205,10 +205,14 @@ const jfaMaterial = new THREE.ShaderMaterial({
 
                      if(loc.x != 0. || loc.y != 0.) {
                         vec2 diff = loc - vUv;
+
+                        vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
                         float dist = dot(diff, diff);
-                        if(dist < nearestDist){
-                            nearestDist = dist;
-                            nearestSeed = sampleValue; //vec4(sampleUV.r, sampleUV.g, 0.5, 1.); this breaks the chain
+                        float dist_sq = dot(diff_px, diff_px);
+
+                        if(dist_sq  < nearestDist){
+                            nearestDist = dist_sq;
+                            nearestSeed = sampleValue; 
                         }
                      }
                 }
@@ -220,19 +224,26 @@ const jfaMaterial = new THREE.ShaderMaterial({
 
 const distanceMaterial = new THREE.ShaderMaterial({
   uniforms:{
-    inputTexture: {value: null}
+    inputTexture: {value: null},
+    resolution: {value: new THREE.Vector2(width, height)}
   },
   vertexShader: paintMaterial.vertexShader,
   fragmentShader: `
     varying vec2 vUv;
     uniform sampler2D inputTexture;
+    uniform vec2 resolution;
 
     void main() { 
 
       vec2 nearestSeed = texture(inputTexture, vUv).xy;  //YAY we now know where the nearest seed is so just calculate the distance to it
-      float dist = distance(nearestSeed, vUv); 
+
+      vec2 diff = nearestSeed - vUv;
+      vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
+
+      float dist = length(diff_px);
+      float dist2 = distance(nearestSeed, vUv);
       
-      gl_FragColor = vec4(vec3(dist), 1.);
+      gl_FragColor = vec4(dist, dist2, 0., 1.);
     }
   `
 })
@@ -270,8 +281,10 @@ const rayMaterial = new THREE.ShaderMaterial({
     vec4 raymarch(){
 
       vec2 coord = floor(vUv * resolution); //pixel loc of fragment
-      float intervalStart = rayCount == baseRayCount ? 0.00 : start;
-      float intervalEnd = rayCount == baseRayCount ? start : sqrt(2.0); //IT DOESNT FUCKING WORK I DONT KNOW HOW TO
+
+      float intervalStart_px = rayCount == baseRayCount ? 0.00 : start * min(resolution.x, resolution.y);
+      float intervalEnd_px = rayCount == baseRayCount ? start * min(resolution.x, resolution.y) : length(resolution);
+      
 
       vec2 effectiveUv = rayCount == baseRayCount ? vUv : (floor(coord / 2.0) * 2.0) / resolution; //snap 2 by 2 pixel groups to top left
 
@@ -284,33 +297,28 @@ const rayMaterial = new THREE.ShaderMaterial({
       float tauOverRayCount = TAU * oneOverRayCount;
 
       vec4 radiance = vec4(0.0); //total light that will be accumulated
-      //vec2 scale = min(resolution.x, resolution.y) / resolution; //1000 x 500 -> (0.5 x 1)
-      vec2 scale = min(resolution.x, resolution.y) * (1.0 / resolution); 
-
-      vec2 oneOverSize = 1.0 / resolution;
-      float minStepSize = min(oneOverSize.x, oneOverSize.y) * 0.5;
 
 
       for(int i = 0; i < rayCount; i++) {
         float index = float(i);
-        float angleStep = (index );
+        float angleStep = (index + 0.5);
         float angle = tauOverRayCount * angleStep;
-        vec2 rayDirection = vec2(cos(angle), -sin(angle)) * scale; //contniue testing with square res until i figure this out
+        vec2 rayDirection = vec2(cos(angle), -sin(angle)); 
 
-        vec2 sampleUv = effectiveUv + rayDirection * intervalStart;
+        vec2 sampleUv = effectiveUv + rayDirection * intervalStart_px / resolution;
         vec4 radDelta = vec4(0.0);
 
-        float traveled = intervalStart;
+        float traveled = intervalStart_px;
 
         for (int step = 1; step < 32; step++) {
 
         float dist = texture(distanceTexture, sampleUv).r;
 
-          sampleUv += rayDirection * dist;
+          sampleUv += rayDirection * dist / resolution;
 
           if (outOfBounds(sampleUv)) break;
 
-          if (dist < minStepSize) {
+          if (dist < 0.001) {
             vec4 colorSample = texture(iTexture, sampleUv);
             radDelta += vec4(pow(colorSample.rgb, vec3(2.2)), 1.0);
             break;
@@ -318,8 +326,7 @@ const rayMaterial = new THREE.ShaderMaterial({
           
           traveled += dist;
 
-          //if (distance(sampleUv, effectiveUv) >= intervalEnd) break;
-          if (traveled >= intervalEnd) break;
+          if (traveled >= intervalEnd_px) break;
         }
 
         // Only merge on non-opaque areas
