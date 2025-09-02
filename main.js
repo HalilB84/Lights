@@ -40,7 +40,7 @@ for(let i = 0; i < 15; i++) { // akari style rects
     color: `hsl(${Math.random() * 360}, 100%, 50%)`,
     height: 1,
     width: Math.random() * 100 + 50,
-    speed: Math.random() * 1 + 1,
+    speed: Math.random() * 0.5 + 0.5,
   })
 }
 
@@ -232,14 +232,13 @@ const distanceMaterial = new THREE.ShaderMaterial({
     uniform vec2 resolution;
 
     void main() { 
+      vec2 nearestSeed = texture(inputTexture, vUv).xy; 
 
-      vec2 nearestSeed = texture(inputTexture, vUv).xy;  //YAY we now know where the nearest seed is so just calculate the distance to it
+      vec2 diff = nearestSeed - vUv;
+      vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
 
-      vec2 nearPx = nearestSeed * resolution;
-      vec2 curPx = vUv * resolution;
-      float dist = length(nearPx - curPx);
-
-      float dist2 = distance(nearestSeed, vUv);
+      float dist = length(diff_px); //tbd
+      float dist2 = distance(nearestSeed, vUv); //tbd
       
       gl_FragColor = vec4(dist, dist2, 0., 1.);
     }
@@ -250,7 +249,7 @@ const rayMaterial = new THREE.ShaderMaterial({
   uniforms: {
     iTexture: {value: null},
     distanceTexture: {value: null},
-    rayCount: {value: 16},
+    rayCount: {value:16},
     resolution: {value: new THREE.Vector2(width, height)}
   },
   vertexShader: paintMaterial.vertexShader,
@@ -289,10 +288,8 @@ const rayMaterial = new THREE.ShaderMaterial({
 
       for(int i = 0; i < rayCount; i++) {
         float angle = tauOverRayCount * (float(i) + noise); //if we dont add noise all rays will be in the same direction which will introduce patterns
-        vec2 rayDirection = vec2(cos(angle), -sin(angle)); //unit circle, if you dont add scale then it will be an elipse, this is still broken btw it partially works.
+        vec2 rayDirection = vec2(cos(angle), -sin(angle)); //unit circle, NOW FIXED!!!!!!
 
-
-        // I AM ACTUALLY GOING TO CRY I CANT NOT FIGURE OUT HOW TO PROPERLY SCALE THE RAYS 
 
         vec2 sampleUv = vUv; //start at the current uv coordinate
         vec4 radDelta = vec4(0.0);
@@ -309,7 +306,7 @@ const rayMaterial = new THREE.ShaderMaterial({
 
           if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
           
-          if (dist < 0.001) { 
+          if (dist == 0.0) { 
             // at this point we now we hit a seed, so get its color and add it to the radiance
             vec4 sampleColor = texture(iTexture, sampleUv);
             radDelta += sampleColor;
@@ -398,7 +395,7 @@ function animate() {
 
 renderer.setAnimationLoop(animate);
 
-renderer.setSize(width * scale, height * scale); //not sure why the speed up is massive, research later
+renderer.setSize(window.innerWidth, window.innerHeight); //not sure why the speed up is massive, research later
 
 window.addEventListener('resize', () => { //resizing is gonna be painful
   
