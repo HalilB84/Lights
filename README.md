@@ -16,10 +16,12 @@ The basic idea is that from each pixel you shoot rays and if it hits something y
 ## Showcase
 
 Using JFA + naive ray marching:
+
 https://github.com/user-attachments/assets/de2ced26-d56f-4a54-aaef-abfe67d1cb15
 
 
 Using radiance cascades (although I'm unsure how faithful this is to the actual algorithm, needs research):
+
 https://github.com/user-attachments/assets/695ad021-ca03-4f48-a944-330444764081
 
 
