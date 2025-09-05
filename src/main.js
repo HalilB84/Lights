@@ -9,8 +9,8 @@ document.body.appendChild(renderer.domElement);
 
 const scale = 4;
 const canvas = renderer.domElement;
-const width = Math.floor(window.innerWidth / scale); //make sure the scaled and non scaled are perfectly divisible bc I do not want to deal with how webgl handles this right now
-const height = Math.floor(window.innerHeight / scale);
+const width = window.innerWidth / scale; //not sure how webgl handles non integer res
+const height = window.innerHeight / scale;
 
 const mouse = {x: null, y: null}; 
 
@@ -276,7 +276,11 @@ const rayMaterial = new THREE.ShaderMaterial({
     vec4 raymarch(){
       vec4 light = texture(iTexture, vUv);
       if(light.r != 0. || light.g != 0. || light.b != 0.) { //if we are at a seed location, we dont need to raymarch 
-        return light / 1.5; //lighter color so doesnt mix up with the lighting
+        return vec4(0.0, 0.0, 0.0,1.0);//light / 1.5; //lighter color so doesnt mix up with the lighting
+      }
+
+      if(mod(gl_FragCoord.x - 0.5,2.) == 0. || mod(gl_FragCoord.y - 0.5, 20.) == 0.) {
+       // return vec4(0.0, 0.0, 0.0,1.0);
       }
 
       float oneOverRayCount = 1.0 / float(rayCount); 
