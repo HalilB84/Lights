@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import Stats from 'stats.js';
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
 
@@ -7,10 +8,19 @@ const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 const renderer = new THREE.WebGLRenderer();
 document.body.appendChild(renderer.domElement);
 
+const stats = new Stats();
+stats.showPanel(0); 
+document.body.appendChild(stats.dom);
+
+
 const scale = 4;
 const canvas = renderer.domElement;
 const width = window.innerWidth / scale; //not sure how webgl handles non integer res
 const height = window.innerHeight / scale;
+
+const raymarchScale = 2; 
+const raymarchWidth = window.innerWidth / raymarchScale;
+const raymarchHeight = window.innerHeight / raymarchScale;
 
 const mouse = {x: null, y: null}; 
 
@@ -29,23 +39,27 @@ textCanvas.width = width;
 textCanvas.height = height;
 const textCtx = textCanvas.getContext('2d');
 
+let startTime = performance.now();
+
 let rects = []
 
 for(let i = 0; i < 15; i++) { // akari style rects
   let where = Math.random() > 0.5 ? 'left' : 'right';
   rects.push({
     where: where,
+    startX: where === 'left' ? 0 : width,
     x: where === 'left' ? 0 : width,
     y: Math.floor(i * height / 15), 
     color: `hsl(${Math.random() * 360}, 100%, 50%)`,
     height: 1,
     width: Math.random() * 100 + 50,
-    speed: Math.random() * 0.5 + 0.5,
+    speed: Math.random() * 400 + 100, 
+    startTime: startTime,
   })
 }
 
 
-function drawTextToCanvas(text, x, y, color, fontSize) { 
+function drawTextToCanvas(text, x, y, color, fontSize, currentTime) { 
   textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
   
   rects.forEach(rect => {    
@@ -55,16 +69,23 @@ function drawTextToCanvas(text, x, y, color, fontSize) {
 
   
   rects.forEach(rect => {
+    const elapsedTime = (currentTime - rect.startTime) / 1000; 
+    const distance = rect.speed * elapsedTime;
+    
     if(rect.where === 'left') {
-      rect.x += rect.speed;
-      if (rect.x > width ) {
-        rect.x = 0 - rect.width; 
+      rect.x = rect.startX + distance;
+      if (rect.x > width + rect.width) {
+        rect.startX = 0 - rect.width;
+        rect.x = rect.startX;
+        rect.startTime = currentTime;
         rect.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
       }
     } else {
-      rect.x -= rect.speed;
-      if (rect.x + rect.width < 0) {
-        rect.x = width; 
+      rect.x = rect.startX - distance;
+      if (rect.x < -rect.width) {
+        rect.startX = width;
+        rect.x = rect.startX;
+        rect.startTime = currentTime;
         rect.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
       }
     }
@@ -80,6 +101,11 @@ function drawTextToCanvas(text, x, y, color, fontSize) {
 
 const textTexture = new THREE.CanvasTexture(textCanvas);
 
+const blueNoiseTexture = new THREE.TextureLoader().load('LDR_LLL1_0.png');
+blueNoiseTexture.wrapS = THREE.RepeatWrapping;
+blueNoiseTexture.wrapT = THREE.RepeatWrapping;
+blueNoiseTexture.minFilter = THREE.NearestFilter;
+blueNoiseTexture.magFilter = THREE.NearestFilter;
 
 // All render targets are used to render a texture to a texture offscreen
 const rtA = new THREE.WebGLRenderTarget(width, height, {
@@ -101,6 +127,14 @@ const jfaB = rtB.clone();
 let currentRT = rtA;
 let previousRT = rtB;
 
+const rayColorRT = new THREE.WebGLRenderTarget(raymarchWidth, raymarchHeight, {
+  minFilter: THREE.NearestFilter,
+  magFilter: THREE.NearestFilter,
+  format: THREE.RGBAFormat,
+  type: THREE.FloatType,
+  wrapS: THREE.ClampToEdgeWrapping,
+  wrapT: THREE.ClampToEdgeWrapping,
+});
 
 const geometry = new THREE.PlaneGeometry(2, 2); //this is the mesh that will be rendered to the screen. 2,2 because we want it to cover clip space -1 to 1 both x and y
 
@@ -249,8 +283,10 @@ const rayMaterial = new THREE.ShaderMaterial({
   uniforms: {
     iTexture: {value: null},
     distanceTexture: {value: null},
+    blueNoise: {value: blueNoiseTexture},
     rayCount: {value:16},
-    resolution: {value: new THREE.Vector2(width, height)}
+    resolution: {value: new THREE.Vector2(width, height)},
+    frame: {value: 0}
   },
   vertexShader: paintMaterial.vertexShader,
   fragmentShader: 
@@ -259,8 +295,10 @@ const rayMaterial = new THREE.ShaderMaterial({
     varying vec2 vUv;
     uniform sampler2D iTexture;
     uniform sampler2D distanceTexture;
+    uniform sampler2D blueNoise;
     uniform int rayCount;
     uniform vec2 resolution;
+    uniform float frame;
     const float PI = 3.14159265;
     const float TAU = 2.0 * PI;
     const float EPS = 0.0001; 
@@ -273,20 +311,33 @@ const rayMaterial = new THREE.ShaderMaterial({
       return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
     }
 
+    float blueNoiseSample(vec2 coord) { //blue noise im probably using this wrong
+      vec2 blueNoiseResolution = vec2(128.0);
+      vec2 noiseUV = mod(coord, blueNoiseResolution) / blueNoiseResolution;
+      return texture2D(blueNoise, noiseUV).r;
+    }
+
+    //https://www.shadertoy.com/view/4tXGWN - ign noise no idea how it works, but it does reduce noise, not the best sol
+    float ign(vec2 p) {
+      const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
+      return fract(magic.z * fract(dot(p, magic.xy)));
+    }
+
     vec4 raymarch(){
       vec4 light = texture(iTexture, vUv);
       if(light.r != 0. || light.g != 0. || light.b != 0.) { //if we are at a seed location, we dont need to raymarch 
-        return vec4(0.0, 0.0, 0.0,1.0);//light / 1.5; //lighter color so doesnt mix up with the lighting
-      }
-
-      if(mod(gl_FragCoord.x - 0.5,2.) == 0. || mod(gl_FragCoord.y - 0.5, 20.) == 0.) {
-       // return vec4(0.0, 0.0, 0.0,1.0);
+        return light / 1.5; //lighter color so doesnt mix up with the lighting
       }
 
       float oneOverRayCount = 1.0 / float(rayCount); 
       float tauOverRayCount = TAU * oneOverRayCount;
 
-      float noise = rand(vUv); //noise is based on where the uv coordinate of that pixel
+      float noise = blueNoiseSample(gl_FragCoord.xy);
+
+      //float noise = ign(gl_FragCoord.xy);
+
+      //float noise = rand(vUv);
+
       vec4 radiance = vec4(0.0); //total light that will be accumulated
       //calcualte and shoot rayCount rays that are equidstant from each other, expensive
 
@@ -330,16 +381,38 @@ const rayMaterial = new THREE.ShaderMaterial({
   `
 })
 
+const upscaleMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    source: { value: null },
+  },
+  vertexShader: paintMaterial.vertexShader,
+  fragmentShader: ` // this is a simple upscaler shader, because I don't know how to make a low res texture appear full screen
+    precision highp float;
+    varying vec2 vUv;
+    uniform sampler2D source;
+    void main() {
+      gl_FragColor = texture2D(source, vUv);
+    }
+  `,
+});
+
 const mesh = new THREE.Mesh(geometry, paintMaterial);
 scene.add(mesh);
 
+let time = performance.now();
 
+let textmaterial = new THREE.MeshBasicMaterial({ map: textTexture });
+
+let frame = 0;
 
 function animate() {
-  drawTextToCanvas('HELLO LIGHT', width/2, height/2, 'white', 64);
+  stats.begin();
+  
+  const currentTime = performance.now();
+  drawTextToCanvas('HELLO LIGHT', width/2, height/2, 'white', 64, currentTime);
   textTexture.needsUpdate = true;
 
-  mesh.material = new THREE.MeshBasicMaterial({ map: textTexture }); //you cant just pass the text texture to prevRT so this is the way
+  mesh.material = textmaterial; //you cant just pass the text texture to prevRT so this is the way
 
   renderer.setRenderTarget(previousRT); 
   renderer.clear();
@@ -384,22 +457,33 @@ function animate() {
   renderer.setRenderTarget(curJFA);
   renderer.render(scene, camera);
 
+  frame++
 
-  //display phase
+  if(frame % 8 ==0) rayMaterial.uniforms.rayCount.value = 32; //wtffff this is insane this makes it way better
+  
+  // raymarch phase
   mesh.material = rayMaterial;
-  rayMaterial.uniforms.iTexture.value = currentRT.texture;
-  rayMaterial.uniforms.distanceTexture.value = curJFA.texture;
-  renderer.setRenderTarget(null); //actual screen
+  rayMaterial.uniforms.iTexture.value = currentRT.texture; 
+  rayMaterial.uniforms.distanceTexture.value = curJFA.texture; 
+  rayMaterial.uniforms.resolution.value.set(width, height); // you still have to treat distances in JFA res
+  rayMaterial.uniforms.frame.value += 1;
+  renderer.setRenderTarget(rayColorRT); 
+  renderer.render(scene, camera);
 
+  mesh.material = upscaleMaterial;
+  upscaleMaterial.uniforms.source.value = rayColorRT.texture;
+  renderer.setRenderTarget(null);
   renderer.render(scene, camera);
 
   //swap for next frame
   [currentRT, previousRT] = [previousRT, currentRT]; //tbd
+  
+  stats.end();
 }
 
 renderer.setAnimationLoop(animate);
 
-renderer.setSize(window.innerWidth, window.innerHeight); //not sure why the speed up is massive, research later
+renderer.setSize(window.innerWidth, window.innerHeight); // full-screen framebuffer; low-res upscales in shader
 
 window.addEventListener('resize', () => { //resizing is gonna be painful
   

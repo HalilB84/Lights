@@ -7,7 +7,7 @@ const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 const renderer = new THREE.WebGLRenderer();
 document.body.appendChild(renderer.domElement);
 
-const scale = 4; // scaling the canvas, which means that the actual canvas is bigger than what we sample, if we don't do this it's unusable everywhere
+const scale = 2; // scaling the canvas, which means that the actual canvas is bigger than what we sample, if we don't do this it's unusable everywhere
 const canvas = renderer.domElement;
 const width = 512 // For now has to be a power of two because of the cascade algorithm or problems at the edges; this needs a fix
 const height = 512
