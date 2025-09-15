@@ -13,10 +13,9 @@ stats.showPanel(0);
 document.body.appendChild(stats.dom);
 
 
-const scale = 4;
-const canvas = renderer.domElement;
-const width = window.innerWidth / scale; //not sure how webgl handles non integer res
-const height = window.innerHeight / scale;
+const JFAscale = 4;
+const jfaWidth = window.innerWidth / JFAscale; //not sure how webgl handles non integer res
+const jfaHeight = window.innerHeight / JFAscale;
 
 const raymarchScale = 2; 
 const raymarchWidth = window.innerWidth / raymarchScale;
@@ -24,20 +23,20 @@ const raymarchHeight = window.innerHeight / raymarchScale;
 
 const mouse = {x: null, y: null}; 
 
+const canvas = renderer.domElement;
+
+
 canvas.addEventListener('mousemove', (e) => { // look at this again when my sanity is restored, it doesnt matter much but its bugging me
   const rect = canvas.getBoundingClientRect();
 
-  mouse.x = (e.clientX - rect.left) / scale;
-  mouse.y = (rect.height - (e.clientY - rect.top)) / scale;
+  mouse.x = (e.clientX - rect.left) / JFAscale;
+  mouse.y = (rect.height - (e.clientY - rect.top)) / JFAscale;
 
   mouse.x = Math.floor(mouse.x);
   mouse.y = Math.floor(mouse.y);
 }); 
 
-const textCanvas = document.createElement('canvas');
-textCanvas.width = width;
-textCanvas.height = height;
-const textCtx = textCanvas.getContext('2d');
+
 
 let startTime = performance.now();
 
@@ -47,9 +46,9 @@ for(let i = 0; i < 15; i++) { // akari style rects
   let where = Math.random() > 0.5 ? 'left' : 'right';
   rects.push({
     where: where,
-    startX: where === 'left' ? 0 : width,
-    x: where === 'left' ? 0 : width,
-    y: Math.floor(i * height / 15), 
+    startX: where === 'left' ? 0 : jfaWidth,
+    x: where === 'left' ? 0 : jfaWidth,
+    y: Math.floor(i * jfaHeight / 15), 
     color: `hsl(${Math.random() * 360}, 100%, 50%)`,
     height: 1,
     width: Math.random() * 100 + 50,
@@ -74,7 +73,7 @@ function drawTextToCanvas(text, x, y, color, fontSize, currentTime) {
     
     if(rect.where === 'left') {
       rect.x = rect.startX + distance;
-      if (rect.x > width + rect.width) {
+      if (rect.x > jfaWidth + rect.width) {
         rect.startX = 0 - rect.width;
         rect.x = rect.startX;
         rect.startTime = currentTime;
@@ -83,7 +82,7 @@ function drawTextToCanvas(text, x, y, color, fontSize, currentTime) {
     } else {
       rect.x = rect.startX - distance;
       if (rect.x < -rect.width) {
-        rect.startX = width;
+        rect.startX = jfaWidth;
         rect.x = rect.startX;
         rect.startTime = currentTime;
         rect.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
@@ -99,7 +98,6 @@ function drawTextToCanvas(text, x, y, color, fontSize, currentTime) {
   textCtx.fillText(text, x, y);
 }
 
-const textTexture = new THREE.CanvasTexture(textCanvas);
 
 const blueNoiseTexture = new THREE.TextureLoader().load('LDR_LLL1_0.png');
 blueNoiseTexture.wrapS = THREE.RepeatWrapping;
@@ -108,7 +106,7 @@ blueNoiseTexture.minFilter = THREE.NearestFilter;
 blueNoiseTexture.magFilter = THREE.NearestFilter;
 
 // All render targets are used to render a texture to a texture offscreen
-const rtA = new THREE.WebGLRenderTarget(width, height, {
+const rtA = new THREE.WebGLRenderTarget(jfaWidth, jfaHeight, {
   minFilter: THREE.NearestFilter,
   magFilter: THREE.NearestFilter,
   format: THREE.RGBAFormat,
@@ -119,7 +117,22 @@ const rtA = new THREE.WebGLRenderTarget(width, height, {
 
 const rtB = rtA.clone(); //ping pong element so webgl doesnt yell at me for reading and writing to the same texture
 
-const seedRT = rtA.clone();
+const textCanvas = document.createElement('canvas');
+textCanvas.width = jfaWidth;
+textCanvas.height = jfaHeight;
+const textCtx = textCanvas.getContext('2d');
+
+const textTexture = new THREE.CanvasTexture(textCanvas);
+
+
+const seedRT = new THREE.WebGLRenderTarget(jfaWidth, jfaHeight, {
+  minFilter: THREE.NearestFilter,
+  magFilter: THREE.NearestFilter,
+  format: THREE.RGBAFormat,
+  type: THREE.FloatType,
+  wrapS: THREE.ClampToEdgeWrapping,
+  wrapT: THREE.ClampToEdgeWrapping,
+});
 
 const jfaA = rtA.clone();
 const jfaB = rtB.clone();
@@ -142,7 +155,7 @@ const paintMaterial = new THREE.ShaderMaterial({
   uniforms: {
     prevTexture: { value: null },
     mouse: { value: mouse },
-    resolution: { value: new THREE.Vector2(width, height) }
+    resolution: { value: new THREE.Vector2(jfaWidth, jfaHeight) }
   },
   vertexShader: ` //standard vertex shader for the plane, realistically we dont need this but I didnt create a camera for no reason 
     varying vec2 vUv;
@@ -212,7 +225,7 @@ const jfaMaterial = new THREE.ShaderMaterial({
     uniforms:{
         inputTexture: {value: null},
         offset: {value: null},
-        resolution: {value: new THREE.Vector2(width, height)}
+        resolution: {value: new THREE.Vector2(jfaWidth, jfaHeight)}
     },
     vertexShader: paintMaterial.vertexShader,
     fragmentShader: `
@@ -257,7 +270,7 @@ const jfaMaterial = new THREE.ShaderMaterial({
 const distanceMaterial = new THREE.ShaderMaterial({
   uniforms:{
     inputTexture: {value: null},
-    resolution: {value: new THREE.Vector2(width, height)}
+    resolution: {value: new THREE.Vector2(jfaWidth, jfaHeight)}
   },
   vertexShader: paintMaterial.vertexShader,
   fragmentShader: `
@@ -272,9 +285,8 @@ const distanceMaterial = new THREE.ShaderMaterial({
       vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
 
       float dist = length(diff_px); //tbd
-      float dist2 = distance(nearestSeed, vUv); //tbd
       
-      gl_FragColor = vec4(dist, dist2, 0., 1.);
+      gl_FragColor = vec4(dist, 0., 0., 1.);
     }
   `
 })
@@ -284,8 +296,8 @@ const rayMaterial = new THREE.ShaderMaterial({
     iTexture: {value: null},
     distanceTexture: {value: null},
     blueNoise: {value: blueNoiseTexture},
-    rayCount: {value:16},
-    resolution: {value: new THREE.Vector2(width, height)},
+    rayCount: {value:32},
+    resolution: {value: new THREE.Vector2(jfaWidth, jfaHeight)},
     frame: {value: 0}
   },
   vertexShader: paintMaterial.vertexShader,
@@ -301,7 +313,6 @@ const rayMaterial = new THREE.ShaderMaterial({
     uniform float frame;
     const float PI = 3.14159265;
     const float TAU = 2.0 * PI;
-    const float EPS = 0.0001; 
 
     bool outOfBounds(vec2 uv) {
       return uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0;
@@ -383,7 +394,7 @@ const rayMaterial = new THREE.ShaderMaterial({
 
 const upscaleMaterial = new THREE.ShaderMaterial({
   uniforms: {
-    source: { value: null },
+    source: { value: null }
   },
   vertexShader: paintMaterial.vertexShader,
   fragmentShader: ` // this is a simple upscaler shader, because I don't know how to make a low res texture appear full screen
@@ -399,17 +410,13 @@ const upscaleMaterial = new THREE.ShaderMaterial({
 const mesh = new THREE.Mesh(geometry, paintMaterial);
 scene.add(mesh);
 
-let time = performance.now();
-
 let textmaterial = new THREE.MeshBasicMaterial({ map: textTexture });
-
-let frame = 0;
 
 function animate() {
   stats.begin();
   
   const currentTime = performance.now();
-  drawTextToCanvas('HELLO LIGHT', width/2, height/2, 'white', 64, currentTime);
+  drawTextToCanvas('HELLO LIGHT', jfaWidth/2, jfaHeight/2, 'white', 64, currentTime);
   textTexture.needsUpdate = true;
 
   mesh.material = textmaterial; //you cant just pass the text texture to prevRT so this is the way
@@ -437,7 +444,7 @@ function animate() {
   let curT = seedRT.texture;
   let curJFA = jfaA;
   let nextJFA = jfaB;
-  const passes = Math.ceil(Math.log2(Math.max(width, height)));
+  const passes = Math.ceil(Math.log2(Math.max(jfaWidth, jfaHeight)));
   mesh.material = jfaMaterial;
 
   for(let i = 0; i < passes; i++) {
@@ -457,15 +464,11 @@ function animate() {
   renderer.setRenderTarget(curJFA);
   renderer.render(scene, camera);
 
-  frame++
-
-  if(frame % 8 ==0) rayMaterial.uniforms.rayCount.value = 32; //wtffff this is insane this makes it way better
   
   // raymarch phase
   mesh.material = rayMaterial;
   rayMaterial.uniforms.iTexture.value = currentRT.texture; 
   rayMaterial.uniforms.distanceTexture.value = curJFA.texture; 
-  rayMaterial.uniforms.resolution.value.set(width, height); // you still have to treat distances in JFA res
   rayMaterial.uniforms.frame.value += 1;
   renderer.setRenderTarget(rayColorRT); 
   renderer.render(scene, camera);
