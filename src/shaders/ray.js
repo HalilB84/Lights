@@ -39,7 +39,9 @@ export default function ray(){
 
             float blueNoiseSample(vec2 coord) { //blue noise im probably using this wrong
                 vec2 blueNoiseResolution = vec2(128.0);
-                vec2 noiseUV = mod(coord, blueNoiseResolution) / blueNoiseResolution;
+                vec2 offset = vec2(mod(frame, blueNoiseResolution.x), 
+                                   mod(frame * 37.0, blueNoiseResolution.y));
+                vec2 noiseUV = mod(coord + offset, blueNoiseResolution) / blueNoiseResolution;
                 return texture2D(blueNoise, noiseUV).r;
             }
 
@@ -52,8 +54,8 @@ export default function ray(){
             vec4 raymarch(){
                 vec4 light = texture(iTexture, vUv);
                 if(light.r != 0. || light.g != 0. || light.b != 0.) { //if we are at a seed location, we dont need to raymarch 
-                   return vec4(vec3(0.0), 1.0);
-                   //return light;
+                   //return vec4(vec3(0.0), 1.0);
+                   return light;
                    //return light / 1.5; //lighter color so doesnt mix up with the lighting
                 }
 

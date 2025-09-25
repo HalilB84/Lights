@@ -7,6 +7,7 @@ import distance from './shaders/distance.js';
 import ray from './shaders/ray.js';
 import upscale from './shaders/upscale.js';
 import resizer from './shaders/resizer.js';
+import bilateral from './shaders/bilateral.js';
 import UI from './ui.js';
 
 
@@ -110,7 +111,15 @@ class Main {
       wrapS: THREE.ClampToEdgeWrapping,
       wrapT: THREE.ClampToEdgeWrapping,
     });
-    
+
+    this.bilateralRT = new THREE.WebGLRenderTarget(this.raymarchWidth, this.raymarchHeight, {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      format: THREE.RGBAFormat,
+      type: THREE.FloatType,
+      wrapS: THREE.ClampToEdgeWrapping,
+      wrapT: THREE.ClampToEdgeWrapping,
+    });    
   }
 
 shaders() { //needs cleaning up
@@ -147,7 +156,14 @@ shaders() { //needs cleaning up
   this.resizerMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
   this.resizerMaterial.uniforms.sourceAspect.value = 1.0;
   this.resizerMaterial.uniforms.sourceScale.value = 1.0;
-  this.resizerMaterial.uniforms.centerX.value = 0.5;  
+  this.resizerMaterial.uniforms.centerX.value = 0.5; 
+  
+  this.bilateralMaterial = bilateral();
+  this.bilateralMaterial.uniforms.inputTexture.value = null;
+  this.bilateralMaterial.uniforms.resolution.value = new THREE.Vector2(this.raymarchWidth, this.raymarchHeight);
+  this.bilateralMaterial.uniforms.sigmaSpatial.value = 2.0;
+  this.bilateralMaterial.uniforms.sigmaRange.value = 0.1;
+  this.bilateralMaterial.uniforms.radius.value = 2;
 
   this.geometry = new THREE.PlaneGeometry(2, 2);
   this.mesh = new THREE.Mesh(this.geometry, this.paintMaterial);
@@ -216,8 +232,14 @@ animate() {
   this.renderer.setRenderTarget(this.rayColorRT); 
   this.renderer.render(this.scene, this.camera);
 
+  this.mesh.material = this.bilateralMaterial;
+  this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth, this.raymarchHeight);
+  this.bilateralMaterial.uniforms.inputTexture.value = this.rayColorRT.texture;
+  this.renderer.setRenderTarget(this.bilateralRT);
+  this.renderer.render(this.scene, this.camera);
+
   this.mesh.material = this.upscaleMaterial;
-  this.upscaleMaterial.uniforms.source.value = this.rayColorRT.texture;
+  this.upscaleMaterial.uniforms.source.value = this.bilateralRT.texture;
   this.renderer.setRenderTarget(null);
   this.renderer.render(this.scene, this.camera);
 
