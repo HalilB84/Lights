@@ -1,494 +1,233 @@
 import * as THREE from 'three';
-import Stats from 'stats.js';
+import Stats from 'stats-gl';
+import paint from './shaders/paint.js';
+import seed from './shaders/seed.js';
+import jfa from './shaders/jfa.js';
+import distance from './shaders/distance.js';
+import ray from './shaders/ray.js';
+import upscale from './shaders/upscale.js';
+import resizer from './shaders/resizer.js';
+import UI from './ui.js';
+
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
 
-const scene = new THREE.Scene();
-const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-const renderer = new THREE.WebGLRenderer();
-document.body.appendChild(renderer.domElement);
 
-const stats = new Stats();
-stats.showPanel(0); 
-document.body.appendChild(stats.dom);
+class Main {
+  constructor() {
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    this.renderer = new THREE.WebGLRenderer();
+    document.body.appendChild(this.renderer.domElement);
+
+    this.stats = new Stats({ // when webgl 2 switch is done update this for gpu data
+      trackGPU: true,
+      trackHz: false,
+      trackCPT: false,
+      logsPerSecond: 4,
+      graphsPerSecond: 30,
+      samplesLog: 40, 
+      samplesGraph: 10, 
+      precision: 2, 
+      horizontal: true,
+      minimal: false, 
+      mode: 0
+  });
+  
+    document.body.appendChild(this.stats.dom);
+
+    this.JFAscale = 2;
+    this.jfaWidth = window.innerWidth / this.JFAscale;
+    this.jfaHeight = window.innerHeight / this.JFAscale;
+
+    this.raymarchScale = 2;
+    this.raymarchWidth = window.innerWidth / this.raymarchScale;
+    this.raymarchHeight = window.innerHeight / this.raymarchScale;
+
+    this.mouse = {x: null, y: null};
+
+    this.canvas = this.renderer.domElement;
+
+    this.ui = new UI();
+
+    this.initialize();
+    this.shaders();
+
+    this.canvas.addEventListener('mousemove', (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      this.mouse.x = (e.clientX - rect.left) / this.JFAscale;
+      this.mouse.y = (rect.height - (e.clientY - rect.top)) / this.JFAscale;
+    });
+
+    window.addEventListener('resize', () => { });
+
+    this.renderer.setAnimationLoop(this.animate.bind(this));
+    this.renderer.setSize(window.innerWidth, window.innerHeight); 
+    
+  }
 
 
-const JFAscale = 4;
-const jfaWidth = window.innerWidth / JFAscale; //not sure how webgl handles non integer res
-const jfaHeight = window.innerHeight / JFAscale;
+  initialize() {
+    
+    this.blueNoiseTexture = new THREE.TextureLoader().load('LDR_LLL1_0.png');
+    this.blueNoiseTexture.wrapS = THREE.RepeatWrapping;
+    this.blueNoiseTexture.wrapT = THREE.RepeatWrapping;
+    this.blueNoiseTexture.minFilter = THREE.NearestFilter;
+    this.blueNoiseTexture.magFilter = THREE.NearestFilter;
+    
+    // All render targets are used to render a texture to a texture offscreen
+    this.rtA = new THREE.WebGLRenderTarget(this.jfaWidth, this.jfaHeight, {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      format: THREE.RGBAFormat,
+      type: THREE.FloatType,
+      wrapS: THREE.ClampToEdgeWrapping,
+      wrapT: THREE.ClampToEdgeWrapping,
+    });
+    
+    this.rtB = this.rtA.clone(); //ping pong element so webgl doesnt yell at me for reading and writing to the same texture
+        
+    this.seedRT = new THREE.WebGLRenderTarget(this.jfaWidth, this.jfaHeight, {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      format: THREE.RGBAFormat,
+      type: THREE.FloatType,
+      wrapS: THREE.ClampToEdgeWrapping,
+      wrapT: THREE.ClampToEdgeWrapping,
+    });
+    
+    this.jfaA = this.rtA.clone();
+    this.jfaB = this.rtB.clone();
+    
+    this.currentRT = this.rtA;
+    this.previousRT = this.rtB;
+    
+    this.rayColorRT = new THREE.WebGLRenderTarget(this.raymarchWidth, this.raymarchHeight, {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      format: THREE.RGBAFormat,
+      type: THREE.FloatType,
+      wrapS: THREE.ClampToEdgeWrapping,
+      wrapT: THREE.ClampToEdgeWrapping,
+    });
+    
+  }
 
-const raymarchScale = 2; 
-const raymarchWidth = window.innerWidth / raymarchScale;
-const raymarchHeight = window.innerHeight / raymarchScale;
+shaders() { //needs cleaning up
+  this.paintMaterial = paint();
+  this.paintMaterial.uniforms.prevTexture.value = null;
+  this.paintMaterial.uniforms.mouse.value = this.mouse;
+  this.paintMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
+  
+  this.seedMaterial = seed();
+  this.seedMaterial.uniforms.inputTexture.value = null;
+  
+  this.jfaMaterial = jfa();
+  this.jfaMaterial.uniforms.inputTexture.value = null;
+  this.jfaMaterial.uniforms.offset.value = null;
+  this.jfaMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
+  
+  this.distanceMaterial = distance();
+  this.distanceMaterial.uniforms.inputTexture.value = null;
+  this.distanceMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
+  
+  this.rayMaterial = ray();
+  this.rayMaterial.uniforms.iTexture.value = null;
+  this.rayMaterial.uniforms.distanceTexture.value = null;
+  this.rayMaterial.uniforms.blueNoise.value = this.blueNoiseTexture;
+  this.rayMaterial.uniforms.rayCount.value = 32;
+  this.rayMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
+  this.rayMaterial.uniforms.frame.value = 0;
+  
+  this.upscaleMaterial = upscale();
+  this.upscaleMaterial.uniforms.source.value = null;
+  
+  this.resizerMaterial = resizer();
+  this.resizerMaterial.uniforms.sourceTex.value = null;
+  this.resizerMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
+  this.resizerMaterial.uniforms.sourceAspect.value = 1.0;
+  this.resizerMaterial.uniforms.sourceScale.value = 1.0;
+  this.resizerMaterial.uniforms.centerX.value = 0.5;  
 
-const mouse = {x: null, y: null}; 
-
-const canvas = renderer.domElement;
-
-
-canvas.addEventListener('mousemove', (e) => { // look at this again when my sanity is restored, it doesnt matter much but its bugging me
-  const rect = canvas.getBoundingClientRect();
-
-  mouse.x = (e.clientX - rect.left) / JFAscale;
-  mouse.y = (rect.height - (e.clientY - rect.top)) / JFAscale;
-
-  mouse.x = Math.floor(mouse.x);
-  mouse.y = Math.floor(mouse.y);
-}); 
-
-
-
-let startTime = performance.now();
-
-let rects = []
-
-for(let i = 0; i < 15; i++) { // akari style rects
-  let where = Math.random() > 0.5 ? 'left' : 'right';
-  rects.push({
-    where: where,
-    startX: where === 'left' ? 0 : jfaWidth,
-    x: where === 'left' ? 0 : jfaWidth,
-    y: Math.floor(i * jfaHeight / 15), 
-    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-    height: 1,
-    width: Math.random() * 100 + 50,
-    speed: Math.random() * 400 + 100, 
-    startTime: startTime,
-  })
+  this.geometry = new THREE.PlaneGeometry(2, 2);
+  this.mesh = new THREE.Mesh(this.geometry, this.paintMaterial);
+  this.scene.add(this.mesh);
+  
 }
 
-
-function drawTextToCanvas(text, x, y, color, fontSize, currentTime) { 
-  textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
-  
-  rects.forEach(rect => {    
-    textCtx.fillStyle = rect.color;
-    textCtx.fillRect(rect.x, rect.y, rect.width, rect.height);
-  })
-
-  
-  rects.forEach(rect => {
-    const elapsedTime = (currentTime - rect.startTime) / 1000; 
-    const distance = rect.speed * elapsedTime;
-    
-    if(rect.where === 'left') {
-      rect.x = rect.startX + distance;
-      if (rect.x > jfaWidth + rect.width) {
-        rect.startX = 0 - rect.width;
-        rect.x = rect.startX;
-        rect.startTime = currentTime;
-        rect.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
-      }
-    } else {
-      rect.x = rect.startX - distance;
-      if (rect.x < -rect.width) {
-        rect.startX = jfaWidth;
-        rect.x = rect.startX;
-        rect.startTime = currentTime;
-        rect.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
-      }
-    }
-  })
-  
-  textCtx.fillStyle = 'orange';
-  textCtx.font = `${24}px Arial`;
-  textCtx.textAlign = 'center';
-  textCtx.textBaseline = 'middle';
-  
-  textCtx.fillText(text, x, y);
-}
+animate() {
+  this.stats.begin();
 
 
-const blueNoiseTexture = new THREE.TextureLoader().load('LDR_LLL1_0.png');
-blueNoiseTexture.wrapS = THREE.RepeatWrapping;
-blueNoiseTexture.wrapT = THREE.RepeatWrapping;
-blueNoiseTexture.minFilter = THREE.NearestFilter;
-blueNoiseTexture.magFilter = THREE.NearestFilter;
+  this.mesh.material = this.resizerMaterial;
+  this.resizerMaterial.uniforms.sourceTex.value = this.ui.videoTexture;
+  this.resizerMaterial.uniforms.sourceAspect.value = this.ui.videoAspect;
+  this.resizerMaterial.uniforms.sourceScale.value = this.ui.videoScale;
+   
 
-// All render targets are used to render a texture to a texture offscreen
-const rtA = new THREE.WebGLRenderTarget(jfaWidth, jfaHeight, {
-  minFilter: THREE.NearestFilter,
-  magFilter: THREE.NearestFilter,
-  format: THREE.RGBAFormat,
-  type: THREE.FloatType,
-  wrapS: THREE.ClampToEdgeWrapping,
-  wrapT: THREE.ClampToEdgeWrapping,
-});
-
-const rtB = rtA.clone(); //ping pong element so webgl doesnt yell at me for reading and writing to the same texture
-
-const textCanvas = document.createElement('canvas');
-textCanvas.width = jfaWidth;
-textCanvas.height = jfaHeight;
-const textCtx = textCanvas.getContext('2d');
-
-const textTexture = new THREE.CanvasTexture(textCanvas);
-
-
-const seedRT = new THREE.WebGLRenderTarget(jfaWidth, jfaHeight, {
-  minFilter: THREE.NearestFilter,
-  magFilter: THREE.NearestFilter,
-  format: THREE.RGBAFormat,
-  type: THREE.FloatType,
-  wrapS: THREE.ClampToEdgeWrapping,
-  wrapT: THREE.ClampToEdgeWrapping,
-});
-
-const jfaA = rtA.clone();
-const jfaB = rtB.clone();
-
-let currentRT = rtA;
-let previousRT = rtB;
-
-const rayColorRT = new THREE.WebGLRenderTarget(raymarchWidth, raymarchHeight, {
-  minFilter: THREE.NearestFilter,
-  magFilter: THREE.NearestFilter,
-  format: THREE.RGBAFormat,
-  type: THREE.FloatType,
-  wrapS: THREE.ClampToEdgeWrapping,
-  wrapT: THREE.ClampToEdgeWrapping,
-});
-
-const geometry = new THREE.PlaneGeometry(2, 2); //this is the mesh that will be rendered to the screen. 2,2 because we want it to cover clip space -1 to 1 both x and y
-
-const paintMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    prevTexture: { value: null },
-    mouse: { value: mouse },
-    resolution: { value: new THREE.Vector2(jfaWidth, jfaHeight) }
-  },
-  vertexShader: ` //standard vertex shader for the plane, realistically we dont need this but I didnt create a camera for no reason 
-    varying vec2 vUv;
-    void main() { 
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  fragmentShader: `
-    precision highp float;
-    varying vec2 vUv; //interpolated coordinates coming from the vertex shader between 0 and 1, one u is 1/width and one v is 1/height per pixel, and as far as I understand, when you access UV in a fragment it gives the interpolated value in the center of that fragment. 
-    uniform sampler2D prevTexture;
-    uniform vec2 mouse;   
-    uniform vec2 resolution;
-        
-    void main() { 
-        // This is the shader that paints and accumates the color to the texture, used it when I was looking at the tutorial but now its just overriden by the canvas texture, 
-        // I am keeping it here because right now it shows a 10px circle where the mouse is which is fun. 
-
-        vec4 color = texture2D(prevTexture, vUv).rgba;
-    
-        vec2 uvPx = gl_FragCoord.xy; //gives the pixel coordinate of the framgent, well kinda, it gives the center of the fragment
-        vec2 mousePx = mouse;
-
-        //if(gl_FragCoord.xy - vec2(0.5) == floor(vUv * resolution)) {
-          //color = vec4(vUv.x, vUv.y, 0.5, 1.);
-        //}
-
-        float dist = length(uvPx - mousePx);
-
-        float brushRadius = 10.0; //brush radius in pixels
-        if(dist < brushRadius) {
-            color = vec4(vUv.x, vUv.y, 0.5, 1.);
-        }
-
-        gl_FragColor = color;
-    }
-  `
-});
-
-const seedMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    inputTexture: {value: null}
-  },
-  vertexShader: paintMaterial.vertexShader,
-  fragmentShader: `
-    precision highp float;
-    varying vec2 vUv;
-    uniform sampler2D inputTexture;
-
-    void main() {
-      //this is the shader that converts the input texture to a seed texture
-      //to calculate the nearest seed in the jfa phase, we need to know the location of the seed in the input texture
-      //so we are storing the uv coordinates in a texture, this creates a nice looking gradient
-      
-      vec4 color = texture(inputTexture, vUv);
-      if(color.r != 0. || color.g != 0. || color.b != 0.) { // There is a seed here
-        gl_FragColor = vec4(vUv.x, vUv.y, gl_FragCoord.x + 0.5, gl_FragCoord.y + 0.5); // vUv.x and vUv.y are the uv coordinates of where this pixel is in, 0.5 is just added to give a nice color scheme
-      } else {
-        gl_FragColor = vec4(0.0); //if the color is black, it means there is no seed here thus this will be one of the pixels that shoot rays
-      }
-    }
-  `
-})
-
-const jfaMaterial = new THREE.ShaderMaterial({
-    uniforms:{
-        inputTexture: {value: null},
-        offset: {value: null},
-        resolution: {value: new THREE.Vector2(jfaWidth, jfaHeight)}
-    },
-    vertexShader: paintMaterial.vertexShader,
-    fragmentShader: `
-        precision highp float;
-        varying vec2 vUv;
-        uniform sampler2D inputTexture;
-        uniform float offset;
-        uniform vec2 resolution;
-
-        void main() {
-            vec4 nearestSeed = vec4(0.0); 
-            float nearestDist = 9999999.9; // Distance to the nearest seed, we start at 9.9 because that obv larger than any distance in the uv space
-
-            //prove why the algo works
-            for(float y = -1.; y <= 1.; y += 1.){ 
-                for(float x = -1.; x <= 1.; x += 1.){
-                    vec2 sampleUV = vUv + vec2(x, y) * offset / resolution; //because offset is in pixels we normalize it to uv space by dividing by resolution
-                    if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) { continue; }
-
-                     vec4 sampleValue = texture(inputTexture, sampleUV);
-                     vec2 loc = sampleValue.xy;
-
-                     if(loc.x != 0. || loc.y != 0.) {
-                        vec2 diff = loc - vUv;
-
-                        vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
-                        float dist = dot(diff, diff);
-                        float dist_sq = dot(diff_px, diff_px);
-
-                        if(dist_sq  < nearestDist){
-                            nearestDist = dist_sq;
-                            nearestSeed = sampleValue; 
-                        }
-                     }
-                }
-            }
-            gl_FragColor = nearestSeed;
-        }
-    `,
-})
-
-const distanceMaterial = new THREE.ShaderMaterial({
-  uniforms:{
-    inputTexture: {value: null},
-    resolution: {value: new THREE.Vector2(jfaWidth, jfaHeight)}
-  },
-  vertexShader: paintMaterial.vertexShader,
-  fragmentShader: `
-    varying vec2 vUv;
-    uniform sampler2D inputTexture;
-    uniform vec2 resolution;
-
-    void main() { 
-      vec2 nearestSeed = texture(inputTexture, vUv).xy; 
-
-      vec2 diff = nearestSeed - vUv;
-      vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
-
-      float dist = length(diff_px); //tbd
-      
-      gl_FragColor = vec4(dist, 0., 0., 1.);
-    }
-  `
-})
-
-const rayMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    iTexture: {value: null},
-    distanceTexture: {value: null},
-    blueNoise: {value: blueNoiseTexture},
-    rayCount: {value:32},
-    resolution: {value: new THREE.Vector2(jfaWidth, jfaHeight)},
-    frame: {value: 0}
-  },
-  vertexShader: paintMaterial.vertexShader,
-  fragmentShader: 
-   `
-    precision highp float;
-    varying vec2 vUv;
-    uniform sampler2D iTexture;
-    uniform sampler2D distanceTexture;
-    uniform sampler2D blueNoise;
-    uniform int rayCount;
-    uniform vec2 resolution;
-    uniform float frame;
-    const float PI = 3.14159265;
-    const float TAU = 2.0 * PI;
-
-    bool outOfBounds(vec2 uv) {
-      return uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0;
-    }
-
-    float rand(vec2 co) {
-      return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-    }
-
-    float blueNoiseSample(vec2 coord) { //blue noise im probably using this wrong
-      vec2 blueNoiseResolution = vec2(128.0);
-      vec2 noiseUV = mod(coord, blueNoiseResolution) / blueNoiseResolution;
-      return texture2D(blueNoise, noiseUV).r;
-    }
-
-    //https://www.shadertoy.com/view/4tXGWN - ign noise no idea how it works, but it does reduce noise, not the best sol
-    float ign(vec2 p) {
-      const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
-      return fract(magic.z * fract(dot(p, magic.xy)));
-    }
-
-    vec4 raymarch(){
-      vec4 light = texture(iTexture, vUv);
-      if(light.r != 0. || light.g != 0. || light.b != 0.) { //if we are at a seed location, we dont need to raymarch 
-        return light / 1.5; //lighter color so doesnt mix up with the lighting
-      }
-
-      float oneOverRayCount = 1.0 / float(rayCount); 
-      float tauOverRayCount = TAU * oneOverRayCount;
-
-      float noise = blueNoiseSample(gl_FragCoord.xy);
-
-      //float noise = ign(gl_FragCoord.xy);
-
-      //float noise = rand(vUv);
-
-      vec4 radiance = vec4(0.0); //total light that will be accumulated
-      //calcualte and shoot rayCount rays that are equidstant from each other, expensive
-
-      for(int i = 0; i < rayCount; i++) {
-        float angle = tauOverRayCount * (float(i) + noise); //if we dont add noise all rays will be in the same direction which will introduce patterns
-        vec2 rayDirection = vec2(cos(angle), -sin(angle)); //unit circle, NOW FIXED!!!!!!
-
-
-        vec2 sampleUv = vUv; //start at the current uv coordinate
-        vec4 radDelta = vec4(0.0);
-        
-        for (int step = 1; step < 32; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
-          float dist = texture(distanceTexture, sampleUv).r;
-          
-          sampleUv += (rayDirection * dist) / resolution;
-          
-
-          //sampleUv += rayDirection * dist; //move the pixel in the direction of the ray, dist is the distance to the nearest seed so we now we can at least move that much
-          //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes 
-  
-
-          if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
-          
-          if (dist == 0.0) { 
-            // at this point we now we hit a seed, so get its color and add it to the radiance
-            vec4 sampleColor = texture(iTexture, sampleUv);
-            radDelta += sampleColor;
-            break;
-          }
-        }
-
-        radiance += radDelta;
-      }
-
-      return vec4((radiance * oneOverRayCount).rgb, 1.0); //finally we return the color of the pixel by averaging the light 
-    }
-
-    void main() {
-      gl_FragColor = raymarch();
-    }
-  `
-})
-
-const upscaleMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    source: { value: null }
-  },
-  vertexShader: paintMaterial.vertexShader,
-  fragmentShader: ` // this is a simple upscaler shader, because I don't know how to make a low res texture appear full screen
-    precision highp float;
-    varying vec2 vUv;
-    uniform sampler2D source;
-    void main() {
-      gl_FragColor = texture2D(source, vUv);
-    }
-  `,
-});
-
-const mesh = new THREE.Mesh(geometry, paintMaterial);
-scene.add(mesh);
-
-let textmaterial = new THREE.MeshBasicMaterial({ map: textTexture });
-
-function animate() {
-  stats.begin();
-  
-  const currentTime = performance.now();
-  drawTextToCanvas('HELLO LIGHT', jfaWidth/2, jfaHeight/2, 'white', 64, currentTime);
-  textTexture.needsUpdate = true;
-
-  mesh.material = textmaterial; //you cant just pass the text texture to prevRT so this is the way
-
-  renderer.setRenderTarget(previousRT); 
-  renderer.clear();
-  renderer.render(scene, camera);
+  this.renderer.setRenderTarget(this.previousRT);
+  this.renderer.clear();
+  this.renderer.render(this.scene, this.camera);
 
   // paint phase
-  mesh.material = paintMaterial;
-  paintMaterial.uniforms.prevTexture.value = previousRT.texture;
-  renderer.setRenderTarget(currentRT);
-  renderer.clear(); 
-  renderer.render(scene, camera);
+  this.mesh.material = this.paintMaterial;
+  this.paintMaterial.uniforms.prevTexture.value = this.previousRT.texture;
+  this.renderer.setRenderTarget(this.currentRT);
+  this.renderer.clear(); 
+  this.renderer.render(this.scene, this.camera);
 
   //seed phase there has to be a better way to do this
-  mesh.material = seedMaterial;
-  seedMaterial.uniforms.inputTexture.value = currentRT.texture;
-  renderer.setRenderTarget(seedRT);
-  renderer.clear();
-  renderer.render(scene, camera);
-
+  this.mesh.material = this.seedMaterial;
+  this.seedMaterial.uniforms.inputTexture.value = this.currentRT.texture;
+  this.renderer.setRenderTarget(this.seedRT);
+  this.renderer.clear();
+  this.renderer.render(this.scene, this.camera);
 
   // jfa phase
-  let curT = seedRT.texture;
-  let curJFA = jfaA;
-  let nextJFA = jfaB;
-  const passes = Math.ceil(Math.log2(Math.max(jfaWidth, jfaHeight)));
-  mesh.material = jfaMaterial;
+  let curT = this.seedRT.texture;
+  let curJFA = this.jfaA;
+  let nextJFA = this.jfaB;
+  const passes = Math.ceil(Math.log2(Math.max(this.jfaWidth, this.jfaHeight)));
+  this.mesh.material = this.jfaMaterial;
 
   for(let i = 0; i < passes; i++) {
-    jfaMaterial.uniforms.inputTexture.value = curT;
-    jfaMaterial.uniforms.offset.value = Math.pow(2, passes - i - 1);
+    this.jfaMaterial.uniforms.inputTexture.value = curT;
+    this.jfaMaterial.uniforms.offset.value = Math.pow(2, passes - i - 1);
 
-    renderer.setRenderTarget(curJFA);
-    renderer.render(scene, camera);
+    this.renderer.setRenderTarget(curJFA);
+    this.renderer.render(this.scene, this.camera);
 
     curT = curJFA.texture;
     [curJFA, nextJFA] = [nextJFA, curJFA]; 
   }
 
   //distance phase
-  mesh.material = distanceMaterial;
-  distanceMaterial.uniforms.inputTexture.value = curT;
-  renderer.setRenderTarget(curJFA);
-  renderer.render(scene, camera);
+  this.mesh.material = this.distanceMaterial;
+  this.distanceMaterial.uniforms.inputTexture.value = curT;
+  this.renderer.setRenderTarget(curJFA);
+  this.renderer.render(this.scene, this.camera);
 
   
   // raymarch phase
-  mesh.material = rayMaterial;
-  rayMaterial.uniforms.iTexture.value = currentRT.texture; 
-  rayMaterial.uniforms.distanceTexture.value = curJFA.texture; 
-  rayMaterial.uniforms.frame.value += 1;
-  renderer.setRenderTarget(rayColorRT); 
-  renderer.render(scene, camera);
+  this.mesh.material = this.rayMaterial;
+  this.rayMaterial.uniforms.iTexture.value = this.currentRT.texture; 
+  this.rayMaterial.uniforms.distanceTexture.value = curJFA.texture; 
+  this.rayMaterial.uniforms.frame.value += 1;
+  this.renderer.setRenderTarget(this.rayColorRT); 
+  this.renderer.render(this.scene, this.camera);
 
-  mesh.material = upscaleMaterial;
-  upscaleMaterial.uniforms.source.value = rayColorRT.texture;
-  renderer.setRenderTarget(null);
-  renderer.render(scene, camera);
+  this.mesh.material = this.upscaleMaterial;
+  this.upscaleMaterial.uniforms.source.value = this.rayColorRT.texture;
+  this.renderer.setRenderTarget(null);
+  this.renderer.render(this.scene, this.camera);
 
   //swap for next frame
-  [currentRT, previousRT] = [previousRT, currentRT]; //tbd
+  [this.currentRT, this.previousRT] = [this.previousRT, this.currentRT]; //tbd
   
-  stats.end();
+  this.stats.end();
+  this.stats.update();
 }
 
-renderer.setAnimationLoop(animate);
+}
 
-renderer.setSize(window.innerWidth, window.innerHeight); // full-screen framebuffer; low-res upscales in shader
-
-window.addEventListener('resize', () => { //resizing is gonna be painful
-  
-});
-
+new Main();

@@ -1,5 +1,4 @@
-// Same as main but commented again with the things I learned after main. 
-
+// TO BE REMOVED AFTER MAKING CASCADES SHADER
 import * as THREE from 'three'; // Three.js to reduce WebGL boilerplate
 
 const scene = new THREE.Scene();
