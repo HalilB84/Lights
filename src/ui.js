@@ -13,10 +13,16 @@ export default class UI {
         this.volume = document.getElementById("video-volume");
         this.scale = document.getElementById("video-scale");
 
+        this.showProgram = document.getElementById("show-program");
+        this.radianceModifier = document.getElementById("radiance-modifier");
+
+        this.playerprogress;
+
         this.input.addEventListener('change', e => this.handleVideo(e));
         this.playPause.addEventListener('click', () => this.handlePlayPause());
         this.volume.addEventListener('input', () => this.handleVolume());
         this.scale.addEventListener('input', () => this.handleScale());
+
     }
 
 

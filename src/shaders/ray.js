@@ -8,7 +8,9 @@ export default function ray(){
             blueNoise: { value: null },
             rayCount: { value: null },
             resolution: { value: null },
-            frame: { value: null }
+            frame: { value: null },
+            radianceModifier: { value: null },
+            showProgram: { value: null }
         },
         vertexShader: ` 
             varying vec2 vUv;
@@ -26,6 +28,8 @@ export default function ray(){
             uniform int rayCount;
             uniform vec2 resolution;
             uniform float frame;
+            uniform float radianceModifier;
+            uniform bool showProgram;
             const float PI = 3.14159265;
             const float TAU = 2.0 * PI;
 
@@ -54,7 +58,7 @@ export default function ray(){
             vec4 raymarch(){
                 vec4 light = texture(iTexture, vUv);
                 if(light.r != 0. || light.g != 0. || light.b != 0.) { //if we are at a seed location, we dont need to raymarch 
-                   //return vec4(vec3(0.0), 1.0);
+                   if(showProgram == true) return vec4(vec3(0.0), 1.0);
                    return light;
                    //return light / 1.5; //lighter color so doesnt mix up with the lighting
                 }
@@ -103,7 +107,7 @@ export default function ray(){
                 }
                 
                 //will add modifier here later
-                return vec4((2.* radiance * oneOverRayCount).rgb, 1.0); //finally we return the color of the pixel by averaging the light 
+                return vec4((radiance * oneOverRayCount * radianceModifier).rgb, 1.0); //finally we return the color of the pixel by averaging the light 
             }
 
             void main() {

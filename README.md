@@ -15,7 +15,7 @@ The basic idea is that from each pixel you shoot rays and if it hits something y
 
 ## Showcase
 
-Using JFA + naive ray marching:
+Using JFA + naive ray marching + (blue noise + bilateral filter) + fsr upscaling* (not yet implemented):
 
 https://github.com/user-attachments/assets/de2ced26-d56f-4a54-aaef-abfe67d1cb15
 
@@ -28,11 +28,11 @@ https://github.com/user-attachments/assets/695ad021-ca03-4f48-a944-330444764081
 ## Todos:
 
 - Switch to webgl2
-- Cleanup/structure code
-- Start adding audio visual support using canvas textures / add interesting things, play with light
+- ~~Cleanup/structure code~~ -> Better but still needs cleaning but I need to adopt a way to transfer data between ui and the backend. Basically eliminate tight coupling
+- ~~Start adding audio visual support using canvas textures / add interesting things, play with light~~ -> Progress but never done
 - Completely document radiance cascades
 - Attempt to fix problems with radiance cascades
-- Research how to make this runable on an average device
+- ~~Research how to make this runable on an average device~~ -> Solved by downscaling, filtering and upscaling, still can be improved 
 - Use some sort of framework so I get a internship
 
 

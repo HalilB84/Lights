@@ -229,6 +229,9 @@ animate() {
   this.rayMaterial.uniforms.iTexture.value = this.currentRT.texture; 
   this.rayMaterial.uniforms.distanceTexture.value = curJFA.texture; 
   this.rayMaterial.uniforms.frame.value += 1;
+  this.rayMaterial.uniforms.radianceModifier.value = this.ui.radianceModifier.value;
+  this.rayMaterial.uniforms.showProgram.value = this.ui.showProgram.checked;
+  
   this.renderer.setRenderTarget(this.rayColorRT); 
   this.renderer.render(this.scene, this.camera);
 
