@@ -10,6 +10,8 @@ import resizer from './shaders/resizer.js';
 import bilateral from './shaders/bilateral.js';
 import UI from './ui.js';
 
+import Text from './text.js';
+
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
 
@@ -21,7 +23,7 @@ class Main {
     this.renderer = new THREE.WebGLRenderer();
     document.body.appendChild(this.renderer.domElement);
 
-    this.stats = new Stats({ // when webgl 2 switch is done update this for gpu data
+    this.stats = new Stats({ // wait I just realized I don't know how three js handles webgl
       trackGPU: true,
       trackHz: false,
       trackCPT: false,
@@ -38,18 +40,20 @@ class Main {
     document.body.appendChild(this.stats.dom);
 
     this.JFAscale = 2;
-    this.jfaWidth = window.innerWidth / this.JFAscale;
-    this.jfaHeight = window.innerHeight / this.JFAscale;
+    this.jfaWidth = Math.floor(window.innerWidth / this.JFAscale);
+    this.jfaHeight = Math.floor(window.innerHeight / this.JFAscale);
 
     this.raymarchScale = 2;
-    this.raymarchWidth = window.innerWidth / this.raymarchScale;
-    this.raymarchHeight = window.innerHeight / this.raymarchScale;
+    this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
+    this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
 
     this.mouse = {x: null, y: null};
 
     this.canvas = this.renderer.domElement;
 
     this.ui = new UI();
+    this.text = new Text(this. jfaWidth, this. jfaHeight);
+
 
     this.initialize();
     this.shaders();
@@ -130,6 +134,7 @@ shaders() { //needs cleaning up
   
   this.seedMaterial = seed();
   this.seedMaterial.uniforms.inputTexture.value = null;
+  this.seedMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
   
   this.jfaMaterial = jfa();
   this.jfaMaterial.uniforms.inputTexture.value = null;
@@ -162,7 +167,7 @@ shaders() { //needs cleaning up
   this.bilateralMaterial.uniforms.inputTexture.value = null;
   this.bilateralMaterial.uniforms.resolution.value = new THREE.Vector2(this.raymarchWidth, this.raymarchHeight);
   this.bilateralMaterial.uniforms.sigmaSpatial.value = 2.0;
-  this.bilateralMaterial.uniforms.sigmaRange.value = 0.1;
+  this.bilateralMaterial.uniforms.sigmaRange.value = 0.3;
   this.bilateralMaterial.uniforms.radius.value = 2;
 
   this.geometry = new THREE.PlaneGeometry(2, 2);
@@ -175,7 +180,7 @@ animate() {
   this.stats.begin();
 
 
-  this.mesh.material = this.resizerMaterial;
+  /*this.mesh.material = this.resizerMaterial;
   this.resizerMaterial.uniforms.sourceTex.value = this.ui.videoTexture;
   this.resizerMaterial.uniforms.sourceAspect.value = this.ui.videoAspect;
   this.resizerMaterial.uniforms.sourceScale.value = this.ui.videoScale;
@@ -184,10 +189,16 @@ animate() {
   this.renderer.setRenderTarget(this.previousRT);
   this.renderer.clear();
   this.renderer.render(this.scene, this.camera);
+  */
+
+  let textTexture = this.text.render(this.renderer);
 
   // paint phase
   this.mesh.material = this.paintMaterial;
-  this.paintMaterial.uniforms.prevTexture.value = this.previousRT.texture;
+  //this.paintMaterial.uniforms.prevTexture.value = this.previousRT.texture;
+  this.paintMaterial.uniforms.prevTexture.value = textTexture;
+
+
   this.renderer.setRenderTarget(this.currentRT);
   this.renderer.clear(); 
   this.renderer.render(this.scene, this.camera);
@@ -217,12 +228,22 @@ animate() {
     [curJFA, nextJFA] = [nextJFA, curJFA]; 
   }
 
+
+  if (this.ui.showJFA.checked) {
+    this.mesh.material = this.upscaleMaterial;
+    this.upscaleMaterial.uniforms.source.value = curJFA.texture;
+    this.renderer.setRenderTarget(null);
+    this.renderer.render(this.scene, this.camera);
+    return;
+  }
+ 
   //distance phase
   this.mesh.material = this.distanceMaterial;
   this.distanceMaterial.uniforms.inputTexture.value = curT;
   this.renderer.setRenderTarget(curJFA);
   this.renderer.render(this.scene, this.camera);
 
+ 
   
   // raymarch phase
   this.mesh.material = this.rayMaterial;

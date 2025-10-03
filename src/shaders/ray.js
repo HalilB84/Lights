@@ -41,10 +41,10 @@ export default function ray(){
                 return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
             }
 
-            float blueNoiseSample(vec2 coord) { //blue noise im probably using this wrong
+            float blueNoiseSample(vec2 coord) { //blue noise with frame based offset to it looks more blended
                 vec2 blueNoiseResolution = vec2(128.0);
                 vec2 offset = vec2(mod(frame, blueNoiseResolution.x), 
-                                   mod(frame * 37.0, blueNoiseResolution.y));
+                                   mod(frame * 37.0, blueNoiseResolution.y)); //apparently we use 37 because its prime numbers create pesudo random patterns
                 vec2 noiseUV = mod(coord + offset, blueNoiseResolution) / blueNoiseResolution;
                 return texture2D(blueNoise, noiseUV).r;
             }
@@ -57,9 +57,9 @@ export default function ray(){
 
             vec4 raymarch(){
                 vec4 light = texture(iTexture, vUv);
-                if(light.r != 0. || light.g != 0. || light.b != 0.) { //if we are at a seed location, we dont need to raymarch 
+                if(light.a != 0.0) { //if we are at a seed location, we dont need to raymarch 
                    if(showProgram == true) return vec4(vec3(0.0), 1.0);
-                   return light;
+                   return vec4(light.rgb, 1.0);
                    //return light / 1.5; //lighter color so doesnt mix up with the lighting
                 }
 
@@ -106,8 +106,7 @@ export default function ray(){
                   radiance += radDelta;
                 }
                 
-                //will add modifier here later
-                return vec4((radiance * oneOverRayCount * radianceModifier).rgb, 1.0); //finally we return the color of the pixel by averaging the light 
+                return vec4((radiance * oneOverRayCount * radianceModifier).rgb, 0.0); //finally we return the color of the pixel by averaging the light 
             }
 
             void main() {

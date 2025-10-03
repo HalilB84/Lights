@@ -38,7 +38,12 @@ export default function bilateral() {
       }
 
       void main() {
-        vec3 center = texture2D(inputTexture, vUv).rgb;
+        vec4 center = texture2D(inputTexture, vUv);
+
+        if(center.a != 0.0) {
+          gl_FragColor = center;
+          return;
+        }
 
         float sumW = 0.0;
         vec3 sumC = vec3(0.0);
@@ -50,7 +55,7 @@ export default function bilateral() {
             vec2 uv = vUv + offset / resolution;
             vec3 neighbor = texture2D(inputTexture, uv).rgb;
 
-            float w = weight(offset, neighbor, center);
+            float w = weight(offset, neighbor, center.rgb);
             sumW += w;
             sumC += neighbor * w;
           }

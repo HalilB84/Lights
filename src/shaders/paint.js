@@ -34,15 +34,12 @@ export default function paint(){
                 vec2 uvPx = gl_FragCoord.xy; //gives the pixel coordinate of the framgent, well kinda, it gives the center of the fragment
                 vec2 mousePx = mouse;
         
-                //if(gl_FragCoord.xy - vec2(0.5) == floor(vUv * resolution)) {
-                    //color = vec4(vUv.x, vUv.y, 0.5, 1.);
-                //}
         
                 float dist = length(uvPx - mousePx);
         
                 float brushRadius = 10.0; //brush radius in pixels
                 if(dist < brushRadius) {
-                    color = vec4(vUv.x, vUv.y, 0.5, 1.);
+                    color = vec4(vUv.x, vUv.y, 1.0, 1.0);
                 }
         
                 gl_FragColor = color;

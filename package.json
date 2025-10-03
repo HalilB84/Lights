@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "stats-gl": "^3.6.0",
-    "three": "^0.179.1"
+    "three": "^0.179.1",
+    "three-msdf-text-utils": "^1.2.1"
   },
   "devDependencies": {
     "vite": "^7.1.3"

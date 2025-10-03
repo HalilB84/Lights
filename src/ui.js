@@ -14,6 +14,7 @@ export default class UI {
         this.scale = document.getElementById("video-scale");
 
         this.showProgram = document.getElementById("show-program");
+        this.showJFA = document.getElementById("show-jfa");
         this.radianceModifier = document.getElementById("radiance-modifier");
 
         this.playerprogress;
@@ -47,6 +48,10 @@ export default class UI {
 
         this.uploadedVideo = video;
         this.videoTexture = new THREE.VideoTexture(video);
+
+        console.log(video);
+        console.log(this.videoTexture);
+
         this.videoTexture.minFilter = THREE.LinearFilter;
         this.videoTexture.magFilter = THREE.LinearFilter;
         this.videoTexture.format = THREE.RGBAFormat;

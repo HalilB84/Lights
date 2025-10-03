@@ -23,10 +23,8 @@ export default function distance(){
 
                 vec2 diff = nearestSeed - vUv;
                 vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
-
-                float dist = length(diff_px); //tbd
                 
-                gl_FragColor = vec4(dist, 0., 0., 1.);
+                gl_FragColor = vec4(length(diff_px), 0., 0., 1.);
             }
         `
     });
