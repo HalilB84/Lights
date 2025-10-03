@@ -17,7 +17,8 @@ The basic idea is that from each pixel you shoot rays and if it hits something y
 
 Using JFA + naive ray marching + (blue noise + bilateral filter) + fsr upscaling* (not yet implemented):
 
-https://github.com/user-attachments/assets/de2ced26-d56f-4a54-aaef-abfe67d1cb15
+https://github.com/user-attachments/assets/504476ca-20a2-43fc-b8cd-25775eadcc38
+
 
 
 Using radiance cascades (although I'm unsure how faithful this is to the actual algorithm, needs research):
