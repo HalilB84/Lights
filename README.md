@@ -19,6 +19,9 @@ Using JFA + naive ray marching + (blue noise + bilateral filter) + fsr upscaling
 
 https://github.com/user-attachments/assets/504476ca-20a2-43fc-b8cd-25775eadcc38
 
+Lyrics (same as above + lrclib.net + three-msdf-text-utils):
+https://github.com/user-attachments/assets/b8725f49-4634-4391-911b-90c8e33ae27c
+
 
 
 Using radiance cascades (although I'm unsure how faithful this is to the actual algorithm, needs research):
