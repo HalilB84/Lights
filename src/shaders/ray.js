@@ -83,7 +83,7 @@ export default function ray(){
                   vec2 sampleUv = vUv; //start at the current uv coordinate
                   vec4 radDelta = vec4(0.0);
                   
-                  for (int step = 1; step < 32; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
+                  for (int step = 1; step < 10; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
                     float dist = texture(distanceTexture, sampleUv).r;
                     
                     sampleUv += (rayDirection * dist) / resolution;

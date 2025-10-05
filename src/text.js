@@ -34,17 +34,18 @@ export default class Text {
         this.font = (await new Promise(r => fontLoader.load(fontPath, r))).data;
         this.isReady = true;
         
-        this.createText('HELLO LIGHT');
+        this.createText("The show is starting!");
     }
 
     createText(text) {
 
         const geometry = new MSDFTextGeometry({ 
             text,
-            font: this.font
+            font: this.font,
+            align: 'center',
+            width: this.width,
         });
 
-        
 
         const material = new THREE.ShaderMaterial({
             side: THREE.DoubleSide,
@@ -88,16 +89,14 @@ export default class Text {
                 void main() {
                     vec4 mvPosition = vec4(position, 1.0);
 
-
                     float frequency1 = 0.035;
                     float amplitude1 = 20.0;
                     float frequency2 = 0.025;
-                    float amplitude2 = 70.0;
+                    float amplitude2 = 20.0;
+       
+                    float offset = sin(letterIndex * 0.3 + time * 1.5) * amplitude2;
+                    mvPosition.x += offset;
 
-                    mvPosition.y += (sin(mvPosition.x * frequency1 + time) * 0.7 + 0.5) * amplitude1;
-                    mvPosition.x += (sin(mvPosition.y * frequency2 + time) * 0.1 + 0.5) * amplitude2;
-
-                    
                     mvPosition = modelViewMatrix * mvPosition;
                     gl_Position = projectionMatrix * mvPosition;
 
@@ -122,6 +121,7 @@ export default class Text {
                 precision highp float;
                 
                 varying vec2 vUv;
+                varying float vLetterIndex;
                 
                 uniform float uOpacity;
                 uniform vec3 uColor;
@@ -149,18 +149,25 @@ export default class Text {
                     vec2 p = vUv * scale;
 
                     for(int i = 1; i < 10; i++) {
-                        p.x += 0.45 / float(i) * sin(float(i) * 3.0 * p.y + time * speed);
-                        p.y += 0.45 / float(i) * cos(float(i) * 3.0 * p.x + time * speed);
+                        p.x += 0.45 / float(i) * sin(float(i) * 3.0 * p.y +  vLetterIndex + time * speed );
+                        p.y += 0.45 / float(i) * cos(float(i) * 3.0 * p.x + vLetterIndex + time * speed );
                     }
 
                     float r = cos(p.x + p.y + 1.0) * 0.5 + 0.5;
                     float g = sin(p.x + p.y + 1.0) * 0.5 + 0.5;
                     float b = (sin(p.x + p.y) + cos(p.x + p.y)) * 0.5 + 0.5;
 
-                    vec3 c1 = vec3(0.5);
-                    vec3 c2 = vec3(0.5);
-                    vec3 c3 = vec3(1.0);
-                    vec3 c4 = vec3(0.00, 0.10, 0.20);
+                    //vec3 c1 = vec3(0.5);
+                    //vec3 c2 = vec3(0.5);
+                    //vec3 c3 = vec3(1.0);
+                    //vec3 c4 = vec3(0.00, 0.10, 0.20);
+
+                    //0.8, 0.5, 0.4		0.2, 0.4, 0.2	2.0, 1.0, 1.0	0.00, 0.25, 0.25
+
+                    vec3 c1 = vec3(0.8, 0.5, 0.4);
+                    vec3 c2 = vec3(0.2, 0.4, 0.2);
+                    vec3 c3 = vec3(2.0, 1.0, 1.0);
+                    vec3 c4 = vec3(0.00, 0.25, 0.25);
 
                     vec3 paletteColor = palette(r, c1, c2, c3, c4);
                     
@@ -178,13 +185,16 @@ export default class Text {
 
         geometry.computeBoundingBox();
         const bbox = geometry.boundingBox;
-        const meshWidth = bbox.max.x - bbox.min.x;
         
-        
-        this.mesh.position.set(-meshWidth/2, 0, 0);
+       
+        const centerX = (bbox.min.x + bbox.max.x) / 2;
+        const centerY = (bbox.min.y + bbox.max.y) / 2;
+   
+       
+        this.mesh.position.set(-centerX, centerY, 0); 
         this.mesh.scale.set(1, -1, 1);
         
-        
+        this.scene.clear();
         this.scene.add(this.mesh);
         
     }

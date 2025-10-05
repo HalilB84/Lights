@@ -9,8 +9,10 @@ import upscale from './shaders/upscale.js';
 import resizer from './shaders/resizer.js';
 import bilateral from './shaders/bilateral.js';
 import UI from './ui.js';
-
+import LRC from './lrcPlayer.js';
 import Text from './text.js';
+import EventBus from './events.js';
+
 
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
@@ -51,8 +53,83 @@ class Main {
 
     this.canvas = this.renderer.domElement;
 
-    this.ui = new UI();
-    this.text = new Text(this. jfaWidth, this. jfaHeight);
+    this.bus = new EventBus();
+    this.ui = new UI(this.bus);
+    this.text = new Text(this.jfaWidth, this.jfaHeight);
+    this.lrcPlayer = new LRC();
+
+    //state management? yessir
+    this.state = {
+      modeIsVideo: false,
+      video: {
+        element: null,
+        texture: null,
+        aspect: null,
+        scale: null,
+        volume: null,
+      },
+      audio: {
+        element: null,
+        volume: null,
+      },
+      settings: {
+        showProgram: false,
+        showJFA: false,
+        radiance: 1.0,
+      },
+    };
+
+    this.bus.on('mode:changed', (isVideo) => { 
+      this.state.modeIsVideo = isVideo; 
+    });
+    this.bus.on('settings:showProgram', (value) => { this.state.settings.showProgram = value; });
+    this.bus.on('settings:showJFA', (value) => { this.state.settings.showJFA = value; });
+    this.bus.on('settings:radiance', (value) => { this.state.settings.radiance = value; });
+
+    this.bus.on('video:loaded', (video) => {
+      if (this.state.video.element) this.state.video.element.pause();
+      this.state.video.element = video;
+      this.state.video.element.volume = this.state.video.volume;
+      this.state.video.texture = new THREE.VideoTexture(video);
+      this.state.video.texture.minFilter = THREE.LinearFilter;
+      this.state.video.texture.magFilter = THREE.LinearFilter;
+      this.state.video.texture.format = THREE.RGBAFormat;
+      this.state.video.aspect = video.videoWidth / video.videoHeight;
+    });
+
+    this.bus.on('video:toggle', () => {
+      const video = this.state.video.element; 
+      if (!video) return;
+      if (video.paused) video.play(); else video.pause();
+    });
+
+    this.bus.on('media:volume', (vol) => {
+      if (this.state.video.element) this.state.video.element.volume = vol;
+      if (this.state.audio.element) this.state.audio.element.volume = vol;
+    });
+
+    this.bus.on('video:scale', (value) => { this.state.video.scale = value; });
+
+    this.bus.on('audio:loaded', (audio, trackName, artistName) => {
+      if (this.state.audio.element) this.state.audio.element.pause();
+      this.state.audio.element = audio;
+
+      console.log(trackName, artistName);
+      this.lrcPlayer.getLRCLIB(trackName, artistName);
+
+
+      this.state.audio.element.addEventListener('timeupdate', () => {
+        const lyric = this.lrcPlayer.update(this.state.audio.element.currentTime * 1000);
+        this.text.createText(lyric);
+        
+      });
+    });
+
+    this.bus.on('audio:toggle', () => {
+      const audio = this.state.audio.element; 
+      if (!audio || !this.lrcPlayer.isReady) return;
+      if (audio.paused) audio.play(); else audio.pause();
+    });
 
 
     this.initialize();
@@ -92,14 +169,7 @@ class Main {
     
     this.rtB = this.rtA.clone(); //ping pong element so webgl doesnt yell at me for reading and writing to the same texture
         
-    this.seedRT = new THREE.WebGLRenderTarget(this.jfaWidth, this.jfaHeight, {
-      minFilter: THREE.NearestFilter,
-      magFilter: THREE.NearestFilter,
-      format: THREE.RGBAFormat,
-      type: THREE.FloatType,
-      wrapS: THREE.ClampToEdgeWrapping,
-      wrapT: THREE.ClampToEdgeWrapping,
-    });
+    this.seedRT = this.rtA.clone();
     
     this.jfaA = this.rtA.clone();
     this.jfaB = this.rtB.clone();
@@ -116,14 +186,7 @@ class Main {
       wrapT: THREE.ClampToEdgeWrapping,
     });
 
-    this.bilateralRT = new THREE.WebGLRenderTarget(this.raymarchWidth, this.raymarchHeight, {
-      minFilter: THREE.NearestFilter,
-      magFilter: THREE.NearestFilter,
-      format: THREE.RGBAFormat,
-      type: THREE.FloatType,
-      wrapS: THREE.ClampToEdgeWrapping,
-      wrapT: THREE.ClampToEdgeWrapping,
-    });    
+    this.bilateralRT = this.rayColorRT.clone();
   }
 
 shaders() { //needs cleaning up
@@ -179,26 +242,27 @@ shaders() { //needs cleaning up
 animate() {
   this.stats.begin();
 
+  let nextTexture = null; //I legitimately hate this, what even is proper code structure anyways? 
 
-  /*this.mesh.material = this.resizerMaterial;
-  this.resizerMaterial.uniforms.sourceTex.value = this.ui.videoTexture;
-  this.resizerMaterial.uniforms.sourceAspect.value = this.ui.videoAspect;
-  this.resizerMaterial.uniforms.sourceScale.value = this.ui.videoScale;
-   
+  if(this.state.modeIsVideo) { //Video
+    this.mesh.material = this.resizerMaterial;
+    this.resizerMaterial.uniforms.sourceTex.value = this.state.video.texture;
+    this.resizerMaterial.uniforms.sourceAspect.value = this.state.video.aspect;
+    this.resizerMaterial.uniforms.sourceScale.value = this.state.video.scale;
 
-  this.renderer.setRenderTarget(this.previousRT);
-  this.renderer.clear();
-  this.renderer.render(this.scene, this.camera);
-  */
+    this.renderer.setRenderTarget(this.previousRT);
+    this.renderer.clear();
+    this.renderer.render(this.scene, this.camera);
 
-  let textTexture = this.text.render(this.renderer);
+    nextTexture = this.previousRT.texture;
+  } 
+  else { //Audio (lyrics)
+      nextTexture = this.text.render(this.renderer);
+  }
 
   // paint phase
   this.mesh.material = this.paintMaterial;
-  //this.paintMaterial.uniforms.prevTexture.value = this.previousRT.texture;
-  this.paintMaterial.uniforms.prevTexture.value = textTexture;
-
-
+  this.paintMaterial.uniforms.prevTexture.value = nextTexture;
   this.renderer.setRenderTarget(this.currentRT);
   this.renderer.clear(); 
   this.renderer.render(this.scene, this.camera);
@@ -229,7 +293,7 @@ animate() {
   }
 
 
-  if (this.ui.showJFA.checked) {
+  if (this.state.settings.showJFA) {
     this.mesh.material = this.upscaleMaterial;
     this.upscaleMaterial.uniforms.source.value = curJFA.texture;
     this.renderer.setRenderTarget(null);
@@ -250,8 +314,8 @@ animate() {
   this.rayMaterial.uniforms.iTexture.value = this.currentRT.texture; 
   this.rayMaterial.uniforms.distanceTexture.value = curJFA.texture; 
   this.rayMaterial.uniforms.frame.value += 1;
-  this.rayMaterial.uniforms.radianceModifier.value = this.ui.radianceModifier.value;
-  this.rayMaterial.uniforms.showProgram.value = this.ui.showProgram.checked;
+  this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
+  this.rayMaterial.uniforms.showProgram.value = this.state.settings.showProgram;
   
   this.renderer.setRenderTarget(this.rayColorRT); 
   this.renderer.render(this.scene, this.camera);

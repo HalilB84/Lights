@@ -1,14 +1,11 @@
-import * as THREE from 'three';
-
 export default class UI {
-    constructor() {
-        this.uploadedVideo = null;
-        this.videoTexture = null;
-        this.useVideoTexture = false;
-        this.videoAspect = 1.0;
-        this.videoScale = 1.0;
+    constructor(bus) {
+        this.bus = bus;
 
-        this.input = document.getElementById('video-upload');
+        this.videoInput = document.getElementById('video-upload');
+        this.audioInput = document.getElementById('audio-upload');
+        this.modeToggle = document.getElementById('mode-toggle');
+
         this.playPause = document.getElementById('play-pause');
         this.volume = document.getElementById("video-volume");
         this.scale = document.getElementById("video-scale");
@@ -17,26 +14,51 @@ export default class UI {
         this.showJFA = document.getElementById("show-jfa");
         this.radianceModifier = document.getElementById("radiance-modifier");
 
-        this.playerprogress;
+        this.videoInput.addEventListener('change', e => this.handleVideo(e));
+        this.audioInput.addEventListener('change', e => this.handleAudio(e));
 
-        this.input.addEventListener('change', e => this.handleVideo(e));
-        this.playPause.addEventListener('click', () => this.handlePlayPause());
-        this.volume.addEventListener('input', () => this.handleVolume());
-        this.scale.addEventListener('input', () => this.handleScale());
+        this.playPause.addEventListener('click', () => {
+          if(this.modeToggle.checked) {
+            this.bus.emit('video:toggle');
+          } else {
+            this.bus.emit('audio:toggle');
+          }
+        });
+        
+        this.modeToggle.addEventListener('change', () => { //TODO:seperation should be on different pages in a sense
+          this.bus.emit('mode:changed', this.modeToggle.checked);
 
+          const radiance = document.getElementById("radiance-modifier");
+          if(this.modeToggle.checked) {
+            radiance.value = 2;
+          }
+          else {
+            radiance.value = 1;
+          }
+
+          this.bus.emit('settings:radiance', radiance.value);
+          
+        });
+          
+        this.volume.addEventListener('input', () => this.bus.emit('media:volume', (this.volume.value)));
+        this.scale.addEventListener('input', () => this.bus.emit('video:scale', (this.scale.value)));
+
+        this.radianceModifier.addEventListener('input', () => {
+          this.bus.emit('settings:radiance', this.radianceModifier.value);
+        });
+
+        this.showProgram.addEventListener('change', () => {
+          this.bus.emit('settings:showProgram', this.showProgram.checked);
+        });
+
+        this.showJFA.addEventListener('change', () => {
+          this.bus.emit('settings:showJFA', this.showJFA.checked);
+        });
+        
     }
 
 
     handleVideo(e) {
-
-      if(this.uploadedVideo) {
-        this.uploadedVideo.pause();
-        this.uploadedVideo = null;
-        this.videoTexture = null;
-        this.useVideoTexture = false;
-      }
-
-
       const file = e.target.files[0];
       const video = document.createElement('video');
       const url = URL.createObjectURL(file);
@@ -45,47 +67,37 @@ export default class UI {
 
       video.onloadeddata = () => {
         console.log("Video loaded");
+        
+        this.bus.emit('video:loaded', video);
+        this.bus.emit('media:volume', (this.volume.value));
+        this.bus.emit('video:scale', 1);
 
-        this.uploadedVideo = video;
-        this.videoTexture = new THREE.VideoTexture(video);
-
-        console.log(video);
-        console.log(this.videoTexture);
-
-        this.videoTexture.minFilter = THREE.LinearFilter;
-        this.videoTexture.magFilter = THREE.LinearFilter;
-        this.videoTexture.format = THREE.RGBAFormat;
-        this.videoAspect = video.videoWidth / video.videoHeight;
-        this.useVideoTexture = true;
-        this.uploadedVideo.volume = this.volume.value;
-        this.videoScale = this.scale.value;
-
-
-        //get the html for the scale range and adjust its max value based on the maximum about the video can grow becaues hitting the boundary of the screen
         const scaleRange = document.getElementById("video-scale");
         scaleRange.max = Math.max(video.videoWidth, video.videoHeight) / Math.min(video.videoWidth, video.videoHeight);
         scaleRange.value = 1;
       }
     }
 
-    handlePlayPause() {
-      if (!this.uploadedVideo) return;
-      if(this.uploadedVideo.paused) {
-        this.uploadedVideo.play();
-      } else {
-        this.uploadedVideo.pause();
+    handleAudio(e) {
+      const file = e.target.files[0];
+      const audio = new Audio();
+      const url = URL.createObjectURL(file);
+      const trackName = file.name.split('-')[0];
+      const artistName = file.name.split('-')[1].replace(/\.[^.]+$/, '');
+
+      console.log(trackName, artistName);
+
+
+      //this.lrcPlayer.getLRCLIB(trackName, artistName);
+
+      audio.src = url;
+
+      
+      audio.onloadeddata = () => {
+        console.log("Audio loaded");
+        this.bus.emit('audio:loaded', audio, trackName, artistName);
+        this.bus.emit('media:volume', (this.volume.value));
       }
     }
 
-    handleVolume() {
-      if (!this.uploadedVideo) return;
-      this.uploadedVideo.volume = this.volume.value;
-    }
-
-    handleScale() {
-      if (!this.uploadedVideo) return;
-      this.videoScale = this.scale.value;
-    }
-
 }
-
