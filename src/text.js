@@ -136,7 +136,7 @@ export default class Text {
                     return max(min(r, g), min(max(r, g), b));
                 }
 
-                void main() {
+                void main() { // https://tympanus.net/codrops/2020/06/02/kinetic-typography-with-three-js/
                     vec3 sample1 = texture2D(uMap, vUv).rgb;
                     float sigDist = median(sample1.r, sample1.g, sample1.b) - 0.5;
                     float alpha = clamp(sigDist/fwidth(sigDist) + 0.5, 0.0, 1.0);
@@ -156,11 +156,6 @@ export default class Text {
                     float r = cos(p.x + p.y + 1.0) * 0.5 + 0.5;
                     float g = sin(p.x + p.y + 1.0) * 0.5 + 0.5;
                     float b = (sin(p.x + p.y) + cos(p.x + p.y)) * 0.5 + 0.5;
-
-                    //vec3 c1 = vec3(0.5);
-                    //vec3 c2 = vec3(0.5);
-                    //vec3 c3 = vec3(1.0);
-                    //vec3 c4 = vec3(0.00, 0.10, 0.20);
 
                     //0.8, 0.5, 0.4		0.2, 0.4, 0.2	2.0, 1.0, 1.0	0.00, 0.25, 0.25
 
