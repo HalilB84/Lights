@@ -22,7 +22,6 @@ export default class LRC {
         }
         this.currentIndex = -1;
 
-        console.log(this.timedLyrics);
         this.isReady = true;
     }
 

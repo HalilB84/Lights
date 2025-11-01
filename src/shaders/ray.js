@@ -57,10 +57,9 @@ export default function ray(){
 
             vec4 raymarch(){
                 vec4 light = texture(iTexture, vUv);
-                if(light.a != 0.0) { //if we are at a seed location, we dont need to raymarch 
-                   if(showProgram == true) return vec4(vec3(0.0), 1.0);
-                   return vec4(light.rgb, 1.0);
-                   //return light / 1.5; //lighter color so doesnt mix up with the lighting
+                
+                if(light.a != 0.0 && !showProgram) {
+                    return vec4(light.rgb, 1.0);
                 }
 
                 float oneOverRayCount = 1.0 / float(rayCount); 
@@ -74,6 +73,10 @@ export default function ray(){
 
                 vec4 radiance = vec4(0.0); //total light that will be accumulated
                 //calcualte and shoot rayCount rays that are equidstant from each other, expensive
+                
+                bool useBruteForce = light.a != 0.0 && showProgram; //if we are at a seed location use fixed stop size so when the full res element is overlaid the blocky edges smooth out
+                int maxSteps = useBruteForce ? 20 : 10;
+                float fixedStepSize = 1.0;
 
                 for(int i = 0; i < rayCount; i++) {
                   float angle = tauOverRayCount * (float(i) + noise); //if we dont add noise all rays will be in the same direction which will introduce patterns
@@ -83,8 +86,8 @@ export default function ray(){
                   vec2 sampleUv = vUv; //start at the current uv coordinate
                   vec4 radDelta = vec4(0.0);
                   
-                  for (int step = 1; step < 10; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
-                    float dist = texture(distanceTexture, sampleUv).r;
+                  for (int step = 1; step < maxSteps; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
+                    float dist = useBruteForce ? fixedStepSize : texture(distanceTexture, sampleUv).r;
                     
                     sampleUv += (rayDirection * dist) / resolution;
                     
@@ -95,7 +98,8 @@ export default function ray(){
 
                     if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
                     
-                    if (dist == 0.0) { 
+                    
+                    if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) { 
                       // at this point we now we hit a seed, so get its color and add it to the radiance
                       vec4 sampleColor = texture(iTexture, sampleUv);
                       radDelta += sampleColor;

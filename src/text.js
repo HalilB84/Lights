@@ -5,7 +5,7 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 
 
 export default class Text {
-    constructor(width, height) {
+    constructor(width, height, scale, useBlending) {
         this.scene = new THREE.Scene();
         this.camera = new THREE.OrthographicCamera(-width/2, width/2, height/2, -height/2, 0, 1);
 
@@ -21,6 +21,10 @@ export default class Text {
 
         this.width = width;
         this.height = height;
+        this.scale = scale;
+        this.useBlending = useBlending;
+
+        this.currentText = "The show is starting!";
 
         this.load();
 
@@ -34,22 +38,24 @@ export default class Text {
         this.font = (await new Promise(r => fontLoader.load(fontPath, r))).data;
         this.isReady = true;
         
-        this.createText("The show is starting!");
+        this.createText();
     }
 
     createText(text) {
 
+        if(text) this.currentText = text;
+
         const geometry = new MSDFTextGeometry({ 
-            text,
+            text: this.currentText,
             font: this.font,
             align: 'center',
-            width: this.width,
+            width: this.width / this.scale,
         });
 
 
         const material = new THREE.ShaderMaterial({
             side: THREE.DoubleSide,
-            transparent: true,
+            transparent: true, 
             defines: {
                 IS_SMALL: false,
             },
@@ -174,7 +180,7 @@ export default class Text {
         });
 
         material.uniforms.uMap.value = this.atlas;
-        material.blending = THREE.NoBlending; //Fixes the black pixels around the text but I havent fully understood why
+        material.blending = this.useBlending ? THREE.NormalBlending : THREE.NoBlending; //Fixes the black pixels around the text but I havent fully understood why
 
         this.mesh = new THREE.Mesh(geometry, material);
 
@@ -185,9 +191,8 @@ export default class Text {
         const centerX = (bbox.min.x + bbox.max.x) / 2;
         const centerY = (bbox.min.y + bbox.max.y) / 2;
    
-       
-        this.mesh.position.set(-centerX, centerY, 0); 
-        this.mesh.scale.set(1, -1, 1);
+        this.mesh.scale.set(this.scale, -this.scale);
+        this.mesh.position.set(-centerX * this.scale, centerY * this.scale);
         
         this.scene.clear();
         this.scene.add(this.mesh);
@@ -207,5 +212,12 @@ export default class Text {
 
         return this.renderTarget.texture;
 
+    }
+
+    renderDirect(renderer) {
+        if(!this.isReady) return;
+        
+        this.mesh.material.uniforms.time.value = performance.now() * 0.001;
+        renderer.render(this.scene, this.camera);
     }
 }

@@ -13,16 +13,15 @@ import LRC from './lrcPlayer.js';
 import Text from './text.js';
 import EventBus from './events.js';
 
-
-
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
-
 
 class Main {
   constructor() {
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.renderer = new THREE.WebGLRenderer();
+    this.renderer.autoClear = false;
+    //this.renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(this.renderer.domElement);
 
     this.stats = new Stats({ // wait I just realized I don't know how three js handles webgl
@@ -40,12 +39,14 @@ class Main {
   });
   
     document.body.appendChild(this.stats.dom);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); 
 
-    this.JFAscale = 2;
+    this.JFAscale = isMobile ? 4 : 2;
     this.jfaWidth = Math.floor(window.innerWidth / this.JFAscale);
     this.jfaHeight = Math.floor(window.innerHeight / this.JFAscale);
 
-    this.raymarchScale = 2;
+
+    this.raymarchScale = isMobile ? 4 : 2;
     this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
     this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
 
@@ -55,7 +56,9 @@ class Main {
 
     this.bus = new EventBus();
     this.ui = new UI(this.bus);
-    this.text = new Text(this.jfaWidth, this.jfaHeight);
+    //uhh bunch of things that need fix here 
+    this.text = new Text(this.jfaWidth, this.jfaHeight, isMobile ? 0.5 : 1.0, false);
+    this.textOverlay = new Text(window.innerWidth, window.innerHeight, isMobile ? 0.5 * this.JFAscale : this.JFAscale, true); 
     this.lrcPlayer = new LRC();
 
     //state management? yessir
@@ -73,18 +76,26 @@ class Main {
         volume: null,
       },
       settings: {
-        showProgram: false,
+        showProgram: true,
         showJFA: false,
         radiance: 1.0,
+        textScale: null,
       },
     };
 
     this.bus.on('mode:changed', (isVideo) => { 
       this.state.modeIsVideo = isVideo; 
     });
+
     this.bus.on('settings:showProgram', (value) => { this.state.settings.showProgram = value; });
     this.bus.on('settings:showJFA', (value) => { this.state.settings.showJFA = value; });
     this.bus.on('settings:radiance', (value) => { this.state.settings.radiance = value; });
+    this.bus.on('settings:textScale', (value) => { this.state.settings.textScale = value;
+      this.text.scale = this.state.settings.textScale;
+      this.textOverlay.scale = this.state.settings.textScale * this.JFAscale;
+      this.text.createText();
+      this.textOverlay.createText();
+    });
 
     this.bus.on('video:loaded', (video) => {
       if (this.state.video.element) this.state.video.element.pause();
@@ -103,6 +114,16 @@ class Main {
       if (video.paused) video.play(); else video.pause();
     });
 
+    this.bus.on('video:pause', () => {
+      const video = this.state.video.element;
+      if (video && !video.paused) video.pause();
+    });
+
+    this.bus.on('audio:pause', () => {
+      const audio = this.state.audio.element;
+      if (audio && !audio.paused) audio.pause();
+    });
+
     this.bus.on('media:volume', (vol) => {
       if (this.state.video.element) this.state.video.element.volume = vol;
       if (this.state.audio.element) this.state.audio.element.volume = vol;
@@ -114,13 +135,16 @@ class Main {
       if (this.state.audio.element) this.state.audio.element.pause();
       this.state.audio.element = audio;
 
-      console.log(trackName, artistName);
+      //console.log(trackName, artistName);
       this.lrcPlayer.getLRCLIB(trackName, artistName);
 
 
       this.state.audio.element.addEventListener('timeupdate', () => {
         const lyric = this.lrcPlayer.update(this.state.audio.element.currentTime * 1000);
+
+
         this.text.createText(lyric);
+        this.textOverlay.createText(lyric);
         
       });
     });
@@ -331,6 +355,11 @@ animate() {
   this.renderer.setRenderTarget(null);
   this.renderer.render(this.scene, this.camera);
 
+  if (!this.state.modeIsVideo) {
+    this.textOverlay.renderDirect(this.renderer);
+  }//TODO: video overlay
+
+ 
   //swap for next frame
   [this.currentRT, this.previousRT] = [this.previousRT, this.currentRT]; //tbd
   

@@ -13,6 +13,12 @@ export default class UI {
         this.showProgram = document.getElementById("show-program");
         this.showJFA = document.getElementById("show-jfa");
         this.radianceModifier = document.getElementById("radiance-modifier");
+        this.textScale = document.getElementById("text-scale");
+
+        //firefox shananigans
+        this.modeToggle.checked = false;
+        this.showProgram.checked = true;
+        this.showJFA.checked = false;
 
         this.videoInput.addEventListener('change', e => this.handleVideo(e));
         this.audioInput.addEventListener('change', e => this.handleAudio(e));
@@ -26,6 +32,12 @@ export default class UI {
         });
         
         this.modeToggle.addEventListener('change', () => { //TODO:seperation should be on different pages in a sense
+          if(this.modeToggle.checked) {
+            this.bus.emit('audio:pause');
+          } else {
+            this.bus.emit('video:pause');
+          }
+          
           this.bus.emit('mode:changed', this.modeToggle.checked);
 
           const radiance = document.getElementById("radiance-modifier");
@@ -36,25 +48,34 @@ export default class UI {
             radiance.value = 1;
           }
 
+          this.bus.emit('settings:showProgram', this.showProgram.checked = !this.modeToggle.checked);
           this.bus.emit('settings:radiance', radiance.value);
           
         });
           
-        this.volume.addEventListener('input', () => this.bus.emit('media:volume', (this.volume.value)));
-        this.scale.addEventListener('input', () => this.bus.emit('video:scale', (this.scale.value)));
-
-        this.radianceModifier.addEventListener('input', () => {
-          this.bus.emit('settings:radiance', this.radianceModifier.value);
-        });
-
-        this.showProgram.addEventListener('change', () => {
-          this.bus.emit('settings:showProgram', this.showProgram.checked);
-        });
-
-        this.showJFA.addEventListener('change', () => {
-          this.bus.emit('settings:showJFA', this.showJFA.checked);
-        });
+        this.volume.addEventListener('input', () => 
+          this.bus.emit('media:volume', (this.volume.value))
+        );
         
+        this.scale.addEventListener('input', () => 
+          this.bus.emit('video:scale', (this.scale.value))
+        );
+
+        this.radianceModifier.addEventListener('input', () => 
+          this.bus.emit('settings:radiance', this.radianceModifier.value)
+        );
+
+        this.showProgram.addEventListener('change', () => 
+          this.bus.emit('settings:showProgram', this.showProgram.checked)
+        );
+
+        this.showJFA.addEventListener('change', () => 
+          this.bus.emit('settings:showJFA', this.showJFA.checked)
+        );
+
+        this.textScale.addEventListener('input', () => 
+          this.bus.emit('settings:textScale', this.textScale.value)
+        );
     }
 
 
@@ -85,14 +106,8 @@ export default class UI {
       const trackName = file.name.split('-')[0];
       const artistName = file.name.split('-')[1].replace(/\.[^.]+$/, '');
 
-      console.log(trackName, artistName);
-
-
-      //this.lrcPlayer.getLRCLIB(trackName, artistName);
-
       audio.src = url;
 
-      
       audio.onloadeddata = () => {
         console.log("Audio loaded");
         this.bus.emit('audio:loaded', audio, trackName, artistName);
