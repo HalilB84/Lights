@@ -5,7 +5,8 @@ export default function jfa(){
         uniforms: {
             inputTexture: { value: null },
             offset: { value: null },
-            resolution: { value: null }
+            resolution: { value: null },
+            isLast: { value: null}
         },
         vertexShader: `  
             varying vec2 vUv;
@@ -20,6 +21,7 @@ export default function jfa(){
             uniform sampler2D inputTexture;
             uniform float offset;
             uniform vec2 resolution;
+            uniform bool isLast;
 
             void main() {
                 vec4 nearestSeed = vec4(0.0); 
@@ -38,20 +40,16 @@ export default function jfa(){
                         vec4 sampleValue = texture2D(inputTexture, sampleUV);
 
                         if(sampleValue.a != 0.0) {
+                            vec2 diff_px = sampleValue.zw - gl_FragCoord.xy;
+                            float dist_raw = dot(diff_px, diff_px);
+                            float dist_sq = dist_raw;
+                            
+                            //IF THEY ARE THE SAME VALUE THEN WHYYYYYYYYYYYYYYYYYYYYYYY JFA
 
-                       
-                        vec2 diff_px = sampleValue.zw - gl_FragCoord.xy;
-                        float dist_raw = dot(diff_px, diff_px);
-                        float dist_sq = dist_raw;
-                          
-
-                        //WHAT THE FUCK IS HAPPENING
-                        //IF THEY ARE THE SAME VALUE THEN WHYYYYYYYYYYYYYYYYYYYYYYY JFA
-
-                        if (abs(dist_raw - nearestDist) == 0.0) { //this shit fixes something, not sure what but yes
-                            float seedBias = fract(sin(dot(sampleValue.zw, vec2(12.9898, 78.233))) * 43758.5453);
-                            dist_sq -= seedBias * 1e-1; 
-                        }
+                            if (abs(dist_raw - nearestDist) == 0.0) { //this shit fixes something, not sure what but yes
+                                float seedBias = fract(sin(dot(sampleValue.zw, vec2(12.9898, 78.233))) * 43758.5453);
+                                dist_sq -= seedBias * 1e-1; 
+                            }
 
                             if(dist_sq  < nearestDist){
                                 nearestDist = dist_sq;
@@ -61,7 +59,18 @@ export default function jfa(){
                     }
                 }
 
-                gl_FragColor = nearestSeed;
+
+                if(isLast == false) {
+                    gl_FragColor = nearestSeed;
+                    return;
+                }
+
+                //distance calculation last pass 
+                vec2 diff = nearestSeed.xy - vUv;
+                vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
+                
+                gl_FragColor = vec4(length(diff_px), 0., 0., 1.);
+
             }
         `
     });

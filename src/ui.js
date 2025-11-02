@@ -25,17 +25,17 @@ export default class UI {
 
         this.playPause.addEventListener('click', () => {
           if(this.modeToggle.checked) {
-            this.bus.emit('video:toggle');
+            this.bus.emit('video:toggle', false);
           } else {
-            this.bus.emit('audio:toggle');
+            this.bus.emit('audio:toggle', false);
           }
         });
         
         this.modeToggle.addEventListener('change', () => { //TODO:seperation should be on different pages in a sense
           if(this.modeToggle.checked) {
-            this.bus.emit('audio:pause');
+            this.bus.emit('audio:toggle', true);
           } else {
-            this.bus.emit('video:pause');
+            this.bus.emit('video:toggle', true);
           }
           
           this.bus.emit('mode:changed', this.modeToggle.checked);
