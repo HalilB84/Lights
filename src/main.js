@@ -156,10 +156,23 @@ class Main {
       this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
       this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
 
-      this.initialize();
-      this.shaders();
-
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+      this.modelRT.setSize(this.jfaWidth, this.jfaHeight);
+      this.seedRT.setSize(this.jfaWidth, this.jfaHeight);
+      this.jfaA.setSize(this.jfaWidth, this.jfaHeight);
+      this.jfaB.setSize(this.jfaWidth, this.jfaHeight);
+      this.rayColorRT.setSize(this.raymarchWidth, this.raymarchHeight);
+      this.bilateralRT.setSize(this.raymarchWidth, this.raymarchHeight);
+
+      this.resizerMaterial.uniforms.resolution.value.set(this.jfaWidth, this.jfaHeight);
+      this.seedMaterial.uniforms.resolution.value.set(this.jfaWidth, this.jfaHeight);
+      this.jfaMaterial.uniforms.resolution.value.set(this.jfaWidth, this.jfaHeight);
+      this.rayMaterial.uniforms.resolution.value.set(this.jfaWidth, this.jfaHeight);
+      this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth, this.raymarchHeight);
+
+      this.text.resize(this.jfaWidth, this.jfaHeight);
+      this.textOverlay.resize(window.innerWidth, window.innerHeight);
     }); 
 
     this.renderer.setAnimationLoop(this.animate.bind(this));

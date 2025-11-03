@@ -41,6 +41,15 @@ export default class Text {
         this.createText();
     }
 
+    resize(width, height) {
+        this.width = width;
+        this.height = height;
+        this.camera = new THREE.OrthographicCamera(-width/2, width/2, height/2, -height/2, 0, 1);
+        this.renderTarget.setSize(width, height);
+        this.createText();
+
+    }
+
     createText(text) {
 
         if(text) this.currentText = text;
