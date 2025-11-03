@@ -7,7 +7,8 @@ export default function resizer(){
             resolution: { value: null },
             sourceAspect: { value: null },
             sourceScale: { value: null },
-            centerX: { value: null }
+            centerX: { value: null },
+            mouse: { value: null }
         },
         vertexShader: ` 
             varying vec2 vUv;
@@ -24,6 +25,7 @@ export default function resizer(){
             uniform float sourceAspect;
             uniform float sourceScale;
             uniform float centerX; 
+            uniform vec2 mouse;
 
             void main() {
                 float basePx = sourceScale * min(resolution.x, resolution.y);
@@ -41,8 +43,15 @@ export default function resizer(){
                 if (inside) {
                   vec2 localUv = (vUv - minUv) / sizeUv;
                   gl_FragColor = texture2D(sourceTex, localUv);
-                } else {
-                  gl_FragColor = vec4(0.0);
+                } 
+                else {
+                  if(distance(gl_FragCoord.xy, mouse) < 10.) {
+                    gl_FragColor = vec4(vUv.x, vUv.y, 1.0, 1.0);
+                  } 
+
+                  else {
+                    discard;
+                  }
                 }
             }
         `

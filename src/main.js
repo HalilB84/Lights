@@ -37,14 +37,13 @@ class Main {
   });
   
     document.body.appendChild(this.stats.dom);
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); 
+    this.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); 
 
-    this.JFAscale = isMobile ? 4 : 2;
+    this.JFAscale = this.isMobile ? 4 : 2;
     this.jfaWidth = Math.floor(window.innerWidth / this.JFAscale);
     this.jfaHeight = Math.floor(window.innerHeight / this.JFAscale);
 
-
-    this.raymarchScale = isMobile ? 4 : 2;
+    this.raymarchScale = this.isMobile ? 4 : 2;
     this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
     this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
 
@@ -54,9 +53,6 @@ class Main {
 
     this.bus = new EventBus();
     this.ui = new UI(this.bus);
-    //uhh bunch of things that need fix here 
-    this.text = new Text(this.jfaWidth, this.jfaHeight, isMobile ? 0.5 : 1.0, false);
-    this.textOverlay = new Text(window.innerWidth, window.innerHeight, isMobile ? 0.5 * this.JFAscale : this.JFAscale, true); 
     this.lrcPlayer = new LRC();
 
     //state management? yessir
@@ -125,7 +121,9 @@ class Main {
       if (this.state.audio.element) this.state.audio.element.pause();
       this.state.audio.element = audio;
 
-      this.lrcPlayer.getLRCLIB(trackName, artistName);
+      this.lrcPlayer.getLRCLIB(trackName, artistName).then(() => {
+        this.bus.emit('audio:toggle', false)
+      });
 
       this.state.audio.element.addEventListener('timeupdate', () => {
         const lyric = this.lrcPlayer.update(this.state.audio.element.currentTime * 1000);
@@ -152,17 +150,28 @@ class Main {
       this.mouse.y = (rect.height - (e.clientY - rect.top)) / this.JFAscale;
     });
 
-    window.addEventListener('resize', () => {}); //TODO: resize logic
+    window.addEventListener('resize', () => {
+      this.jfaWidth = Math.floor(window.innerWidth / this.JFAscale);
+      this.jfaHeight = Math.floor(window.innerHeight / this.JFAscale);
+      this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
+      this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
+
+      this.initialize();
+      this.shaders();
+
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }); 
 
     this.renderer.setAnimationLoop(this.animate.bind(this));
     this.renderer.setSize(window.innerWidth, window.innerHeight); 
     
   }
 
-
   initialize() {
+    this.text = new Text(this.jfaWidth, this.jfaHeight, this.isMobile ? 0.5 : 1.0, false);
+    this.textOverlay = new Text(window.innerWidth, window.innerHeight, this.isMobile ? 0.5 * this.JFAscale : this.JFAscale, true); 
 
-    const rtConfig = {
+    let rtConfig = {
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,
       type: THREE.FloatType,
@@ -235,11 +244,14 @@ class Main {
 
     if(this.state.modeIsVideo) { //Video
       this.mesh.material = this.resizerMaterial;
+      this.resizerMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
       this.resizerMaterial.uniforms.sourceTex.value = this.state.video.texture;
       this.resizerMaterial.uniforms.sourceAspect.value = this.state.video.aspect;
       this.resizerMaterial.uniforms.sourceScale.value = this.state.video.scale;
-
+      this.resizerMaterial.uniforms.mouse.value = this.mouse;
+      
       this.renderer.setRenderTarget(this.modelRT);
+      this.renderer.clear();
       this.renderer.render(this.scene, this.camera);
 
       nextTexture = this.modelRT.texture;
@@ -288,7 +300,6 @@ class Main {
     this.rayMaterial.uniforms.frame.value += 1;
     this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
     this.rayMaterial.uniforms.showProgram.value = this.state.settings.showProgram;
-    
     this.renderer.setRenderTarget(this.rayColorRT); 
     this.renderer.render(this.scene, this.camera);
 
@@ -305,7 +316,15 @@ class Main {
 
     if (!this.state.modeIsVideo) {
       this.textOverlay.renderDirect(this.renderer);
-    }//TODO: video overlay
+    }
+
+    else if (this.state.video.texture){
+      this.mesh.material = this.resizerMaterial;
+      this.resizerMaterial.uniforms.resolution.value = new THREE.Vector2(window.innerWidth, window.innerHeight);
+      this.resizerMaterial.uniforms.mouse.value = new THREE.Vector2(-9999, -9999);
+      this.renderer.setRenderTarget(null);
+      this.renderer.render(this.scene, this.camera);
+    }
     
     this.stats.end();
     this.stats.update();

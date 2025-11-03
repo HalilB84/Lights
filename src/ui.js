@@ -93,6 +93,11 @@ export default class UI {
         this.bus.emit('media:volume', (this.volume.value));
         this.bus.emit('video:scale', 1);
 
+        this.modeToggle.checked = true;
+        this.modeToggle.dispatchEvent(new Event('change'));
+        this.bus.emit('video:toggle', false);
+        
+
         const scaleRange = document.getElementById("video-scale");
         scaleRange.max = Math.max(video.videoWidth, video.videoHeight) / Math.min(video.videoWidth, video.videoHeight);
         scaleRange.value = 1;
@@ -112,6 +117,9 @@ export default class UI {
         console.log("Audio loaded");
         this.bus.emit('audio:loaded', audio, trackName, artistName);
         this.bus.emit('media:volume', (this.volume.value));
+
+        this.modeToggle.checked = false;
+        this.modeToggle.dispatchEvent(new Event('change'));
       }
     }
 
