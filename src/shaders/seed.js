@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 
-export default function seed(){
+export default function seed() {
     return new THREE.ShaderMaterial({
         uniforms: {
             prevTexture: { value: null },
             mouse: { value: null },
             resolution: { value: null }
         },
-        
+
         vertexShader: ` 
             varying vec2 vUv;
             void main() { 

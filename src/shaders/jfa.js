@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export default function jfa(){
+export default function jfa() {
     return new THREE.ShaderMaterial({
         uniforms: {
             inputTexture: { value: null },
@@ -8,6 +8,7 @@ export default function jfa(){
             resolution: { value: null },
             isLast: { value: null}
         },
+
         vertexShader: `  
             varying vec2 vUv;
             void main() { 
@@ -15,6 +16,7 @@ export default function jfa(){
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `,
+
         fragmentShader: `
             precision highp float;
             varying vec2 vUv;
@@ -58,7 +60,6 @@ export default function jfa(){
                         }
                     }
                 }
-
 
                 if(isLast == false) {
                     gl_FragColor = nearestSeed;

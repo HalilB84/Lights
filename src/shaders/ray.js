@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export default function ray(){
+export default function ray() {
     return new THREE.ShaderMaterial({
         uniforms: {
             iTexture: { value: null },
@@ -12,6 +12,7 @@ export default function ray(){
             radianceModifier: { value: null },
             showProgram: { value: null }
         },
+
         vertexShader: ` 
             varying vec2 vUv;
             void main() { 
@@ -19,6 +20,7 @@ export default function ray(){
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `,
+
         fragmentShader: `
             precision highp float;
             varying vec2 vUv;
@@ -79,35 +81,35 @@ export default function ray(){
                 float fixedStepSize = 1.0;
 
                 for(int i = 0; i < rayCount; i++) {
-                  float angle = tauOverRayCount * (float(i) + noise); //if we dont add noise all rays will be in the same direction which will introduce patterns
-                  vec2 rayDirection = vec2(cos(angle), -sin(angle)); //unit circle, NOW FIXED!!!!!!
+                    float angle = tauOverRayCount * (float(i) + noise); //if we dont add noise all rays will be in the same direction which will introduce patterns
+                    vec2 rayDirection = vec2(cos(angle), -sin(angle)); //unit circle, NOW FIXED!!!!!!
 
 
-                  vec2 sampleUv = vUv; //start at the current uv coordinate
-                  vec4 radDelta = vec4(0.0);
-                  
-                  for (int step = 1; step < maxSteps; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
-                    float dist = useBruteForce ? fixedStepSize : texture(distanceTexture, sampleUv).r;
+                    vec2 sampleUv = vUv; //start at the current uv coordinate
+                    vec4 radDelta = vec4(0.0);
                     
-                    sampleUv += (rayDirection * dist) / resolution;
-                    
+                    for (int step = 1; step < maxSteps; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
+                        float dist = useBruteForce ? fixedStepSize : texture(distanceTexture, sampleUv).r;
+                        
+                        sampleUv += (rayDirection * dist) / resolution;
+                        
 
-                    //sampleUv += rayDirection * dist; //move the pixel in the direction of the ray, dist is the distance to the nearest seed so we now we can at least move that much
-                    //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes 
-            
+                        //sampleUv += rayDirection * dist; //move the pixel in the direction of the ray, dist is the distance to the nearest seed so we now we can at least move that much
+                        //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes 
+                
 
-                    if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
-                    
-                    
-                    if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) { 
-                      // at this point we now we hit a seed, so get its color and add it to the radiance
-                      vec4 sampleColor = texture(iTexture, sampleUv);
-                      radDelta += sampleColor;
-                      break;
+                        if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
+                        
+                        
+                        if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) { 
+                            // at this point we now we hit a seed, so get its color and add it to the radiance
+                            vec4 sampleColor = texture(iTexture, sampleUv);
+                            radDelta += sampleColor;
+                            break;
+                        }
                     }
-                  }
 
-                  radiance += radDelta;
+                    radiance += radDelta;
                 }
                 
                 return vec4((radiance * oneOverRayCount * radianceModifier).rgb, 0.0); //finally we return the color of the pixel by averaging the light 

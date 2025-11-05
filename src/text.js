@@ -2,8 +2,6 @@ import * as THREE from 'three';
 import { MSDFTextGeometry, uniforms } from 'three-msdf-text-utils';
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 
-
-
 export default class Text {
     constructor(width, height, scale, useBlending) {
         this.scene = new THREE.Scene();
@@ -24,10 +22,9 @@ export default class Text {
         this.scale = scale;
         this.useBlending = useBlending;
 
-        this.currentText = "The show is starting!";
+        this.currentText = 'The show is starting!';
 
         this.load();
-
     }
 
     async load(fontPath = './fonts/roboto-regular.fnt', atlasPath = './fonts/roboto-regular.png') {
@@ -47,11 +44,9 @@ export default class Text {
         this.camera = new THREE.OrthographicCamera(-width/2, width/2, height/2, -height/2, 0, 1);
         this.renderTarget.setSize(width, height);
         this.createText();
-
     }
 
     createText(text) {
-
         if(text) this.currentText = text;
 
         const geometry = new MSDFTextGeometry({ 
@@ -60,7 +55,6 @@ export default class Text {
             align: 'center',
             width: this.width / this.scale,
         });
-
 
         const material = new THREE.ShaderMaterial({
             side: THREE.DoubleSide,
@@ -195,7 +189,6 @@ export default class Text {
 
         geometry.computeBoundingBox();
         const bbox = geometry.boundingBox;
-        
        
         const centerX = (bbox.min.x + bbox.max.x) / 2;
         const centerY = (bbox.min.y + bbox.max.y) / 2;
@@ -205,12 +198,10 @@ export default class Text {
         
         this.scene.clear();
         this.scene.add(this.mesh);
-        
     }
 
     render(renderer) {
         if(!this.isReady) return;
-
 
         this.mesh.material.uniforms.time.value = performance.now() * 0.001;
 
@@ -220,7 +211,6 @@ export default class Text {
         renderer.render(this.scene, this.camera);
 
         return this.renderTarget.texture;
-
     }
 
     renderDirect(renderer) {

@@ -8,17 +8,17 @@ document.body.appendChild(renderer.domElement);
 
 const scale = 2; // scaling the canvas, which means that the actual canvas is bigger than what we sample, if we don't do this it's unusable everywhere
 const canvas = renderer.domElement;
-const width = 512 // For now has to be a power of two because of the cascade algorithm or problems at the edges; this needs a fix
-const height = 512
+const width = 512; // For now has to be a power of two because of the cascade algorithm or problems at the edges; this needs a fix
+const height = 512;
 
 const mouse = {x: null, y: null}; 
 
 canvas.addEventListener('mousemove', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  mouse.x = (e.clientX - rect.left) / scale;
-  mouse.y = (rect.height - (e.clientY - rect.top)) / scale;
-  mouse.x = Math.floor(mouse.x);
-  mouse.y = Math.floor(mouse.y);
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = (e.clientX - rect.left) / scale;
+    mouse.y = (rect.height - (e.clientY - rect.top)) / scale;
+    mouse.x = Math.floor(mouse.x);
+    mouse.y = Math.floor(mouse.y);
 }); 
 
 const textCanvas = document.createElement('canvas'); // to display complex shapes on the canvas we can create a canvas element and draw on it
@@ -29,59 +29,59 @@ const textCtx = textCanvas.getContext('2d');
 let rects = [];
 
 for(let i = 0; i < 15; i++) { // inspired by Akari
-  let where = Math.random() > 0.5 ? 'left' : 'right';
-  rects.push({
-    where: where,
-    x: where === 'left' ? 0 : width,
-    y: Math.floor(i * height / 15), 
-    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
-    height: 1,
-    width: Math.random() * 200 + 100,
-    speed: Math.random() * 1 + 1,
-  });
+    let where = Math.random() > 0.5 ? 'left' : 'right';
+    rects.push({
+        where: where,
+        x: where === 'left' ? 0 : width,
+        y: Math.floor(i * height / 15), 
+        color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+        height: 1,
+        width: Math.random() * 200 + 100,
+        speed: Math.random() * 1 + 1,
+    });
 }
 
 function drawTextToCanvas(text, x, y, color, fontSize) { 
-  textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+    textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
   
-  rects.forEach(rect => {    
-    textCtx.fillStyle = rect.color;
-    textCtx.fillRect(rect.x, rect.y, rect.width, rect.height);
-  });
+    rects.forEach(rect => {    
+        textCtx.fillStyle = rect.color;
+        textCtx.fillRect(rect.x, rect.y, rect.width, rect.height);
+    });
 
-  rects.forEach(rect => {
-    if(rect.where === 'left') {
-      rect.x += rect.speed;
-      if (rect.x > width) {
-        rect.x = 0 - rect.width; 
-        rect.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
-      }
-    } else {
-      rect.x -= rect.speed;
-      if (rect.x + rect.width < 0) {
-        rect.x = width; 
-        rect.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
-      }
-    }
-  });
+    rects.forEach(rect => {
+        if(rect.where === 'left') {
+            rect.x += rect.speed;
+            if (rect.x > width) {
+                rect.x = 0 - rect.width; 
+                rect.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            }
+        } else {
+            rect.x -= rect.speed;
+            if (rect.x + rect.width < 0) {
+                rect.x = width; 
+                rect.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            }
+        }
+    });
   
-  textCtx.fillStyle = 'orange';
-  textCtx.font = `${24}px Arial`;
-  textCtx.textAlign = 'center';
-  textCtx.textBaseline = 'middle';
+    textCtx.fillStyle = 'orange';
+    textCtx.font = `${24}px Arial`;
+    textCtx.textAlign = 'center';
+    textCtx.textBaseline = 'middle';
   
-  textCtx.fillText(text, x, y);
+    textCtx.fillText(text, x, y);
 }
 
 const textTexture = new THREE.CanvasTexture(textCanvas); // canvas texture is how you turn canvas -> texture
 
 const rtA = new THREE.WebGLRenderTarget(width , height, { // a WebGL render target is an offscreen texture that can be used to render to, this is useful because we can use these render targets to store in-between textures
-  minFilter: THREE.NearestFilter,
-  magFilter: THREE.NearestFilter,
-  format: THREE.RGBAFormat,
-  type: THREE.FloatType,
-  wrapS: THREE.ClampToEdgeWrapping,
-  wrapT: THREE.ClampToEdgeWrapping,
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+    format: THREE.RGBAFormat,
+    type: THREE.FloatType,
+    wrapS: THREE.ClampToEdgeWrapping,
+    wrapT: THREE.ClampToEdgeWrapping,
 });
 
 const rtB = rtA.clone();
@@ -95,12 +95,12 @@ let currentRT = rtA;
 let previousRT = rtB;
 
 const cascadeRTa = new THREE.WebGLRenderTarget(width, height, {
-  minFilter: THREE.LinearFilter, // same as above but for cascades we use linear filter so they look less blocky
-  magFilter: THREE.LinearFilter,
-  format: THREE.RGBAFormat,
-  type: THREE.FloatType,
-  wrapS: THREE.ClampToEdgeWrapping,
-  wrapT: THREE.ClampToEdgeWrapping,
+    minFilter: THREE.LinearFilter, // same as above but for cascades we use linear filter so they look less blocky
+    magFilter: THREE.LinearFilter,
+    format: THREE.RGBAFormat,
+    type: THREE.FloatType,
+    wrapS: THREE.ClampToEdgeWrapping,
+    wrapT: THREE.ClampToEdgeWrapping,
 });
 
 const cascadeRTb = cascadeRTa.clone();
@@ -108,19 +108,19 @@ const cascadeRTb = cascadeRTa.clone();
 const geometry = new THREE.PlaneGeometry(2, 2); // 2,2 because we want it to cover clip space -1 to 1 for both x and y; default is 1,1
 
 const paintMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    prevTexture: { value: null },
-    mouse: { value: mouse },
-    resolution: { value: new THREE.Vector2(width, height) }
-  },
-  vertexShader: ` // we use the same vertex shader everywhere, standard position calculations
+    uniforms: {
+        prevTexture: { value: null },
+        mouse: { value: mouse },
+        resolution: { value: new THREE.Vector2(width, height) }
+    },
+    vertexShader: ` // we use the same vertex shader everywhere, standard position calculations
     varying vec2 vUv; // these are the coordinates that are to be interpolated between the vertices, for a plane this will be 0,0 in the bottom left and 1,1 in the top right 
     void main() { 
       vUv = uv; // for every vertex we set vUv to the UV, then it's interpolated; one u is 1/width and one v is 1/height per pixel.
       gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
     }
   `,
-  fragmentShader: ` // this is a very simple fragment shader that can be used to paint (accumulate using the ping-pong technique) or just draw a circle where the mouse is
+    fragmentShader: ` // this is a very simple fragment shader that can be used to paint (accumulate using the ping-pong technique) or just draw a circle where the mouse is
     precision highp float;
     varying vec2 vUv;
     uniform sampler2D prevTexture;
@@ -146,11 +146,11 @@ const paintMaterial = new THREE.ShaderMaterial({
 });
 
 const seedMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    inputTexture: {value: null},
-  },
-  vertexShader: paintMaterial.vertexShader,
-  fragmentShader: ` // this shader converts every painted pixel to a seed pixel so it can be used in the JFA phase to find the nearest seed
+    uniforms: {
+        inputTexture: {value: null},
+    },
+    vertexShader: paintMaterial.vertexShader,
+    fragmentShader: ` // this shader converts every painted pixel to a seed pixel so it can be used in the JFA phase to find the nearest seed
     precision highp float;
     varying vec2 vUv;
     uniform sampler2D inputTexture;
@@ -210,12 +210,12 @@ const jfaMaterial = new THREE.ShaderMaterial({
 });
 
 const distanceMaterial = new THREE.ShaderMaterial({
-  uniforms:{
-    inputTexture: {value: null},
-    resolution: {value: new THREE.Vector2(width, height)}
-  },
-  vertexShader: paintMaterial.vertexShader,
-  fragmentShader: `
+    uniforms:{
+        inputTexture: {value: null},
+        resolution: {value: new THREE.Vector2(width, height)}
+    },
+    vertexShader: paintMaterial.vertexShader,
+    fragmentShader: `
     varying vec2 vUv; // this shader computes the distance to the nearest seed in pixels
     uniform sampler2D inputTexture;
     uniform vec2 resolution;
@@ -231,19 +231,19 @@ const distanceMaterial = new THREE.ShaderMaterial({
 });
 
 const rayMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    iTexture: {value: null},
-    distanceTexture: {value: null},
-    lastTexture: {value: null},
-    resolution: {value: new THREE.Vector2(width, height)},
-    baseRayCount: {value:4},
-    cascadeIndex: {value: 0.0},
-    cascadeCount: {value: 1.0},
-    lastIndex: {value: false},
-    srgb: {value: 1.0} // honestly looks better without correction, I don't understand why we need this at all right now
-  },
-  vertexShader: paintMaterial.vertexShader,
-  fragmentShader: // this is the raymarching shader; the main difference from main.js is that we raymarch in multiple passes and merge them together. Each pass has a different resolution and amount of rays
+    uniforms: {
+        iTexture: {value: null},
+        distanceTexture: {value: null},
+        lastTexture: {value: null},
+        resolution: {value: new THREE.Vector2(width, height)},
+        baseRayCount: {value:4},
+        cascadeIndex: {value: 0.0},
+        cascadeCount: {value: 1.0},
+        lastIndex: {value: false},
+        srgb: {value: 1.0} // honestly looks better without correction, I don't understand why we need this at all right now
+    },
+    vertexShader: paintMaterial.vertexShader,
+    fragmentShader: // this is the raymarching shader; the main difference from main.js is that we raymarch in multiple passes and merge them together. Each pass has a different resolution and amount of rays
    ` // this needs more explaining, right now it doesn't cover the entire idea of radiance cascades
     precision highp float;
 
@@ -368,80 +368,80 @@ const mesh = new THREE.Mesh(geometry, paintMaterial);
 scene.add(mesh);
 
 function animate() {
-  drawTextToCanvas('HELLO LIGHT', width/2, height/2, 'white', 64);
-  textTexture.needsUpdate = true;
+    drawTextToCanvas('HELLO LIGHT', width/2, height/2, 'white', 64);
+    textTexture.needsUpdate = true;
 
-  mesh.material = new THREE.MeshBasicMaterial({ map: textTexture }); // apparently this is how you render a canvas texture to a WebGL target
+    mesh.material = new THREE.MeshBasicMaterial({ map: textTexture }); // apparently this is how you render a canvas texture to a WebGL target
 
-  // rest of this logic is the same as main.js—just a bunch of offscreen rendering, ping-pongs, and finally render to the actual screen
+    // rest of this logic is the same as main.js—just a bunch of offscreen rendering, ping-pongs, and finally render to the actual screen
 
-  renderer.setRenderTarget(previousRT); 
-  renderer.clear();
-  renderer.render(scene, camera);
+    renderer.setRenderTarget(previousRT); 
+    renderer.clear();
+    renderer.render(scene, camera);
 
-  mesh.material = paintMaterial;
-  paintMaterial.uniforms.prevTexture.value = previousRT.texture;
-  renderer.setRenderTarget(currentRT);
-  renderer.clear(); 
-  renderer.render(scene, camera);
+    mesh.material = paintMaterial;
+    paintMaterial.uniforms.prevTexture.value = previousRT.texture;
+    renderer.setRenderTarget(currentRT);
+    renderer.clear(); 
+    renderer.render(scene, camera);
 
-  mesh.material = seedMaterial;
-  seedMaterial.uniforms.inputTexture.value = currentRT.texture;
-  renderer.setRenderTarget(seedRT);
-  renderer.clear();
-  renderer.render(scene, camera);
+    mesh.material = seedMaterial;
+    seedMaterial.uniforms.inputTexture.value = currentRT.texture;
+    renderer.setRenderTarget(seedRT);
+    renderer.clear();
+    renderer.render(scene, camera);
 
-  let curT = seedRT.texture;
-  let curJFA = jfaA;
-  let nextJFA = jfaB;
-  const passes = Math.ceil(Math.log2(Math.max(width, height)));
-  mesh.material = jfaMaterial;
+    let curT = seedRT.texture;
+    let curJFA = jfaA;
+    let nextJFA = jfaB;
+    const passes = Math.ceil(Math.log2(Math.max(width, height)));
+    mesh.material = jfaMaterial;
 
-  for(let i = 0; i < passes; i++) {
-    jfaMaterial.uniforms.inputTexture.value = curT;
-    jfaMaterial.uniforms.offset.value = Math.pow(2, passes - i - 1);
+    for(let i = 0; i < passes; i++) {
+        jfaMaterial.uniforms.inputTexture.value = curT;
+        jfaMaterial.uniforms.offset.value = Math.pow(2, passes - i - 1);
+        renderer.setRenderTarget(curJFA);
+        renderer.render(scene, camera);
+        curT = curJFA.texture;
+        [curJFA, nextJFA] = [nextJFA, curJFA]; 
+    }
+
+    mesh.material = distanceMaterial;
+    distanceMaterial.uniforms.inputTexture.value = curT;
     renderer.setRenderTarget(curJFA);
     renderer.render(scene, camera);
-    curT = curJFA.texture;
-    [curJFA, nextJFA] = [nextJFA, curJFA]; 
-  }
 
-  mesh.material = distanceMaterial;
-  distanceMaterial.uniforms.inputTexture.value = curT;
-  renderer.setRenderTarget(curJFA);
-  renderer.render(scene, camera);
+    mesh.material = rayMaterial;
+    rayMaterial.uniforms.iTexture.value = currentRT.texture;
+    rayMaterial.uniforms.distanceTexture.value = curJFA.texture;
 
-  mesh.material = rayMaterial;
-  rayMaterial.uniforms.iTexture.value = currentRT.texture;
-  rayMaterial.uniforms.distanceTexture.value = curJFA.texture;
+    const base = rayMaterial.uniforms.baseRayCount.value;
+    const diagonal = Math.sqrt(width * width + height * height);
+    const cascadeCount = Math.ceil(Math.log(diagonal) / Math.log(base)) + 1;
+    rayMaterial.uniforms.cascadeCount.value = cascadeCount;
 
-  const base = rayMaterial.uniforms.baseRayCount.value;
-  const diagonal = Math.sqrt(width * width + height * height);
-  const cascadeCount = Math.ceil(Math.log(diagonal) / Math.log(base)) + 1;
-  rayMaterial.uniforms.cascadeCount.value = cascadeCount;
+    let currRT = cascadeRTa;
+    let prevRT = cascadeRTb;
 
-  let currRT = cascadeRTa;
-  let prevRT = cascadeRTb;
+    rayMaterial.uniforms.lastTexture.value = null;
 
-  rayMaterial.uniforms.lastTexture.value = null;
-
-  for (let i = cascadeCount - 1; i >= 0; i--) {
-    rayMaterial.uniforms.cascadeIndex.value = i;
-    rayMaterial.uniforms.lastIndex.value = i === 0;
-    if (i === 0) {
-      renderer.setRenderTarget(null);
-    } else {
-      renderer.setRenderTarget(currRT);
-      renderer.clear();
+    for (let i = cascadeCount - 1; i >= 0; i--) {
+        rayMaterial.uniforms.cascadeIndex.value = i;
+        rayMaterial.uniforms.lastIndex.value = i === 0;
+        if (i === 0) {
+            renderer.setRenderTarget(null);
+        } else {
+            renderer.setRenderTarget(currRT);
+            renderer.clear();
+        }
+        renderer.render(scene, camera);
+        if (i !== 0) {
+            rayMaterial.uniforms.lastTexture.value = currRT.texture;
+            [currRT, prevRT] = [prevRT, currRT];
+        }
     }
-    renderer.render(scene, camera);
-    if (i !== 0) {
-      rayMaterial.uniforms.lastTexture.value = currRT.texture;
-      [currRT, prevRT] = [prevRT, currRT];
-    }
-  }
 
-  [currentRT, previousRT] = [previousRT, currentRT];
+    [currentRT, previousRT] = [previousRT, currentRT];
 }
 
 renderer.setAnimationLoop(animate);

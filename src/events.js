@@ -1,35 +1,31 @@
 //https://yaron-galperin.medium.com/eventbus-pattern-event-driven-communication-in-js-2f29c3875982
 
 export default class EventBus {
-  constructor() {
-    this.events = {};
-  }
-
-  on(event, callback) {
-    if (!this.events[event]) {
-      this.events[event] = [];
+    constructor() {
+        this.events = {};
     }
 
-    this.events[event].push(callback);
-  }
+    on(event, callback) {
+        if (!this.events[event]) {
+            this.events[event] = [];
+        }
 
-  off(event, callback) {
-    if (!this.events[event]) {
-      return;
+        this.events[event].push(callback);
     }
 
-    this.events[event] = this.events[event].filter(cb => cb !== callback);
-  }
+    off(event, callback) {
+        if (!this.events[event]) {
+            return;
+        }
 
-  emit(event, ...args) {
-    if (!this.events[event]) {
-      return;
+        this.events[event] = this.events[event].filter(cb => cb !== callback);
     }
 
-    this.events[event].forEach(callback => callback(...args));
-  }
+    emit(event, ...args) {
+        if (!this.events[event]) {
+            return;
+        }
+
+        this.events[event].forEach(callback => callback(...args));
+    }
 }
-
-
-
-

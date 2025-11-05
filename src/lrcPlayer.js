@@ -15,7 +15,7 @@ export default class LRC {
                 let lyric = match[3].trim();
                 const time = (minutes * 60 + seconds) * 1000;
 
-                if(lyric === "") lyric = "(Music)";
+                if(lyric === '') lyric = '(Music)';
 
                 this.timedLyrics.push({ time, lyric });
             }
@@ -26,7 +26,7 @@ export default class LRC {
     }
 
     update(currentTimeMs) {
-        if (this.timedLyrics.length === 0) return "No lyrics found?";
+        if (this.timedLyrics.length === 0) return 'No lyrics found?';
         
         const newIndex = this.timedLyrics.findLastIndex(lyric => currentTimeMs >= lyric.time);
         
@@ -35,17 +35,16 @@ export default class LRC {
             return this.timedLyrics[newIndex].lyric;
         }
         
-        return "(Music)";
+        return '(Music)';
     }
 
     async getLRCLIB(trackName, artistName){//TODO: figure out the agnet header
         this.isReady = false;
 
         const params = new URLSearchParams({
-        track_name: trackName,
-        artist_name: artistName
+            track_name: trackName,
+            artist_name: artistName
         });
-
 
         const response = await fetch(`https://lrclib.net/api/search?${params.toString()}`);
 
@@ -57,12 +56,11 @@ export default class LRC {
         const results = await response.json();
 
         if (results.length === 0) {
-            console.log("No lyrics found.");
+            console.log('No lyrics found.');
             return;
         }
 
         console.log(results[0].syncedLyrics);
         this.loadLRC(results[0].syncedLyrics);
-
     }
 }
