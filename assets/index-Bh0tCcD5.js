@@ -3928,7 +3928,6 @@ void main() {
                     }
                 }
 
-
                 if(isLast == false) {
                     gl_FragColor = nearestSeed;
                     return;
@@ -4007,35 +4006,35 @@ void main() {
                 float fixedStepSize = 1.0;
 
                 for(int i = 0; i < rayCount; i++) {
-                  float angle = tauOverRayCount * (float(i) + noise); //if we dont add noise all rays will be in the same direction which will introduce patterns
-                  vec2 rayDirection = vec2(cos(angle), -sin(angle)); //unit circle, NOW FIXED!!!!!!
+                    float angle = tauOverRayCount * (float(i) + noise); //if we dont add noise all rays will be in the same direction which will introduce patterns
+                    vec2 rayDirection = vec2(cos(angle), -sin(angle)); //unit circle, NOW FIXED!!!!!!
 
 
-                  vec2 sampleUv = vUv; //start at the current uv coordinate
-                  vec4 radDelta = vec4(0.0);
-                  
-                  for (int step = 1; step < maxSteps; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
-                    float dist = useBruteForce ? fixedStepSize : texture(distanceTexture, sampleUv).r;
+                    vec2 sampleUv = vUv; //start at the current uv coordinate
+                    vec4 radDelta = vec4(0.0);
                     
-                    sampleUv += (rayDirection * dist) / resolution;
-                    
+                    for (int step = 1; step < maxSteps; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
+                        float dist = useBruteForce ? fixedStepSize : texture(distanceTexture, sampleUv).r;
+                        
+                        sampleUv += (rayDirection * dist) / resolution;
+                        
 
-                    //sampleUv += rayDirection * dist; //move the pixel in the direction of the ray, dist is the distance to the nearest seed so we now we can at least move that much
-                    //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes 
-            
+                        //sampleUv += rayDirection * dist; //move the pixel in the direction of the ray, dist is the distance to the nearest seed so we now we can at least move that much
+                        //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes 
+                
 
-                    if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
-                    
-                    
-                    if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) { 
-                      // at this point we now we hit a seed, so get its color and add it to the radiance
-                      vec4 sampleColor = texture(iTexture, sampleUv);
-                      radDelta += sampleColor;
-                      break;
+                        if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
+                        
+                        
+                        if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) { 
+                            // at this point we now we hit a seed, so get its color and add it to the radiance
+                            vec4 sampleColor = texture(iTexture, sampleUv);
+                            radDelta += sampleColor;
+                            break;
+                        }
                     }
-                  }
 
-                  radiance += radDelta;
+                    radiance += radDelta;
                 }
                 
                 return vec4((radiance * oneOverRayCount * radianceModifier).rgb, 0.0); //finally we return the color of the pixel by averaging the light 
@@ -4044,7 +4043,7 @@ void main() {
             void main() {
                 gl_FragColor = raymarch();
             }
-        `})}function e7(){return new Cr({uniforms:{sourceTex:{value:null},resolution:{value:null},sourceAspect:{value:null},sourceScale:{value:null},centerX:{value:null},mouse:{value:null}},vertexShader:` 
+        `})}function e7(){return new Cr({uniforms:{sourceTex:{value:null},resolution:{value:null},sourceHeight:{value:null},sourceWidth:{value:null},sourceScale:{value:null},mouse:{value:null}},vertexShader:` 
             varying vec2 vUv;
             void main() { 
                 vUv = uv;
@@ -4055,92 +4054,86 @@ void main() {
             varying vec2 vUv;
             uniform sampler2D sourceTex;
             uniform vec2 resolution;
-            uniform float sourceAspect;
+            uniform float sourceHeight;
+            uniform float sourceWidth; 
             uniform float sourceScale;
-            uniform float centerX; 
             uniform vec2 mouse;
 
             void main() {
-                float basePx = sourceScale * min(resolution.x, resolution.y);
-                float wPx = basePx;
-                float hPx = basePx;
-                if (sourceAspect >= 1.0) {
-                  hPx = basePx / sourceAspect;
-                } else {
-                  wPx = basePx * sourceAspect;
-                }
-                vec2 sizeUv = vec2(wPx / resolution.x, hPx / resolution.y);
-                vec2 minUv = vec2(centerX, 0.5) - 0.5 * sizeUv;
-                vec2 maxUv = minUv + sizeUv;
-                bool inside = vUv.x >= minUv.x && vUv.x <= maxUv.x && vUv.y >= minUv.y && vUv.y <= maxUv.y;
-                if (inside) {
-                  vec2 localUv = (vUv - minUv) / sizeUv;
-                  gl_FragColor = texture2D(sourceTex, localUv);
-                } 
-                else {
-                  if(distance(gl_FragCoord.xy, mouse) < 10.) {
-                    gl_FragColor = vec4(vUv.x, vUv.y, 1.0, 1.0);
-                  } 
 
-                  else {
-                    discard;
-                  }
+                float originalAspect = sourceWidth / sourceHeight;
+                float jfaAspect = resolution.x / resolution.y;
+
+                vec2 mul = vec2(sourceScale);
+                if (originalAspect >= jfaAspect) {
+                    mul.y *= jfaAspect / originalAspect; 
+                } else {
+                    mul.x *= originalAspect / jfaAspect;  
                 }
+
+                vec2 offset = 0.5 * (1.0 - mul);
+
+                vec2 newUv = (vUv - offset) / mul;
+
+                if (newUv.x < 0.0 || newUv.x > 1.0 || newUv.y < 0.0 || newUv.y > 1.0) {
+                    discard;
+                }
+
+                gl_FragColor = texture2D(sourceTex, newUv);
             }
         `})}function t7(){return new Cr({uniforms:{inputTexture:{value:null},resolution:{value:null},sigmaSpatial:{value:null},sigmaRange:{value:null},radius:{value:null}},vertexShader:`
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,fragmentShader:`
-      precision highp float;
-      varying vec2 vUv;
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,fragmentShader:`
+            precision highp float;
+            varying vec2 vUv;
 
-      uniform sampler2D inputTexture;
-      uniform vec2 resolution;
-      uniform float sigmaSpatial;
-      uniform float sigmaRange;
-      uniform int radius;
+            uniform sampler2D inputTexture;
+            uniform vec2 resolution;
+            uniform float sigmaSpatial;
+            uniform float sigmaRange;
+            uniform int radius;
 
-      // Bilateral weight = exp( - ( |p-q|^2 / 2σ_s^2 + |I(p)-I(q)|^2 / 2σ_r^2 ) )
+            // Bilateral weight = exp( -(|p-q|^2 / 2σ_s^2 + |I(p)-I(q)|^2 / 2σ_r^2 ) )
 
-      float weight(vec2 spatialOffset, vec3 neighbor, vec3 center) {
-        float spatialDist2 = dot(spatialOffset, spatialOffset);
-        float rangeDist2   = dot(neighbor - center, neighbor - center);
-        float w = exp(-(spatialDist2 / (2.0 * sigmaSpatial * sigmaSpatial)
-                      + rangeDist2   / (2.0 * sigmaRange  * sigmaRange)));
-        return w;
-      }
+            float weight(vec2 spatialOffset, vec3 neighbor, vec3 center) {
+                float spatialDist2 = dot(spatialOffset, spatialOffset);
+                float rangeDist2   = dot(neighbor - center, neighbor - center);
+                float w = exp(-(spatialDist2 / (2.0 * sigmaSpatial * sigmaSpatial)
+                              + rangeDist2   / (2.0 * sigmaRange  * sigmaRange)));
+                return w;
+            }
 
-      void main() {
-        vec4 center = texture2D(inputTexture, vUv);
+            void main() {
+                vec4 center = texture2D(inputTexture, vUv);
 
-        if(center.a != 0.0) {
-          gl_FragColor = center;
-          return;
-        }
+                if(center.a != 0.0) {
+                    gl_FragColor = center;
+                    return;
+                }
 
-        float sumW = 0.0;
-        vec3 sumC = vec3(0.0);
+                float sumW = 0.0;
+                vec3 sumC = vec3(0.0);
 
-        for (int j = -radius; j <= radius; ++j) {
-          for (int i = -radius; i <= radius; ++i) {
+                for (int j = -radius; j <= radius; ++j) {
+                    for (int i = -radius; i <= radius; ++i) {
+                        vec2 offset = vec2(float(i), float(j));
+                        vec2 uv = vUv + offset / resolution;
+                        vec3 neighbor = texture2D(inputTexture, uv).rgb;
 
-            vec2 offset = vec2(float(i), float(j));
-            vec2 uv = vUv + offset / resolution;
-            vec3 neighbor = texture2D(inputTexture, uv).rgb;
+                        float w = weight(offset, neighbor, center.rgb);
+                        sumW += w;
+                        sumC += neighbor * w;
+                    }
+                }
 
-            float w = weight(offset, neighbor, center.rgb);
-            sumW += w;
-            sumC += neighbor * w;
-          }
-        }
-
-        vec3 filtered = sumC / sumW;
-        gl_FragColor = vec4(filtered, 1.0);
-      }
-    `})}class n7{constructor(e){this.bus=e,this.videoInput=document.getElementById("video-upload"),this.audioInput=document.getElementById("audio-upload"),this.modeToggle=document.getElementById("mode-toggle"),this.playPause=document.getElementById("play-pause"),this.volume=document.getElementById("video-volume"),this.scale=document.getElementById("video-scale"),this.showProgram=document.getElementById("show-program"),this.showJFA=document.getElementById("show-jfa"),this.radianceModifier=document.getElementById("radiance-modifier"),this.textScale=document.getElementById("text-scale"),this.modeToggle.checked=!1,this.showProgram.checked=!0,this.showJFA.checked=!1,this.videoInput.addEventListener("change",t=>this.handleVideo(t)),this.audioInput.addEventListener("change",t=>this.handleAudio(t)),this.playPause.addEventListener("click",()=>{this.modeToggle.checked?this.bus.emit("video:toggle",!1):this.bus.emit("audio:toggle",!1)}),this.modeToggle.addEventListener("change",()=>{this.modeToggle.checked?this.bus.emit("audio:toggle",!0):this.bus.emit("video:toggle",!0),this.bus.emit("mode:changed",this.modeToggle.checked);const t=document.getElementById("radiance-modifier");this.modeToggle.checked?t.value=2:t.value=1,this.bus.emit("settings:showProgram",this.showProgram.checked=!this.modeToggle.checked),this.bus.emit("settings:radiance",t.value)}),this.volume.addEventListener("input",()=>this.bus.emit("media:volume",this.volume.value)),this.scale.addEventListener("input",()=>this.bus.emit("video:scale",this.scale.value)),this.radianceModifier.addEventListener("input",()=>this.bus.emit("settings:radiance",this.radianceModifier.value)),this.showProgram.addEventListener("change",()=>this.bus.emit("settings:showProgram",this.showProgram.checked)),this.showJFA.addEventListener("change",()=>this.bus.emit("settings:showJFA",this.showJFA.checked)),this.textScale.addEventListener("input",()=>this.bus.emit("settings:textScale",this.textScale.value))}handleVideo(e){const t=e.target.files[0],i=document.createElement("video"),s=URL.createObjectURL(t);i.src=s,i.onloadeddata=()=>{console.log("Video loaded"),this.bus.emit("video:loaded",i),this.bus.emit("media:volume",this.volume.value),this.bus.emit("video:scale",1),this.modeToggle.checked=!0,this.modeToggle.dispatchEvent(new Event("change")),this.bus.emit("video:toggle",!1);const r=document.getElementById("video-scale");r.max=Math.max(i.videoWidth,i.videoHeight)/Math.min(i.videoWidth,i.videoHeight),r.value=1}}handleAudio(e){const t=e.target.files[0],i=new Audio,s=URL.createObjectURL(t),r=t.name.split("-")[0],l=t.name.split("-")[1].replace(/\.[^.]+$/,"");i.src=s,i.onloadeddata=()=>{console.log("Audio loaded"),this.bus.emit("audio:loaded",i,r,l),this.bus.emit("media:volume",this.volume.value),this.modeToggle.checked=!1,this.modeToggle.dispatchEvent(new Event("change"))}}}class i7{constructor(){this.isReady=!1}loadLRC(e){this.timedLyrics=[];const t=e.split(`
+                vec3 filtered = sumC / sumW;
+                gl_FragColor = vec4(filtered, 1.0);
+            }
+        `})}class n7{constructor(e){this.bus=e,this.videoInput=document.getElementById("video-upload"),this.audioInput=document.getElementById("audio-upload"),this.modeToggle=document.getElementById("mode-toggle"),this.playPause=document.getElementById("play-pause"),this.volume=document.getElementById("video-volume"),this.scale=document.getElementById("video-scale"),this.showProgram=document.getElementById("show-program"),this.showJFA=document.getElementById("show-jfa"),this.radianceModifier=document.getElementById("radiance-modifier"),this.textScale=document.getElementById("text-scale"),this.modeToggle.checked=!1,this.showProgram.checked=!0,this.showJFA.checked=!1,this.videoInput.addEventListener("change",t=>this.handleVideo(t)),this.audioInput.addEventListener("change",t=>this.handleAudio(t)),this.playPause.addEventListener("click",()=>{this.modeToggle.checked?this.bus.emit("video:toggle",!1):this.bus.emit("audio:toggle",!1)}),this.modeToggle.addEventListener("change",()=>{this.modeToggle.checked?this.bus.emit("audio:toggle",!0):this.bus.emit("video:toggle",!0),this.bus.emit("mode:changed",this.modeToggle.checked);const t=document.getElementById("radiance-modifier");this.modeToggle.checked?t.value=2:t.value=1,this.bus.emit("settings:showProgram",this.showProgram.checked=!this.modeToggle.checked),this.bus.emit("settings:radiance",t.value)}),this.volume.addEventListener("input",()=>this.bus.emit("media:volume",this.volume.value)),this.scale.addEventListener("input",()=>this.bus.emit("video:scale",this.scale.value)),this.radianceModifier.addEventListener("input",()=>this.bus.emit("settings:radiance",this.radianceModifier.value)),this.showProgram.addEventListener("change",()=>this.bus.emit("settings:showProgram",this.showProgram.checked)),this.showJFA.addEventListener("change",()=>this.bus.emit("settings:showJFA",this.showJFA.checked)),this.textScale.addEventListener("input",()=>this.bus.emit("settings:textScale",this.textScale.value))}handleVideo(e){const t=e.target.files[0],i=document.createElement("video"),s=URL.createObjectURL(t);i.src=s,i.onloadeddata=()=>{console.log("Video loaded"),this.bus.emit("video:loaded",i),this.bus.emit("media:volume",this.volume.value),this.bus.emit("video:scale",.5),this.modeToggle.checked=!0,this.modeToggle.dispatchEvent(new Event("change")),this.bus.emit("video:toggle",!1)}}handleAudio(e){const t=e.target.files[0],i=new Audio,s=URL.createObjectURL(t),r=t.name.split("-")[0],l=t.name.split("-")[1].replace(/\.[^.]+$/,"");i.src=s,i.onloadeddata=()=>{console.log("Audio loaded"),this.bus.emit("audio:loaded",i,r,l),this.bus.emit("media:volume",this.volume.value),this.modeToggle.checked=!1,this.modeToggle.dispatchEvent(new Event("change"))}}}class i7{constructor(){this.isReady=!1}loadLRC(e){this.timedLyrics=[];const t=e.split(`
 `),i=/\[(\d{2}):(\d{2}\.\d{2})\]\s*(.*)/;for(const s of t){const r=s.match(i);if(r){const l=parseInt(r[1]),u=parseFloat(r[2]);let d=r[3].trim();const f=(l*60+u)*1e3;d===""&&(d="(Music)"),this.timedLyrics.push({time:f,lyric:d})}}this.currentIndex=-1,this.isReady=!0}update(e){if(this.timedLyrics.length===0)return"No lyrics found?";const t=this.timedLyrics.findLastIndex(i=>e>=i.time);return t>=0&&t<this.timedLyrics.length?(this.currentIndex=t,this.timedLyrics[t].lyric):"(Music)"}async getLRCLIB(e,t){this.isReady=!1;const i=new URLSearchParams({track_name:e,artist_name:t}),s=await fetch(`https://lrclib.net/api/search?${i.toString()}`);if(!s.ok){console.error(`Error ${s.status}: ${s.statusText}`);return}const r=await s.json();if(r.length===0){console.log("No lyrics found.");return}console.log(r[0].syncedLyrics),this.loadLRC(r[0].syncedLyrics)}}function sD(a){if(Object.prototype.hasOwnProperty.call(a,"__esModule"))return a;var e=a.default;if(typeof e=="function"){var t=function i(){var s=!1;try{s=this instanceof i}catch{}return s?Reflect.construct(e,arguments,this.constructor):e.apply(this,arguments)};t.prototype=e.prototype}else t={};return Object.defineProperty(t,"__esModule",{value:!0}),Object.keys(a).forEach(function(i){var s=Object.getOwnPropertyDescriptor(a,i);Object.defineProperty(t,i,s.get?s:{enumerable:!0,get:function(){return a[i]}})}),t}var km={exports:{}},H={};/**
  * @license
  * Copyright 2010-2025 Three.js Authors
@@ -8501,4 +8494,4 @@ float border=outset*inset;if(alpha<uAlphaTest)discard;vec4 filledFragColor=vec4(
                     gl_FragColor = vec4(paletteColor, alpha * uOpacity);
                     if (gl_FragColor.a < 0.0001) discard;
                 }
-            `});i.uniforms.uMap.value=this.atlas,i.blending=this.useBlending?lo:Gr,this.mesh=new es(t,i),t.computeBoundingBox();const s=t.boundingBox,r=(s.min.x+s.max.x)/2,l=(s.min.y+s.max.y)/2;this.mesh.scale.set(this.scale,-this.scale),this.mesh.position.set(-r*this.scale,l*this.scale),this.scene.clear(),this.scene.add(this.mesh)}render(e){if(this.isReady)return this.mesh.material.uniforms.time.value=performance.now()*.001,e.setRenderTarget(this.renderTarget),e.setClearColor(0,0),e.clear(),e.render(this.scene,this.camera),this.renderTarget.texture}renderDirect(e){this.isReady&&(this.mesh.material.uniforms.time.value=performance.now()*.001,e.render(this.scene,this.camera))}}class jfe{constructor(){this.events={}}on(e,t){this.events[e]||(this.events[e]=[]),this.events[e].push(t)}off(e,t){this.events[e]&&(this.events[e]=this.events[e].filter(i=>i!==t))}emit(e,...t){this.events[e]&&this.events[e].forEach(i=>i(...t))}}class Qfe{constructor(){this.scene=new rd,this.camera=new rc(-1,1,1,-1,0,1),this.renderer=new YY,this.renderer.autoClear=!1,this.renderer.outputColorSpace=_l,document.body.appendChild(this.renderer.domElement),this.stats=new KY({trackGPU:!0,trackHz:!1,trackCPT:!1,logsPerSecond:4,graphsPerSecond:30,samplesLog:40,samplesGraph:10,precision:2,horizontal:!0,minimal:!1,mode:0}),document.body.appendChild(this.stats.dom),this.isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent),this.JFAscale=this.isMobile?4:2,this.jfaWidth=Math.floor(window.innerWidth/this.JFAscale),this.jfaHeight=Math.floor(window.innerHeight/this.JFAscale),this.raymarchScale=this.isMobile?4:2,this.raymarchWidth=Math.floor(window.innerWidth/this.raymarchScale),this.raymarchHeight=Math.floor(window.innerHeight/this.raymarchScale),this.mouse={x:null,y:null},this.canvas=this.renderer.domElement,this.bus=new jfe,this.ui=new n7(this.bus),this.lrcPlayer=new i7,this.state={modeIsVideo:!1,video:{element:null,texture:null,aspect:null,scale:null,volume:null},audio:{element:null,volume:null},settings:{showProgram:!0,showJFA:!1,radiance:1,textScale:null}},this.bus.on("mode:changed",e=>{this.state.modeIsVideo=e}),this.bus.on("settings:showProgram",e=>{this.state.settings.showProgram=e}),this.bus.on("settings:showJFA",e=>{this.state.settings.showJFA=e}),this.bus.on("settings:radiance",e=>{this.state.settings.radiance=e}),this.bus.on("settings:textScale",e=>{this.state.settings.textScale=e,this.text.scale=this.state.settings.textScale,this.textOverlay.scale=this.state.settings.textScale*this.JFAscale,this.text.createText(),this.textOverlay.createText()}),this.bus.on("video:loaded",e=>{this.state.video.element&&this.state.video.element.pause(),this.state.video.element=e,this.state.video.element.volume=this.state.video.volume,this.state.video.texture=new ow(e),this.state.video.texture.minFilter=Ci,this.state.video.texture.magFilter=Ci,this.state.video.texture.format=hs,this.state.video.aspect=e.videoWidth/e.videoHeight}),this.bus.on("video:toggle",e=>{const t=this.state.video.element;t&&(e?t.pause():t.paused?t.play():t.pause())}),this.bus.on("media:volume",e=>{this.state.video.element&&(this.state.video.element.volume=e),this.state.audio.element&&(this.state.audio.element.volume=e)}),this.bus.on("video:scale",e=>{this.state.video.scale=e}),this.bus.on("audio:loaded",(e,t,i)=>{this.state.audio.element&&this.state.audio.element.pause(),this.state.audio.element=e,this.lrcPlayer.getLRCLIB(t,i).then(()=>{this.bus.emit("audio:toggle",!1)}),this.state.audio.element.addEventListener("timeupdate",()=>{const s=this.lrcPlayer.update(this.state.audio.element.currentTime*1e3);this.text.createText(s),this.textOverlay.createText(s)})}),this.bus.on("audio:toggle",e=>{const t=this.state.audio.element;!t||!this.lrcPlayer.isReady||(e?t.pause():t.paused?t.play():t.pause())}),this.initialize(),this.shaders(),this.canvas.addEventListener("mousemove",e=>{const t=this.canvas.getBoundingClientRect();this.mouse.x=(e.clientX-t.left)/this.JFAscale,this.mouse.y=(t.height-(e.clientY-t.top))/this.JFAscale}),window.addEventListener("resize",()=>{this.jfaWidth=Math.floor(window.innerWidth/this.JFAscale),this.jfaHeight=Math.floor(window.innerHeight/this.JFAscale),this.raymarchWidth=Math.floor(window.innerWidth/this.raymarchScale),this.raymarchHeight=Math.floor(window.innerHeight/this.raymarchScale),this.renderer.setSize(window.innerWidth,window.innerHeight),this.modelRT.setSize(this.jfaWidth,this.jfaHeight),this.seedRT.setSize(this.jfaWidth,this.jfaHeight),this.jfaA.setSize(this.jfaWidth,this.jfaHeight),this.jfaB.setSize(this.jfaWidth,this.jfaHeight),this.rayColorRT.setSize(this.raymarchWidth,this.raymarchHeight),this.bilateralRT.setSize(this.raymarchWidth,this.raymarchHeight),this.resizerMaterial.uniforms.resolution.value.set(this.jfaWidth,this.jfaHeight),this.seedMaterial.uniforms.resolution.value.set(this.jfaWidth,this.jfaHeight),this.jfaMaterial.uniforms.resolution.value.set(this.jfaWidth,this.jfaHeight),this.rayMaterial.uniforms.resolution.value.set(this.jfaWidth,this.jfaHeight),this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth,this.raymarchHeight),this.text.resize(this.jfaWidth,this.jfaHeight),this.textOverlay.resize(window.innerWidth,window.innerHeight)}),this.renderer.setAnimationLoop(this.animate.bind(this)),this.renderer.setSize(window.innerWidth,window.innerHeight)}initialize(){this.text=new LI(this.jfaWidth,this.jfaHeight,this.isMobile?.5:1,!1),this.textOverlay=new LI(window.innerWidth,window.innerHeight,this.isMobile?.5*this.JFAscale:this.JFAscale,!0);let e={minFilter:Li,magFilter:Li,type:us};this.blueNoiseTexture=new Ew().load("LDR_LLL1_0.png"),this.blueNoiseTexture.wrapS=za,this.blueNoiseTexture.wrapT=za,this.blueNoiseTexture.minFilter=Li,this.blueNoiseTexture.magFilter=Li,this.modelRT=new Yo(this.jfaWidth,this.jfaHeight,e),this.seedRT=this.modelRT.clone(),this.jfaA=this.modelRT.clone(),this.jfaB=this.modelRT.clone(),this.rayColorRT=new Yo(this.raymarchWidth,this.raymarchHeight,e),this.bilateralRT=this.rayColorRT.clone()}shaders(){this.resizerMaterial=e7(),this.resizerMaterial.uniforms.sourceTex.value=null,this.resizerMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.resizerMaterial.uniforms.sourceAspect.value=1,this.resizerMaterial.uniforms.sourceScale.value=1,this.resizerMaterial.uniforms.centerX.value=.5,this.seedMaterial=JY(),this.seedMaterial.uniforms.prevTexture.value=null,this.seedMaterial.uniforms.mouse.value=this.mouse,this.seedMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.jfaMaterial=jY(),this.jfaMaterial.uniforms.inputTexture.value=null,this.jfaMaterial.uniforms.offset.value=null,this.jfaMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.rayMaterial=QY(),this.rayMaterial.uniforms.iTexture.value=null,this.rayMaterial.uniforms.distanceTexture.value=null,this.rayMaterial.uniforms.blueNoise.value=this.blueNoiseTexture,this.rayMaterial.uniforms.rayCount.value=32,this.rayMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.rayMaterial.uniforms.frame.value=0,this.displayMaterial=new zr,this.bilateralMaterial=t7(),this.bilateralMaterial.uniforms.inputTexture.value=null,this.bilateralMaterial.uniforms.resolution.value=new nt(this.raymarchWidth,this.raymarchHeight),this.bilateralMaterial.uniforms.sigmaSpatial.value=2,this.bilateralMaterial.uniforms.sigmaRange.value=.3,this.bilateralMaterial.uniforms.radius.value=2,this.geometry=new su(2,2),this.mesh=new es(this.geometry,this.seedMaterial),this.scene.add(this.mesh)}animate(){this.stats.begin();let e=null;this.state.modeIsVideo?(this.mesh.material=this.resizerMaterial,this.resizerMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.resizerMaterial.uniforms.sourceTex.value=this.state.video.texture,this.resizerMaterial.uniforms.sourceAspect.value=this.state.video.aspect,this.resizerMaterial.uniforms.sourceScale.value=this.state.video.scale,this.resizerMaterial.uniforms.mouse.value=this.mouse,this.renderer.setRenderTarget(this.modelRT),this.renderer.clear(),this.renderer.render(this.scene,this.camera),e=this.modelRT.texture):e=this.text.render(this.renderer),this.mesh.material=this.seedMaterial,this.seedMaterial.uniforms.prevTexture.value=e,this.renderer.setRenderTarget(this.seedRT),this.renderer.render(this.scene,this.camera);let t=this.seedRT.texture,i=this.jfaA,s=this.jfaB;const r=Math.ceil(Math.log2(Math.max(this.jfaWidth,this.jfaHeight)));this.mesh.material=this.jfaMaterial;for(let l=0;l<r;l++)this.jfaMaterial.uniforms.inputTexture.value=t,this.jfaMaterial.uniforms.offset.value=Math.pow(2,r-l-1),this.jfaMaterial.uniforms.isLast.value=l==r-1&&!this.state.settings.showJFA,this.renderer.setRenderTarget(i),this.renderer.render(this.scene,this.camera),t=i.texture,[i,s]=[s,i];if(this.state.settings.showJFA){this.displayMaterial.map=t,this.mesh.material=this.displayMaterial,this.renderer.setRenderTarget(null),this.renderer.render(this.scene,this.camera);return}this.mesh.material=this.rayMaterial,this.rayMaterial.uniforms.iTexture.value=e,this.rayMaterial.uniforms.distanceTexture.value=t,this.rayMaterial.uniforms.frame.value+=1,this.rayMaterial.uniforms.radianceModifier.value=this.state.settings.radiance,this.rayMaterial.uniforms.showProgram.value=this.state.settings.showProgram,this.renderer.setRenderTarget(this.rayColorRT),this.renderer.render(this.scene,this.camera),this.mesh.material=this.bilateralMaterial,this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth,this.raymarchHeight),this.bilateralMaterial.uniforms.inputTexture.value=this.rayColorRT.texture,this.renderer.setRenderTarget(this.bilateralRT),this.renderer.render(this.scene,this.camera),this.displayMaterial.map=this.bilateralRT.texture,this.mesh.material=this.displayMaterial,this.renderer.setRenderTarget(null),this.renderer.render(this.scene,this.camera),this.state.modeIsVideo?this.state.video.texture&&(this.mesh.material=this.resizerMaterial,this.resizerMaterial.uniforms.resolution.value=new nt(window.innerWidth,window.innerHeight),this.resizerMaterial.uniforms.mouse.value=new nt(-9999,-9999),this.renderer.setRenderTarget(null),this.renderer.render(this.scene,this.camera)):this.textOverlay.renderDirect(this.renderer),this.stats.end(),this.stats.update()}}new Qfe;
+            `});i.uniforms.uMap.value=this.atlas,i.blending=this.useBlending?lo:Gr,this.mesh=new es(t,i),t.computeBoundingBox();const s=t.boundingBox,r=(s.min.x+s.max.x)/2,l=(s.min.y+s.max.y)/2;this.mesh.scale.set(this.scale,-this.scale),this.mesh.position.set(-r*this.scale,l*this.scale),this.scene.clear(),this.scene.add(this.mesh)}render(e){if(this.isReady)return this.mesh.material.uniforms.time.value=performance.now()*.001,e.setRenderTarget(this.renderTarget),e.setClearColor(0,0),e.clear(),e.render(this.scene,this.camera),this.renderTarget.texture}renderDirect(e){this.isReady&&(this.mesh.material.uniforms.time.value=performance.now()*.001,e.render(this.scene,this.camera))}}class jfe{constructor(){this.events={}}on(e,t){this.events[e]||(this.events[e]=[]),this.events[e].push(t)}off(e,t){this.events[e]&&(this.events[e]=this.events[e].filter(i=>i!==t))}emit(e,...t){this.events[e]&&this.events[e].forEach(i=>i(...t))}}class Qfe{constructor(){this.scene=new rd,this.camera=new rc(-1,1,1,-1,0,1),this.renderer=new YY,this.renderer.autoClear=!1,this.renderer.outputColorSpace=_l,document.body.appendChild(this.renderer.domElement),this.stats=new KY({trackGPU:!0,trackHz:!1,trackCPT:!1,logsPerSecond:4,graphsPerSecond:30,samplesLog:40,samplesGraph:10,precision:2,horizontal:!0,minimal:!1,mode:0}),document.body.appendChild(this.stats.dom),this.isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent),this.JFAscale=this.isMobile?4:2,this.jfaWidth=Math.floor(window.innerWidth/this.JFAscale),this.jfaHeight=Math.floor(window.innerHeight/this.JFAscale),this.raymarchScale=this.isMobile?4:2,this.raymarchWidth=Math.floor(window.innerWidth/this.raymarchScale),this.raymarchHeight=Math.floor(window.innerHeight/this.raymarchScale),this.mouse={x:null,y:null},this.canvas=this.renderer.domElement,this.bus=new jfe,this.ui=new n7(this.bus),this.lrcPlayer=new i7,this.state={modeIsVideo:!1,video:{element:null,texture:null,heigth:null,width:null,scale:null,volume:null},audio:{element:null,volume:null},settings:{showProgram:!0,showJFA:!1,radiance:1,textScale:null}},this.bus.on("mode:changed",e=>{this.state.modeIsVideo=e}),this.bus.on("settings:showProgram",e=>{this.state.settings.showProgram=e}),this.bus.on("settings:showJFA",e=>{this.state.settings.showJFA=e}),this.bus.on("settings:radiance",e=>{this.state.settings.radiance=e}),this.bus.on("settings:textScale",e=>{this.state.settings.textScale=e,this.text.scale=this.state.settings.textScale,this.textOverlay.scale=this.state.settings.textScale*this.JFAscale,this.text.createText(),this.textOverlay.createText()}),this.bus.on("video:loaded",e=>{this.state.video.element&&this.state.video.element.pause(),this.state.video.element=e,this.state.video.element.volume=this.state.video.volume,this.state.video.texture=new ow(e),this.state.video.texture.minFilter=Ci,this.state.video.texture.magFilter=Ci,this.state.video.texture.format=hs,this.state.video.height=e.videoHeight,this.state.video.width=e.videoWidth}),this.bus.on("video:toggle",e=>{const t=this.state.video.element;t&&(e?t.pause():t.paused?t.play():t.pause())}),this.bus.on("media:volume",e=>{this.state.video.element&&(this.state.video.element.volume=e),this.state.audio.element&&(this.state.audio.element.volume=e)}),this.bus.on("video:scale",e=>{this.state.video.scale=e,console.log(e)}),this.bus.on("audio:loaded",(e,t,i)=>{this.state.audio.element&&this.state.audio.element.pause(),this.state.audio.element=e,this.lrcPlayer.getLRCLIB(t,i).then(()=>{this.bus.emit("audio:toggle",!1)}),this.state.audio.element.addEventListener("timeupdate",()=>{const s=this.lrcPlayer.update(this.state.audio.element.currentTime*1e3);this.text.createText(s),this.textOverlay.createText(s)})}),this.bus.on("audio:toggle",e=>{const t=this.state.audio.element;!t||!this.lrcPlayer.isReady||(e?t.pause():t.paused?t.play():t.pause())}),this.initialize(),this.shaders(),this.canvas.addEventListener("mousemove",e=>{const t=this.canvas.getBoundingClientRect();this.mouse.x=(e.clientX-t.left)/this.JFAscale,this.mouse.y=(t.height-(e.clientY-t.top))/this.JFAscale}),window.addEventListener("resize",()=>{this.jfaWidth=Math.floor(window.innerWidth/this.JFAscale),this.jfaHeight=Math.floor(window.innerHeight/this.JFAscale),this.raymarchWidth=Math.floor(window.innerWidth/this.raymarchScale),this.raymarchHeight=Math.floor(window.innerHeight/this.raymarchScale),this.renderer.setSize(window.innerWidth,window.innerHeight),this.modelRT.setSize(this.jfaWidth,this.jfaHeight),this.seedRT.setSize(this.jfaWidth,this.jfaHeight),this.jfaA.setSize(this.jfaWidth,this.jfaHeight),this.jfaB.setSize(this.jfaWidth,this.jfaHeight),this.rayColorRT.setSize(this.raymarchWidth,this.raymarchHeight),this.bilateralRT.setSize(this.raymarchWidth,this.raymarchHeight),this.resizerMaterial.uniforms.resolution.value.set(this.jfaWidth,this.jfaHeight),this.seedMaterial.uniforms.resolution.value.set(this.jfaWidth,this.jfaHeight),this.jfaMaterial.uniforms.resolution.value.set(this.jfaWidth,this.jfaHeight),this.rayMaterial.uniforms.resolution.value.set(this.jfaWidth,this.jfaHeight),this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth,this.raymarchHeight),this.text.resize(this.jfaWidth,this.jfaHeight),this.textOverlay.resize(window.innerWidth,window.innerHeight)}),this.renderer.setAnimationLoop(this.animate.bind(this)),this.renderer.setSize(window.innerWidth,window.innerHeight)}initialize(){this.text=new LI(this.jfaWidth,this.jfaHeight,this.isMobile?.5:1,!1),this.textOverlay=new LI(window.innerWidth,window.innerHeight,this.isMobile?.5*this.JFAscale:this.JFAscale,!0);let e={minFilter:Li,magFilter:Li,type:us};this.blueNoiseTexture=new Ew().load("LDR_LLL1_0.png"),this.blueNoiseTexture.wrapS=za,this.blueNoiseTexture.wrapT=za,this.blueNoiseTexture.minFilter=Li,this.blueNoiseTexture.magFilter=Li,this.modelRT=new Yo(this.jfaWidth,this.jfaHeight,e),this.seedRT=this.modelRT.clone(),this.jfaA=this.modelRT.clone(),this.jfaB=this.modelRT.clone(),this.rayColorRT=new Yo(this.raymarchWidth,this.raymarchHeight,e),this.bilateralRT=this.rayColorRT.clone()}shaders(){this.resizerMaterial=e7(),this.resizerMaterial.uniforms.sourceTex.value=null,this.resizerMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.resizerMaterial.uniforms.sourceScale.value=1,this.seedMaterial=JY(),this.seedMaterial.uniforms.prevTexture.value=null,this.seedMaterial.uniforms.mouse.value=this.mouse,this.seedMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.jfaMaterial=jY(),this.jfaMaterial.uniforms.inputTexture.value=null,this.jfaMaterial.uniforms.offset.value=null,this.jfaMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.rayMaterial=QY(),this.rayMaterial.uniforms.iTexture.value=null,this.rayMaterial.uniforms.distanceTexture.value=null,this.rayMaterial.uniforms.blueNoise.value=this.blueNoiseTexture,this.rayMaterial.uniforms.rayCount.value=32,this.rayMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.rayMaterial.uniforms.frame.value=0,this.displayMaterial=new zr,this.bilateralMaterial=t7(),this.bilateralMaterial.uniforms.inputTexture.value=null,this.bilateralMaterial.uniforms.resolution.value=new nt(this.raymarchWidth,this.raymarchHeight),this.bilateralMaterial.uniforms.sigmaSpatial.value=2,this.bilateralMaterial.uniforms.sigmaRange.value=.3,this.bilateralMaterial.uniforms.radius.value=2,this.geometry=new su(2,2),this.mesh=new es(this.geometry,this.seedMaterial),this.scene.add(this.mesh)}animate(){this.stats.begin();let e=null;this.state.modeIsVideo?(this.mesh.material=this.resizerMaterial,this.resizerMaterial.uniforms.sourceTex.value=this.state.video.texture,this.resizerMaterial.uniforms.sourceHeight.value=this.state.video.height,this.resizerMaterial.uniforms.sourceWidth.value=this.state.video.width,this.resizerMaterial.uniforms.sourceScale.value=this.state.video.scale,this.resizerMaterial.uniforms.resolution.value=new nt(this.jfaWidth,this.jfaHeight),this.resizerMaterial.uniforms.mouse.value=this.mouse,this.renderer.setRenderTarget(this.modelRT),this.renderer.clear(),this.renderer.render(this.scene,this.camera),e=this.modelRT.texture):e=this.text.render(this.renderer),this.mesh.material=this.seedMaterial,this.seedMaterial.uniforms.prevTexture.value=e,this.renderer.setRenderTarget(this.seedRT),this.renderer.render(this.scene,this.camera);let t=this.seedRT.texture,i=this.jfaA,s=this.jfaB;const r=Math.ceil(Math.log2(Math.max(this.jfaWidth,this.jfaHeight)));this.mesh.material=this.jfaMaterial;for(let l=0;l<r;l++)this.jfaMaterial.uniforms.inputTexture.value=t,this.jfaMaterial.uniforms.offset.value=Math.pow(2,r-l-1),this.jfaMaterial.uniforms.isLast.value=l==r-1&&!this.state.settings.showJFA,this.renderer.setRenderTarget(i),this.renderer.render(this.scene,this.camera),t=i.texture,[i,s]=[s,i];if(this.state.settings.showJFA){this.displayMaterial.map=t,this.mesh.material=this.displayMaterial,this.renderer.setRenderTarget(null),this.renderer.render(this.scene,this.camera);return}this.mesh.material=this.rayMaterial,this.rayMaterial.uniforms.iTexture.value=e,this.rayMaterial.uniforms.distanceTexture.value=t,this.rayMaterial.uniforms.frame.value+=1,this.rayMaterial.uniforms.radianceModifier.value=this.state.settings.radiance,this.rayMaterial.uniforms.showProgram.value=this.state.settings.showProgram,this.renderer.setRenderTarget(this.rayColorRT),this.renderer.render(this.scene,this.camera),this.mesh.material=this.bilateralMaterial,this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth,this.raymarchHeight),this.bilateralMaterial.uniforms.inputTexture.value=this.rayColorRT.texture,this.renderer.setRenderTarget(this.bilateralRT),this.renderer.render(this.scene,this.camera),this.displayMaterial.map=this.bilateralRT.texture,this.mesh.material=this.displayMaterial,this.renderer.setRenderTarget(null),this.renderer.render(this.scene,this.camera),this.state.modeIsVideo?this.state.video.texture&&(this.mesh.material=this.resizerMaterial,this.resizerMaterial.uniforms.resolution.value=new nt(window.innerWidth,window.innerHeight),this.resizerMaterial.uniforms.mouse.value=new nt(-9999,-9999),this.renderer.setRenderTarget(null),this.renderer.render(this.scene,this.camera)):this.textOverlay.renderDirect(this.renderer),this.stats.end(),this.stats.update()}}new Qfe;
