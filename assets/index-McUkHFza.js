@@ -4064,14 +4064,14 @@ void main() {
                 float originalAspect = sourceWidth / sourceHeight;
                 float jfaAspect = resolution.x / resolution.y;
 
-                vec2 mul = vec2(sourceScale);
+                vec2 mul = vec2(sourceScale); //think about this as how much uv space we are covering
                 if (originalAspect >= jfaAspect) {
-                    mul.y *= jfaAspect / originalAspect; 
+                    mul.y *= jfaAspect / originalAspect; // video where width is more important? height will have less uv space
                 } else {
                     mul.x *= originalAspect / jfaAspect;  
                 }
 
-                vec2 offset = 0.5 * (1.0 - mul);
+                vec2 offset = 0.5 * (1.0 - mul); // how much uv space it needs to be shifted
 
                 vec2 newUv = (vUv - offset) / mul;
 
