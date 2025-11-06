@@ -31,7 +31,7 @@ export default class UI {
             }
         });
         
-        this.modeToggle.addEventListener('change', () => { //TODO:seperation should be on different pages in a sense
+        this.modeToggle.addEventListener('change', () => { 
             if(this.modeToggle.checked) {
                 this.bus.emit('audio:toggle', true);
             } else {
@@ -53,11 +53,11 @@ export default class UI {
         });
           
         this.volume.addEventListener('input', () => 
-            this.bus.emit('media:volume', (this.volume.value))
+            this.bus.emit('media:volume', this.volume.value)
         );
         
         this.scale.addEventListener('input', () => 
-            this.bus.emit('video:scale', (this.scale.value))
+            this.bus.emit('video:scale', this.scale.value)
         );
 
         this.radianceModifier.addEventListener('input', () => 
@@ -88,7 +88,7 @@ export default class UI {
             console.log('Video loaded');
         
             this.bus.emit('video:loaded', video);
-            this.bus.emit('media:volume', (this.volume.value));
+            this.bus.emit('media:volume', this.volume.value);
             this.bus.emit('video:scale', 0.5);
 
             this.modeToggle.checked = true;
@@ -110,7 +110,7 @@ export default class UI {
         audio.onloadeddata = () => {
             console.log('Audio loaded');
             this.bus.emit('audio:loaded', audio, trackName, artistName);
-            this.bus.emit('media:volume', (this.volume.value));
+            this.bus.emit('media:volume', this.volume.value);
 
             this.modeToggle.checked = false;
             this.modeToggle.dispatchEvent(new Event('change'));

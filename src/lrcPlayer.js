@@ -9,18 +9,17 @@ export default class LRC {
         const regex = /\[(\d{2}):(\d{2}\.\d{2})\]\s*(.*)/;
         for (const line of lines) {
             const match = line.match(regex);
-            if (match) {
-                const minutes = parseInt(match[1]);
-                const seconds = parseFloat(match[2]);
-                let lyric = match[3].trim();
-                const time = (minutes * 60 + seconds) * 1000;
+            
+            const minutes = parseInt(match[1]);
+            const seconds = parseFloat(match[2]);
+            let lyric = match[3].trim();
+            const time = (minutes * 60 + seconds) * 1000;
 
-                if(lyric === '') lyric = '(Music)';
+            if(lyric === '') lyric = '(Music)';
 
-                this.timedLyrics.push({ time, lyric });
-            }
+            this.timedLyrics.push({ time, lyric });
+            
         }
-        this.currentIndex = -1;
 
         this.isReady = true;
     }
@@ -30,15 +29,14 @@ export default class LRC {
         
         const newIndex = this.timedLyrics.findLastIndex(lyric => currentTimeMs >= lyric.time);
         
-        if (newIndex >= 0 && newIndex < this.timedLyrics.length) {
-            this.currentIndex = newIndex;
+        if (newIndex >= 0) {
             return this.timedLyrics[newIndex].lyric;
         }
         
         return '(Music)';
     }
 
-    async getLRCLIB(trackName, artistName){//TODO: figure out the agnet header
+    async getLRCLIB(trackName, artistName){
         this.isReady = false;
 
         const params = new URLSearchParams({
@@ -46,7 +44,11 @@ export default class LRC {
             artist_name: artistName
         });
 
-        const response = await fetch(`https://lrclib.net/api/search?${params.toString()}`);
+        const response = await fetch(`https://lrclib.net/api/search?${params.toString()}`, {
+            headers: {
+                'x-user-agent': 'Lights! v0.1.0 (https://github.com/HalilB84/lights)'
+            }
+        });
 
         if (!response.ok) {
             console.error(`Error ${response.status}: ${response.statusText}`);
@@ -60,7 +62,7 @@ export default class LRC {
             return;
         }
 
-        console.log(results[0].syncedLyrics);
+        //console.log(results[0].syncedLyrics);
         this.loadLRC(results[0].syncedLyrics);
     }
 }

@@ -34,14 +34,14 @@ export default function resizer() {
                 float originalAspect = sourceWidth / sourceHeight;
                 float jfaAspect = resolution.x / resolution.y;
 
-                vec2 mul = vec2(sourceScale);
+                vec2 mul = vec2(sourceScale); // think about this as how much uv space we are covering
                 if (originalAspect >= jfaAspect) {
-                    mul.y *= jfaAspect / originalAspect; 
+                    mul.y *= jfaAspect / originalAspect; //as a future note to me, we mul by jfaaspect so 1 u matches 1 v, then we can divide by the original aspect
                 } else {
                     mul.x *= originalAspect / jfaAspect;  
                 }
 
-                vec2 offset = 0.5 * (1.0 - mul);
+                vec2 offset = 0.5 * (1.0 - mul); 
 
                 vec2 newUv = (vUv - offset) / mul;
 

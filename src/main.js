@@ -286,7 +286,7 @@ class Main {
         for(let i = 0; i < passes; i++) { //ping pong so webgl doesnt yell at me for reading and writing to the same texture
             this.jfaMaterial.uniforms.inputTexture.value = curT;
             this.jfaMaterial.uniforms.offset.value = Math.pow(2, passes - i - 1);
-            this.jfaMaterial.uniforms.isLast.value = (i == passes - 1) && !this.state.settings.showJFA;
+            this.jfaMaterial.uniforms.isLast.value = (i === passes - 1) && !this.state.settings.showJFA;
 
             this.renderer.setRenderTarget(curJFA);
             this.renderer.render(this.scene, this.camera);

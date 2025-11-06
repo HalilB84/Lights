@@ -84,7 +84,6 @@ export default function ray() {
                     float angle = tauOverRayCount * (float(i) + noise); //if we dont add noise all rays will be in the same direction which will introduce patterns
                     vec2 rayDirection = vec2(cos(angle), -sin(angle)); //unit circle, NOW FIXED!!!!!!
 
-
                     vec2 sampleUv = vUv; //start at the current uv coordinate
                     vec4 radDelta = vec4(0.0);
                     
@@ -93,13 +92,10 @@ export default function ray() {
                         
                         sampleUv += (rayDirection * dist) / resolution;
                         
-
                         //sampleUv += rayDirection * dist; //move the pixel in the direction of the ray, dist is the distance to the nearest seed so we now we can at least move that much
                         //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes 
                 
-
                         if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
-                        
                         
                         if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) { 
                             // at this point we now we hit a seed, so get its color and add it to the radiance
