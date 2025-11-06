@@ -20,19 +20,22 @@ export default class LRC {
 			this.timedLyrics.push({ time, lyric });
 		}
 
+		this.prevIndex = -1;
 		this.isReady = true;
 	}
 
 	update(currentTimeMs) {
-		if (this.timedLyrics.length === 0) return "No lyrics found?";
+		if (this.timedLyrics.length === 0) return ["No lyrics found?", true];
 
 		const newIndex = this.timedLyrics.findLastIndex((lyric) => currentTimeMs >= lyric.time);
 
 		if (newIndex >= 0) {
-			return this.timedLyrics[newIndex].lyric;
+			const changed =  newIndex !== this.prevIndex;
+			this.prevIndex = newIndex;
+			return [this.timedLyrics[newIndex].lyric, changed];
 		}
 
-		return "(Music)";
+		return ["(Music)", true];
 	}
 
 	async getLRCLIB(trackName, artistName) {

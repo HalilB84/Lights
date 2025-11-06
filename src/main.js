@@ -75,7 +75,7 @@ class Main {
 				showProgram: true,
 				showJFA: false,
 				radiance: 1.0,
-				textScale: null,
+				textScale: this.isMobile ? 0.5 : 1,
 			},
 		};
 
@@ -127,7 +127,6 @@ class Main {
 
 		this.bus.on("video:scale", (value) => {
 			this.state.video.scale = value;
-			console.log(value);
 		});
 
 		this.bus.on("audio:loaded", (audio, trackName, artistName) => {
@@ -139,10 +138,12 @@ class Main {
 			});
 
 			this.state.audio.element.addEventListener("timeupdate", () => {
-				const lyric = this.lrcPlayer.update(this.state.audio.element.currentTime * 1000);
+				const [lyric, changed] = this.lrcPlayer.update(this.state.audio.element.currentTime * 1000);
 
-				this.text.createText(lyric);
-				this.textOverlay.createText(lyric);
+				if(changed) {
+					this.text.createText(lyric);
+					this.textOverlay.createText(lyric);
+				}
 			});
 		});
 
@@ -193,8 +194,8 @@ class Main {
 	}
 
 	initialize() {
-		this.text = new Text(this.jfaWidth, this.jfaHeight, this.isMobile ? 0.5 : 1.0, false);
-		this.textOverlay = new Text(window.innerWidth, window.innerHeight, this.isMobile ? 0.5 * this.JFAscale : this.JFAscale, true);
+		this.text = new Text(this.jfaWidth, this.jfaHeight, this.state.settings.textScale, false);
+		this.textOverlay = new Text(window.innerWidth, window.innerHeight, this.state.settings.textScale * this.JFAscale, true);
 
 		let rtConfig = {
 			minFilter: THREE.NearestFilter,
@@ -276,7 +277,7 @@ class Main {
 			this.resizerMaterial.uniforms.mouse.value = this.mouse;
 
 			this.renderer.setRenderTarget(this.modelRT);
-			this.renderer.clear();
+			this.renderer.clear(); //this is incase the user changes the scale
 			this.renderer.render(this.scene, this.camera);
 
 			nextTexture = this.modelRT.texture;

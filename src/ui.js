@@ -76,7 +76,7 @@ export default class UI {
 
 			this.bus.emit("video:loaded", video);
 			this.bus.emit("media:volume", this.volume.value);
-			this.bus.emit("video:scale", 0.5);
+			this.bus.emit("video:scale", this.scale.value);
 
 			this.modeToggle.checked = true;
 			this.modeToggle.dispatchEvent(new Event("change"));
