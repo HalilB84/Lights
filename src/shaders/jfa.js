@@ -1,15 +1,15 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export default function jfa() {
-    return new THREE.ShaderMaterial({
-        uniforms: {
-            inputTexture: { value: null },
-            offset: { value: null },
-            resolution: { value: null },
-            isLast: { value: null}
-        },
+	return new THREE.ShaderMaterial({
+		uniforms: {
+			inputTexture: { value: null },
+			offset: { value: null },
+			resolution: { value: null },
+			isLast: { value: null },
+		},
 
-        vertexShader: `  
+		vertexShader: `  
             varying vec2 vUv;
             void main() { 
                 vUv = uv;
@@ -17,7 +17,7 @@ export default function jfa() {
             }
         `,
 
-        fragmentShader: `
+		fragmentShader: `
             precision highp float;
             varying vec2 vUv;
             uniform sampler2D inputTexture;
@@ -73,6 +73,6 @@ export default function jfa() {
                 gl_FragColor = vec4(length(diff_px), 0., 0., 1.);
 
             }
-        `
-    });
+        `,
+	});
 }

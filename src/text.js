@@ -1,77 +1,76 @@
-import * as THREE from 'three';
-import { MSDFTextGeometry, uniforms } from 'three-msdf-text-utils';
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import * as THREE from "three";
+import { MSDFTextGeometry, uniforms } from "three-msdf-text-utils";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 
 export default class Text {
-    constructor(width, height, scale, useBlending) {
-        this.scene = new THREE.Scene();
-        this.camera = new THREE.OrthographicCamera(-width/2, width/2, height/2, -height/2, 0, 1);
+	constructor(width, height, scale, useBlending) {
+		this.scene = new THREE.Scene();
+		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
 
-        this.renderTarget = new THREE.WebGLRenderTarget(width, height, {
-            minFilter: THREE.NearestFilter,
-            magFilter: THREE.NearestFilter,
-            format: THREE.RGBAFormat,
-            type: THREE.FloatType,
+		this.renderTarget = new THREE.WebGLRenderTarget(width, height, {
+			minFilter: THREE.NearestFilter,
+			magFilter: THREE.NearestFilter,
+			format: THREE.RGBAFormat,
+			type: THREE.FloatType,
+		});
 
-        });
+		this.isReady = false;
 
-        this.isReady = false;
+		this.width = width;
+		this.height = height;
+		this.scale = scale;
+		this.useBlending = useBlending;
 
-        this.width = width;
-        this.height = height;
-        this.scale = scale;
-        this.useBlending = useBlending;
+		this.currentText = "The show is starting!";
 
-        this.currentText = 'The show is starting!';
+		this.load();
+	}
 
-        this.load();
-    }
+	async load(fontPath = "./fonts/roboto-regular.fnt", atlasPath = "./fonts/roboto-regular.png") {
+		const loader = new THREE.TextureLoader();
+		const fontLoader = new FontLoader();
 
-    async load(fontPath = './fonts/roboto-regular.fnt', atlasPath = './fonts/roboto-regular.png') {
-        const loader = new THREE.TextureLoader();
-        const fontLoader = new FontLoader();
-        
-        this.atlas = await new Promise(r => loader.load(atlasPath, r));
-        this.font = (await new Promise(r => fontLoader.load(fontPath, r))).data;
-        this.isReady = true;
-        
-        this.createText();
-    }
+		this.atlas = await new Promise((r) => loader.load(atlasPath, r));
+		this.font = (await new Promise((r) => fontLoader.load(fontPath, r))).data;
+		this.isReady = true;
 
-    resize(width, height) {
-        this.width = width;
-        this.height = height;
-        this.camera = new THREE.OrthographicCamera(-width/2, width/2, height/2, -height/2, 0, 1);
-        this.renderTarget.setSize(width, height);
-        this.createText();
-    }
+		this.createText();
+	}
 
-    createText(text) {
-        if(text) this.currentText = text;
+	resize(width, height) {
+		this.width = width;
+		this.height = height;
+		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
+		this.renderTarget.setSize(width, height);
+		this.createText();
+	}
 
-        const geometry = new MSDFTextGeometry({ 
-            text: this.currentText,
-            font: this.font,
-            align: 'center',
-            width: this.width / this.scale,
-        });
+	createText(text) {
+		if (text) this.currentText = text;
 
-        const material = new THREE.ShaderMaterial({
-            side: THREE.DoubleSide,
-            transparent: true, 
-            defines: {
-                IS_SMALL: false,
-            },
-            extensions: {
-                derivatives: true,
-            },
-            uniforms: {
-                ...uniforms.common,
-                ...uniforms.rendering,
-                ...uniforms.strokes,
-                time: { value: performance.now() * 0.001 },
-            },
-            vertexShader: `
+		const geometry = new MSDFTextGeometry({
+			text: this.currentText,
+			font: this.font,
+			align: "center",
+			width: this.width / this.scale,
+		});
+
+		const material = new THREE.ShaderMaterial({
+			side: THREE.DoubleSide,
+			transparent: true,
+			defines: {
+				IS_SMALL: false,
+			},
+			extensions: {
+				derivatives: true,
+			},
+			uniforms: {
+				...uniforms.common,
+				...uniforms.rendering,
+				...uniforms.strokes,
+				time: { value: performance.now() * 0.001 },
+			},
+			vertexShader: `
                 attribute vec2 layoutUv;
                 attribute float lineIndex;
                 attribute float lineLettersTotal;
@@ -122,7 +121,7 @@ export default class Text {
                     vLetterIndex = letterIndex;
                 }
             `,
-            fragmentShader: `
+			fragmentShader: `
                 #ifdef GL_OES_standard_derivatives
                 #extension GL_OES_standard_derivatives : enable
                 #endif
@@ -180,43 +179,43 @@ export default class Text {
                     if (gl_FragColor.a < 0.0001) discard;
                 }
             `,
-        });
+		});
 
-        material.uniforms.uMap.value = this.atlas;
-        material.blending = this.useBlending ? THREE.NormalBlending : THREE.NoBlending; //Fixes the black pixels around the text but I havent fully understood why
+		material.uniforms.uMap.value = this.atlas;
+		material.blending = this.useBlending ? THREE.NormalBlending : THREE.NoBlending; //Fixes the black pixels around the text but I havent fully understood why
 
-        this.mesh = new THREE.Mesh(geometry, material);
+		this.mesh = new THREE.Mesh(geometry, material);
 
-        geometry.computeBoundingBox();
-        const bbox = geometry.boundingBox;
-       
-        const centerX = (bbox.min.x + bbox.max.x) / 2;
-        const centerY = (bbox.min.y + bbox.max.y) / 2;
-   
-        this.mesh.scale.set(this.scale, -this.scale);
-        this.mesh.position.set(-centerX * this.scale, centerY * this.scale);
-        
-        this.scene.clear();
-        this.scene.add(this.mesh);
-    }
+		geometry.computeBoundingBox();
+		const bbox = geometry.boundingBox;
 
-    render(renderer) {
-        if(!this.isReady) return;
+		const centerX = (bbox.min.x + bbox.max.x) / 2;
+		const centerY = (bbox.min.y + bbox.max.y) / 2;
 
-        this.mesh.material.uniforms.time.value = performance.now() * 0.001;
+		this.mesh.scale.set(this.scale, -this.scale);
+		this.mesh.position.set(-centerX * this.scale, centerY * this.scale);
 
-        renderer.setRenderTarget(this.renderTarget);
-        renderer.setClearColor(0x000000, 0);
-        renderer.clear();
-        renderer.render(this.scene, this.camera);
+		this.scene.clear();
+		this.scene.add(this.mesh);
+	}
 
-        return this.renderTarget.texture;
-    }
+	render(renderer) {
+		if (!this.isReady) return;
 
-    renderDirect(renderer) {
-        if(!this.isReady) return;
-        
-        this.mesh.material.uniforms.time.value = performance.now() * 0.001;
-        renderer.render(this.scene, this.camera);
-    }
+		this.mesh.material.uniforms.time.value = performance.now() * 0.001;
+
+		renderer.setRenderTarget(this.renderTarget);
+		renderer.setClearColor(0x000000, 0);
+		renderer.clear();
+		renderer.render(this.scene, this.camera);
+
+		return this.renderTarget.texture;
+	}
+
+	renderDirect(renderer) {
+		if (!this.isReady) return;
+
+		this.mesh.material.uniforms.time.value = performance.now() * 0.001;
+		renderer.render(this.scene, this.camera);
+	}
 }

@@ -1,19 +1,19 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export default function ray() {
-    return new THREE.ShaderMaterial({
-        uniforms: {
-            iTexture: { value: null },
-            distanceTexture: { value: null },
-            blueNoise: { value: null },
-            rayCount: { value: null },
-            resolution: { value: null },
-            frame: { value: null },
-            radianceModifier: { value: null },
-            showProgram: { value: null }
-        },
+	return new THREE.ShaderMaterial({
+		uniforms: {
+			iTexture: { value: null },
+			distanceTexture: { value: null },
+			blueNoise: { value: null },
+			rayCount: { value: null },
+			resolution: { value: null },
+			frame: { value: null },
+			radianceModifier: { value: null },
+			showProgram: { value: null },
+		},
 
-        vertexShader: ` 
+		vertexShader: ` 
             varying vec2 vUv;
             void main() { 
                 vUv = uv;
@@ -21,7 +21,7 @@ export default function ray() {
             }
         `,
 
-        fragmentShader: `
+		fragmentShader: `
             precision highp float;
             varying vec2 vUv;
             uniform sampler2D iTexture;
@@ -114,6 +114,6 @@ export default function ray() {
             void main() {
                 gl_FragColor = raymarch();
             }
-        `
-    });
+        `,
+	});
 }

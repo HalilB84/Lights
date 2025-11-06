@@ -5,7 +5,8 @@
     "dev-host": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "format": "prettier --write \"**/*.{js,css,html}\""
   },
   "dependencies": {
     "stats-gl": "^3.6.0",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "gh-pages": "^6.3.0",
+    "prettier": "^3.6.2",
     "vite": "^7.1.3"
   }
 }

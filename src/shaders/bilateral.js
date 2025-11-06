@@ -1,17 +1,17 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 //https://en.wikipedia.org/wiki/Bilateral_filter
 export default function bilateral() {
-    return new THREE.ShaderMaterial({
-        uniforms: {
-            inputTexture: { value: null },
-            resolution: { value: null },
-            sigmaSpatial: { value: null }, 
-            sigmaRange: { value: null },   
-            radius: { value: null },     
-        },
+	return new THREE.ShaderMaterial({
+		uniforms: {
+			inputTexture: { value: null },
+			resolution: { value: null },
+			sigmaSpatial: { value: null },
+			sigmaRange: { value: null },
+			radius: { value: null },
+		},
 
-        vertexShader: `
+		vertexShader: `
             varying vec2 vUv;
             void main() {
                 vUv = uv;
@@ -19,7 +19,7 @@ export default function bilateral() {
             }
         `,
 
-        fragmentShader: `
+		fragmentShader: `
             precision highp float;
             varying vec2 vUv;
 
@@ -65,6 +65,6 @@ export default function bilateral() {
                 vec3 filtered = sumC / sumW;
                 gl_FragColor = vec4(filtered, 1.0);
             }
-        `
-    });
+        `,
+	});
 }

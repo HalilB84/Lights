@@ -1,17 +1,17 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export default function resizer() {
-    return new THREE.ShaderMaterial({
-        uniforms: {
-            sourceTex: { value: null },
-            resolution: { value: null },
-            sourceHeight: {value: null},
-            sourceWidth: {value: null},
-            sourceScale: { value: null },
-            mouse: { value: null }
-        },
+	return new THREE.ShaderMaterial({
+		uniforms: {
+			sourceTex: { value: null },
+			resolution: { value: null },
+			sourceHeight: { value: null },
+			sourceWidth: { value: null },
+			sourceScale: { value: null },
+			mouse: { value: null },
+		},
 
-        vertexShader: ` 
+		vertexShader: ` 
             varying vec2 vUv;
             void main() { 
                 vUv = uv;
@@ -19,7 +19,7 @@ export default function resizer() {
             }
         `,
 
-        fragmentShader: `
+		fragmentShader: `
             precision highp float;
             varying vec2 vUv;
             uniform sampler2D sourceTex;
@@ -51,6 +51,6 @@ export default function resizer() {
 
                 gl_FragColor = texture2D(sourceTex, newUv);
             }
-        `
-    });
+        `,
+	});
 }

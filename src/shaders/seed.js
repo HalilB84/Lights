@@ -1,14 +1,14 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 export default function seed() {
-    return new THREE.ShaderMaterial({
-        uniforms: {
-            prevTexture: { value: null },
-            mouse: { value: null },
-            resolution: { value: null }
-        },
+	return new THREE.ShaderMaterial({
+		uniforms: {
+			prevTexture: { value: null },
+			mouse: { value: null },
+			resolution: { value: null },
+		},
 
-        vertexShader: ` 
+		vertexShader: ` 
             varying vec2 vUv;
             void main() { 
                 vUv = uv;
@@ -16,7 +16,7 @@ export default function seed() {
             }
         `,
 
-        fragmentShader: `
+		fragmentShader: `
             precision highp float;
             varying vec2 vUv;
             uniform sampler2D prevTexture;
@@ -36,6 +36,6 @@ export default function seed() {
                     gl_FragColor = vec4(0.0);
                 }
             }
-        `
-    });
+        `,
+	});
 }

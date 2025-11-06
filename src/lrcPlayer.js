@@ -1,68 +1,67 @@
 export default class LRC {
-    constructor() {
-        this.isReady = false;
-    }
+	constructor() {
+		this.isReady = false;
+	}
 
-    loadLRC(text) {
-        this.timedLyrics = [];
-        const lines = text.split('\n');
-        const regex = /\[(\d{2}):(\d{2}\.\d{2})\]\s*(.*)/;
-        for (const line of lines) {
-            const match = line.match(regex);
-            
-            const minutes = parseInt(match[1]);
-            const seconds = parseFloat(match[2]);
-            let lyric = match[3].trim();
-            const time = (minutes * 60 + seconds) * 1000;
+	loadLRC(text) {
+		this.timedLyrics = [];
+		const lines = text.split("\n");
+		const regex = /\[(\d{2}):(\d{2}\.\d{2})\]\s*(.*)/;
+		for (const line of lines) {
+			const match = line.match(regex);
 
-            if(lyric === '') lyric = '(Music)';
+			const minutes = parseInt(match[1]);
+			const seconds = parseFloat(match[2]);
+			let lyric = match[3].trim();
+			const time = (minutes * 60 + seconds) * 1000;
 
-            this.timedLyrics.push({ time, lyric });
-            
-        }
+			if (lyric === "") lyric = "(Music)";
 
-        this.isReady = true;
-    }
+			this.timedLyrics.push({ time, lyric });
+		}
 
-    update(currentTimeMs) {
-        if (this.timedLyrics.length === 0) return 'No lyrics found?';
-        
-        const newIndex = this.timedLyrics.findLastIndex(lyric => currentTimeMs >= lyric.time);
-        
-        if (newIndex >= 0) {
-            return this.timedLyrics[newIndex].lyric;
-        }
-        
-        return '(Music)';
-    }
+		this.isReady = true;
+	}
 
-    async getLRCLIB(trackName, artistName){
-        this.isReady = false;
+	update(currentTimeMs) {
+		if (this.timedLyrics.length === 0) return "No lyrics found?";
 
-        const params = new URLSearchParams({
-            track_name: trackName,
-            artist_name: artistName
-        });
+		const newIndex = this.timedLyrics.findLastIndex((lyric) => currentTimeMs >= lyric.time);
 
-        const response = await fetch(`https://lrclib.net/api/search?${params.toString()}`, {
-            headers: {
-                'x-user-agent': 'Lights! v0.1.0 (https://github.com/HalilB84/lights)'
-            }
-        });
+		if (newIndex >= 0) {
+			return this.timedLyrics[newIndex].lyric;
+		}
 
-        if (!response.ok) {
-            console.error(`Error ${response.status}: ${response.statusText}`);
-            return;
-        }
+		return "(Music)";
+	}
 
-        const results = await response.json();
+	async getLRCLIB(trackName, artistName) {
+		this.isReady = false;
 
-        if (results.length === 0) {
-            console.log('No lyrics found.');
-            return;
-        }
+		const params = new URLSearchParams({
+			track_name: trackName,
+			artist_name: artistName,
+		});
 
-        //console.log(results[0].syncedLyrics);
-        this.loadLRC(results[0].syncedLyrics);
-    }
+		const response = await fetch(`https://lrclib.net/api/search?${params.toString()}`, {
+			headers: {
+				"x-user-agent": "Lights! v0.1.0 (https://github.com/HalilB84/lights)",
+			},
+		});
+
+		if (!response.ok) {
+			console.error(`Error ${response.status}: ${response.statusText}`);
+			return;
+		}
+
+		const results = await response.json();
+
+		if (results.length === 0) {
+			console.log("No lyrics found.");
+			return;
+		}
+
+		//console.log(results[0].syncedLyrics);
+		this.loadLRC(results[0].syncedLyrics);
+	}
 }
