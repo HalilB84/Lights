@@ -20,6 +20,7 @@ class Main {
 		this.renderer.autoClear = false;
 		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 		// TODO: figure out what pixelratio actually is and how it works
+		this.renderer.setPixelRatio(window.devicePixelRatio); // only works on portrait mode?
 		document.body.appendChild(this.renderer.domElement);
 
 		this.stats = new Stats({
@@ -47,6 +48,10 @@ class Main {
 		this.raymarchScale = this.isMobile ? 4 : 2;
 		this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
 		this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
+
+		//console.log("jfaWidth: " + this.jfaWidth, "jfaHeight: " + this.jfaHeight, "raymarchWidth: " + this.raymarchWidth, "raymarchHeight: " + this.raymarchHeight);
+		//console.log("window.innerWidth: " + window.innerWidth, "window.innerHeight: " + window.innerHeight);
+		//console.log("dpr: " + window.devicePixelRatio);
 
 		this.mouse = { x: null, y: null };
 
@@ -140,7 +145,7 @@ class Main {
 			this.state.audio.element.addEventListener("timeupdate", () => {
 				const [lyric, changed] = this.lrcPlayer.update(this.state.audio.element.currentTime * 1000);
 
-				if(changed) {
+				if (changed) {
 					this.text.createText(lyric);
 					this.textOverlay.createText(lyric);
 				}
@@ -191,6 +196,7 @@ class Main {
 
 		this.renderer.setAnimationLoop(this.animate.bind(this));
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
+		//this.textOverlay.createText(`wdw: ${window.innerWidth} × ${window.innerHeight}`);
 	}
 
 	initialize() {

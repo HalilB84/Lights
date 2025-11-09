@@ -3,23 +3,21 @@ body {
 }
 
 #media-controls {
-	position: absolute;
+	position: fixed;
 	top: 0;
 	right: 0;
 	background: rgba(0, 0, 0, 0.5);
 	color: #fff;
 	padding: 8px;
-	font:
-		12px/1.2 Arial,
-		sans-serif;
+	font-family: Arial;
+	font-size: 16px;
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
 }
 
 #video-upload,
-#audio-upload,
-#lrc-upload {
+#audio-upload {
 	max-width: 200px;
 }
 

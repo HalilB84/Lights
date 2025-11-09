@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/695ad021-ca03-4f48-a944-330444764081
 - ~~Start adding audio visual support using canvas textures / add interesting things, play with light~~ -> Progress but never done
 - Completely document radiance cascades and attempt to fix problems with radiance cascades
 - ~~Research how to make this runable on an average device~~ -> Solved by downscaling, filtering and upscaling, still can be improved 
-- Use some sort of framework so I get a internship
+- Figure out dpr shenanigans and proper scaling based on which platform the user is on
 
 
 

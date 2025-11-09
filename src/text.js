@@ -205,8 +205,8 @@ export default class Text {
 		this.mesh.material.uniforms.time.value = performance.now() * 0.001;
 
 		renderer.setRenderTarget(this.renderTarget);
-		renderer.setClearColor(0x000000, 0);//ok so I think whats happening is the video counterpart goes through the resizer which discard pixels outside the texture so they are considered non opaque? However the clear color default is 1 no we have to set this 
-		renderer.clear(); // we clear because the text moves 
+		renderer.setClearColor(0x000000, 0); //ok so I think whats happening is the video counterpart goes through the resizer which discard pixels outside the texture so they are considered non opaque? However the clear color default is 1 no we have to set this
+		renderer.clear(); // we clear because the text moves
 		renderer.render(this.scene, this.camera);
 
 		return this.renderTarget.texture;

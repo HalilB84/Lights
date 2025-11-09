@@ -30,7 +30,7 @@ export default class LRC {
 		const newIndex = this.timedLyrics.findLastIndex((lyric) => currentTimeMs >= lyric.time);
 
 		if (newIndex >= 0) {
-			const changed =  newIndex !== this.prevIndex;
+			const changed = newIndex !== this.prevIndex;
 			this.prevIndex = newIndex;
 			return [this.timedLyrics[newIndex].lyric, changed];
 		}
