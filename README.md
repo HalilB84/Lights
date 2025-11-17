@@ -10,7 +10,7 @@ Planned Features:
 
 ## Technical
 
-The basic idea is that from each pixel you shoot rays and if it hits something you accumulate color. Of course this is sped up with clever algorithms (Jump Flooding Algorithm, Radiance Cascades). The current state of the code is a very lightweight implementation of the [Radiance Cascades](https://jason.today/rc) blog post, with some fixes.
+The basic idea is that from each pixel you shoot rays and if it hits something you accumulate color. Of course this is sped up with clever algorithms (Jump Flooding Algorithm, Radiance Cascades). The current state of the code is a mix of the [Radiance Cascades](https://jason.today/rc) blog post and Yaazarai's RC implementation, with some fixes + a video player and a lyrics player.
 
 
 ## Showcase
@@ -24,22 +24,22 @@ Lyrics (same as above + lrclib.net + three-msdf-text-utils):
 https://github.com/user-attachments/assets/b8725f49-4634-4391-911b-90c8e33ae27c
 
 
-Using radiance cascades (although I'm unsure how faithful this is to the actual algorithm, needs research):
+Using Radiance Cascades (direction first, 4x scaling -> no noise but now there are artificats, however it looks considerably better than above):
 
-https://github.com/user-attachments/assets/695ad021-ca03-4f48-a944-330444764081
 
 
 ## Todos:
 
 - Switch to webgl2 glsl
-- ~~Cleanup/structure code~~ -> ~~Better but still needs cleaning but I need to adopt a way to transfer data between ui and the backend. Basically eliminate tight coupling -> Done to some extent?~~
+- ~~Cleanup/structure code~~ -> ~~Better but still needs cleaning but I need to adopt a way to transfer data between ui and the backend. Basically eliminate tight coupling -> Done to some extent?~~ -> consider making state its own file
 - ~~Start adding audio visual support using canvas textures / add interesting things, play with light~~ -> Progress but never done
-- Completely document radiance cascades and attempt to fix problems with radiance cascades
+- ~~Completely document radiance cascades and attempt to fix problems with radiance cascades~~ -> Still not fully fixed but better
 - ~~Research how to make this runable on an average device~~ -> Solved by downscaling, filtering and upscaling, still can be improved 
 - Figure out dpr shenanigans and proper scaling based on which platform the user is on
 
 
 
 ## License & Attribution
-Parts (actually mostly as of now) of this project are based on code from [Radiance Cascades](https://jason.today/rc) ([by  Jason McGhee](https://github.com/jasonjmcghee)),  
-used under the MIT License.
+Parts of this project are based on code from [Radiance Cascades](https://jason.today/rc) ([by  Jason McGhee](https://github.com/jasonjmcghee)), used under the MIT License.
+
+At least as of now the Radiance Cascade implementation is based on [GMShaders-Radiance-Cascades](https://github.com/Yaazarai/GMShaders-Radiance-Cascades) ([by Yaazarai](https://github.com/Yaazarai))

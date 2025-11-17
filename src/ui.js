@@ -14,11 +14,13 @@ export default class UI {
 		this.showJFA = document.getElementById("show-jfa");
 		this.radianceModifier = document.getElementById("radiance-modifier");
 		this.textScale = document.getElementById("text-scale");
+		this.enableRC = document.getElementById("enable-rc");
 
 		//firefox shananigans
 		this.modeToggle.checked = false;
 		this.showProgram.checked = true;
 		this.showJFA.checked = false;
+		this.enableRC.checked = false;
 
 		this.videoInput.addEventListener("change", (e) => this.handleVideo(e));
 		this.audioInput.addEventListener("change", (e) => this.handleAudio(e));
@@ -51,17 +53,33 @@ export default class UI {
 			this.bus.emit("settings:radiance", radiance.value);
 		});
 
-		this.volume.addEventListener("input", () => this.bus.emit("media:volume", this.volume.value));
+		this.volume.addEventListener("input", () => {
+			this.bus.emit("media:volume", this.volume.value);
+		});
 
-		this.scale.addEventListener("input", () => this.bus.emit("video:scale", this.scale.value));
+		this.scale.addEventListener("input", () => {
+			this.bus.emit("video:scale", this.scale.value);
+		});
 
-		this.radianceModifier.addEventListener("input", () => this.bus.emit("settings:radiance", this.radianceModifier.value));
+		this.radianceModifier.addEventListener("input", () => {
+			this.bus.emit("settings:radiance", this.radianceModifier.value);
+		});
 
-		this.showProgram.addEventListener("change", () => this.bus.emit("settings:showProgram", this.showProgram.checked));
+		this.showProgram.addEventListener("change", () => {
+			this.bus.emit("settings:showProgram", this.showProgram.checked);
+		});
 
-		this.showJFA.addEventListener("change", () => this.bus.emit("settings:showJFA", this.showJFA.checked));
+		this.showJFA.addEventListener("change", () => {
+			this.bus.emit("settings:showJFA", this.showJFA.checked);
+		});
 
-		this.textScale.addEventListener("input", () => this.bus.emit("settings:textScale", this.textScale.value));
+		this.textScale.addEventListener("input", () => {
+			this.bus.emit("settings:textScale", this.textScale.value);
+		});
+
+		this.enableRC.addEventListener("change", () => {
+			this.bus.emit("settings:enableRC", this.enableRC.checked);
+		});
 	}
 
 	handleVideo(e) {

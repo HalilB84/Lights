@@ -25,3 +25,34 @@ input[type="range"] {
 	height: 2px;
 	background: rgba(255, 255, 255, 0.2);
 }
+
+.info {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border: 2px solid #fff;
+	border-radius: 50%;	
+}
+
+.info::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	right: 0;
+	top: calc(100%);
+	width: 100vw;
+	max-width: 400px;
+	background: rgba(0, 0, 0, 1.0);
+	color: #fff;
+	padding: 8px 8px;
+	border-radius: 4px;
+	font-size: 14px;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s;
+}
+
+.info:hover::after {
+	opacity: 1;
+}

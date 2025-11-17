@@ -1,14 +1,17 @@
 // TO BE REMOVED AFTER MAKING CASCADES SHADER
+//NEVER USE CANVAS TEXTURES, SO MUCH HEADACHE
 import * as THREE from "three"; // Three.js to reduce WebGL boilerplate
 
 const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-const renderer = new THREE.WebGLRenderer();
+let renderer = new THREE.WebGLRenderer();
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+
 document.body.appendChild(renderer.domElement);
 
 const scale = 2; // scaling the canvas, which means that the actual canvas is bigger than what we sample, if we don't do this it's unusable everywhere
 const canvas = renderer.domElement;
-const width = 512; // For now has to be a power of two because of the cascade algorithm or problems at the edges; this needs a fix
+const width = 900; // For now has to be a power of two because of the cascade algorithm or problems at the edges; this needs a fix
 const height = 512;
 
 const mouse = { x: null, y: null };
@@ -338,7 +341,7 @@ const rayMaterial = new THREE.ShaderMaterial({
           ) * upperSize;
 
           vec2 offset = (probeRelativePosition + 0.5) / sqrtBase;
-          vec2 clamped = clamp(offset, vec2(0.5), upperSize - 0.5);
+          vec2 clamped = clamp(offset, vec2(1.0), upperSize - 1.0);
           vec4 upperSample = texture(
               lastTexture,
               (upperPosition + clamped) / resolution

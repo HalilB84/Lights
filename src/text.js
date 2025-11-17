@@ -161,18 +161,23 @@ export default class Text {
                         p.y += 0.45 / float(i) * cos(float(i) * 3.0 * p.x + vLetterIndex + time * speed );
                     }
 
+                    //https://iquilezles.org/articles/palettes/
+
                     float r = cos(p.x + p.y + 1.0) * 0.5 + 0.5;
                     float g = sin(p.x + p.y + 1.0) * 0.5 + 0.5;
                     float b = (sin(p.x + p.y) + cos(p.x + p.y)) * 0.5 + 0.5;
 
                     //0.8, 0.5, 0.4		0.2, 0.4, 0.2	2.0, 1.0, 1.0	0.00, 0.25, 0.25
+                    //0.5, 0.5, 0.5		0.5, 0.5, 0.5	1.0, 1.0, 1.0	0.30, 0.20, 0.20
+                    //0.5, 0.5, 0.5		0.5, 0.5, 0.5	1.0, 0.7, 0.4	0.00, 0.15, 0.20
+                    //0.5, 0.5, 0.5		0.5, 0.5, 0.5	1.0, 1.0, 1.0	0.00, 0.10, 0.20	
 
-                    vec3 c1 = vec3(0.8, 0.5, 0.4);
-                    vec3 c2 = vec3(0.2, 0.4, 0.2);
-                    vec3 c3 = vec3(2.0, 1.0, 1.0);
-                    vec3 c4 = vec3(0.00, 0.25, 0.25);
+                    vec3 c0 = vec3(0.8, 0.5, 0.4);
+                    vec3 c1 = vec3(0.2, 0.4, 0.2);
+                    vec3 c2 = vec3(2.0, 1.0, 1.0);
+                    vec3 c3 = vec3(0.00, 0.25, 0.25);
 
-                    vec3 paletteColor = palette(r, c1, c2, c3, c4);
+                    vec3 paletteColor = palette(r, c0, c1, c2, c3);
                     
                     
                     gl_FragColor = vec4(paletteColor, alpha * uOpacity);

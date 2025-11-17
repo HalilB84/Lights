@@ -42,10 +42,10 @@ export default function bilateral() {
             void main() {
                 vec4 center = texture2D(inputTexture, vUv);
 
-                if(center.a != 0.0) {
-                    gl_FragColor = center;
-                    return;
-                }
+                // if(center.a != 0.0) {
+                //   gl_FragColor = center;
+                //   return;
+                // }
 
                 float sumW = 0.0;
                 vec3 sumC = vec3(0.0);

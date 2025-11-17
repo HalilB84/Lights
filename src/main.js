@@ -9,6 +9,7 @@ import UI from "./ui.js";
 import LRC from "./lrcPlayer.js";
 import Text from "./text.js";
 import EventBus from "./events.js";
+import radiancecascades from "./shaders/radiancecascades.js";
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
 
@@ -61,7 +62,7 @@ class Main {
 		this.ui = new UI(this.bus);
 		this.lrcPlayer = new LRC();
 
-		//state management? yessir
+		//state management? the default state should be matching with html needs workaround
 		this.state = {
 			modeIsVideo: false,
 			video: {
@@ -81,6 +82,7 @@ class Main {
 				showJFA: false,
 				radiance: 1.0,
 				textScale: this.isMobile ? 0.5 : 1,
+				enableRC: false,
 			},
 		};
 
@@ -103,6 +105,9 @@ class Main {
 			this.textOverlay.scale = this.state.settings.textScale * this.JFAscale;
 			this.text.createText();
 			this.textOverlay.createText();
+		});
+		this.bus.on("settings:enableRC", (value) => {
+			this.state.settings.enableRC = value;
 		});
 
 		this.bus.on("video:loaded", (video) => {
@@ -190,6 +195,16 @@ class Main {
 			this.rayMaterial.uniforms.resolution.value.set(this.jfaWidth, this.jfaHeight);
 			this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth, this.raymarchHeight);
 
+			//TODO: Resize radiance cascades although there is a very cool looking bug when you don't. Look into it
+			this.rcCalculations();
+			this.cascadeA.setSize(this.radiance_width, this.radiance_height);
+			this.cascadeB.setSize(this.radiance_width, this.radiance_height);
+			this.radiancecascadesMaterial.uniforms.resolution.value.set(this.render_width, this.render_height);
+			this.radiancecascadesMaterial.uniforms.cascadeExtent.value.set(this.radiance_width, this.radiance_height);
+			this.radiancecascadesMaterial.uniforms.cascadeCount.value = this.radiance_cascades;
+			this.radiancecascadesMaterial.uniforms.cascadeLinear.value = this.radiance_linear;
+			this.radiancecascadesMaterial.uniforms.cascadeInterval.value = this.radiance_interval;
+
 			this.text.resize(this.jfaWidth, this.jfaHeight);
 			this.textOverlay.resize(window.innerWidth, window.innerHeight);
 		});
@@ -206,6 +221,12 @@ class Main {
 		let rtConfig = {
 			minFilter: THREE.NearestFilter,
 			magFilter: THREE.NearestFilter,
+			type: THREE.FloatType,
+		};
+
+		let cascadeRTConfig = {
+			minFilter: THREE.LinearFilter,
+			magFilter: THREE.LinearFilter,
 			type: THREE.FloatType,
 		};
 
@@ -226,6 +247,29 @@ class Main {
 		this.rayColorRT = new THREE.WebGLRenderTarget(this.raymarchWidth, this.raymarchHeight, rtConfig);
 
 		this.bilateralRT = this.rayColorRT.clone();
+
+		this.rcCalculations();
+
+		this.cascadeA = new THREE.WebGLRenderTarget(this.radiance_width, this.radiance_height, cascadeRTConfig);
+		this.cascadeB = this.cascadeA.clone();
+	}
+
+	rcCalculations() {
+		//RC
+		//Calculations taken from Create_0.gml and needs explaining and im probably doing something wrong because it requires one more cascade?
+		const diagonal = Math.sqrt(this.jfaWidth * this.jfaWidth + this.jfaHeight * this.jfaHeight);
+		this.radiance_cascades = Math.ceil(Math.log(diagonal) / Math.log(4)) + 1;
+
+		const errorRate = Math.pow(2.0, this.radiance_cascades - 1);
+		const errorX = Math.ceil(this.jfaWidth / errorRate);
+		const errorY = Math.ceil(this.jfaHeight / errorRate);
+		this.render_width = errorX * errorRate;
+		this.render_height = errorY * errorRate;
+
+		this.radiance_linear = 1; //spacing between probes/quality control however anything other than 1 either looks bad or tanks performance
+		this.radiance_interval = 1; //TODO: figure out why in the original code its set to 2?
+		this.radiance_width = Math.floor(this.render_width / this.radiance_linear);
+		this.radiance_height = Math.floor(this.render_height / this.radiance_linear);
 	}
 
 	shaders() {
@@ -262,6 +306,13 @@ class Main {
 		this.bilateralMaterial.uniforms.sigmaRange.value = 0.3;
 		this.bilateralMaterial.uniforms.radius.value = 2;
 
+		this.radiancecascadesMaterial = radiancecascades();
+		this.radiancecascadesMaterial.uniforms.resolution.value = new THREE.Vector2(this.render_width, this.render_height);
+		this.radiancecascadesMaterial.uniforms.cascadeExtent.value = new THREE.Vector2(this.radiance_width, this.radiance_height);
+		this.radiancecascadesMaterial.uniforms.cascadeCount.value = this.radiance_cascades;
+		this.radiancecascadesMaterial.uniforms.cascadeLinear.value = this.radiance_linear;
+		this.radiancecascadesMaterial.uniforms.cascadeInterval.value = this.radiance_interval;
+
 		this.geometry = new THREE.PlaneGeometry(2, 2);
 		this.mesh = new THREE.Mesh(this.geometry, this.seedMaterial);
 		this.scene.add(this.mesh);
@@ -273,7 +324,6 @@ class Main {
 		let nextTexture = null; //I legitimately hate this, what even is proper code structure anyways?
 
 		if (this.state.modeIsVideo) {
-			//Video
 			this.mesh.material = this.resizerMaterial;
 			this.resizerMaterial.uniforms.sourceTex.value = this.state.video.texture;
 			this.resizerMaterial.uniforms.sourceHeight.value = this.state.video.height;
@@ -288,7 +338,6 @@ class Main {
 
 			nextTexture = this.modelRT.texture;
 		} else {
-			//Audio (lyrics)
 			nextTexture = this.text.render(this.renderer);
 		}
 
@@ -326,19 +375,49 @@ class Main {
 			return;
 		}
 
-		// raymarch phase
-		this.mesh.material = this.rayMaterial;
-		this.rayMaterial.uniforms.iTexture.value = nextTexture;
-		this.rayMaterial.uniforms.distanceTexture.value = curT;
-		this.rayMaterial.uniforms.frame.value += 1;
-		this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
-		this.rayMaterial.uniforms.showProgram.value = this.state.settings.showProgram;
-		this.renderer.setRenderTarget(this.rayColorRT);
-		this.renderer.render(this.scene, this.camera);
+		let curCascade = this.cascadeA;
+		let prevCascade = this.cascadeB;
 
+		//Naive Ray Marching / RC phase
+		if (this.state.settings.enableRC) {
+			this.mesh.material = this.radiancecascadesMaterial;
+			this.radiancecascadesMaterial.uniforms.sceneTexture.value = nextTexture;
+			this.radiancecascadesMaterial.uniforms.distanceTexture.value = curT;
+			this.radiancecascadesMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
+
+			//let curCascade = this.cascadeA;
+			//let prevCascade = this.cascadeB;
+
+			for (let i = this.radiance_cascades - 1; i >= 0; i--) {
+				this.radiancecascadesMaterial.uniforms.cascadeIndex.value = i;
+
+				
+				this.renderer.setRenderTarget(curCascade);
+				this.renderer.clear();
+				
+
+				this.renderer.render(this.scene, this.camera);
+
+				this.radiancecascadesMaterial.uniforms.previousCascadeTexture.value = curCascade.texture;
+				[curCascade, prevCascade] = [prevCascade, curCascade];
+			}
+		} else {
+			this.mesh.material = this.rayMaterial;
+			this.rayMaterial.uniforms.iTexture.value = nextTexture;
+			this.rayMaterial.uniforms.distanceTexture.value = curT;
+			this.rayMaterial.uniforms.frame.value += 1;
+			this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
+			this.rayMaterial.uniforms.showProgram.value = this.state.settings.showProgram;
+			this.renderer.setRenderTarget(this.rayColorRT);
+			this.renderer.render(this.scene, this.camera);
+		}
+
+		//because of the error calculatin there will be a mismatch between the resolutions. since the streching is little its not really visible
+
+		//bilateral filter phase (to smooth out noise/artifacts)
 		this.mesh.material = this.bilateralMaterial;
 		this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth, this.raymarchHeight);
-		this.bilateralMaterial.uniforms.inputTexture.value = this.rayColorRT.texture;
+		this.bilateralMaterial.uniforms.inputTexture.value = this.state.settings.enableRC ? prevCascade.texture : this.rayColorRT.texture;
 		this.renderer.setRenderTarget(this.bilateralRT);
 		this.renderer.render(this.scene, this.camera);
 
@@ -347,6 +426,7 @@ class Main {
 		this.renderer.setRenderTarget(null);
 		this.renderer.render(this.scene, this.camera);
 
+		//overlay phase (to display text/video on full res)
 		if (!this.state.modeIsVideo) {
 			this.textOverlay.renderDirect(this.renderer);
 		} else if (this.state.video.texture) {
