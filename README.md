@@ -37,6 +37,7 @@ https://github.com/user-attachments/assets/b8725f49-4634-4391-911b-90c8e33ae27c
 - ~~Completely document radiance cascades and attempt to fix problems with radiance cascades~~ -> Still not fully fixed but better
 - ~~Research how to make this runable on an average device~~ -> Solved by downscaling, filtering and upscaling, still can be improved 
 - Figure out dpr shenanigans and proper scaling based on which platform the user is on
+- Look into holographic radiance cascades
 
 
 
