@@ -10,9 +10,9 @@ export default function bilateral() {
 			sigmaRange: { value: null },
 			radius: { value: null },
 		},
-
+        glslVersion: THREE.GLSL3,
 		vertexShader: `
-            varying vec2 vUv;
+            out vec2 vUv;
             void main() {
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -21,13 +21,15 @@ export default function bilateral() {
 
 		fragmentShader: `
             precision highp float;
-            varying vec2 vUv;
+            in vec2 vUv;
 
             uniform sampler2D inputTexture;
             uniform vec2 resolution;
             uniform float sigmaSpatial;
             uniform float sigmaRange;
             uniform int radius;
+            
+            out vec4 fragColor;
 
             // Bilateral weight = exp( -(|p-q|^2 / 2σ_s^2 + |I(p)-I(q)|^2 / 2σ_r^2 ) )
 
@@ -40,10 +42,10 @@ export default function bilateral() {
             }
 
             void main() {
-                vec4 center = texture2D(inputTexture, vUv);
+                vec4 center = texture(inputTexture, vUv);
 
                 // if(center.a != 0.0) {
-                //   gl_FragColor = center;
+                //   fragColor = center;
                 //   return;
                 // }
 
@@ -54,7 +56,7 @@ export default function bilateral() {
                     for (int i = -radius; i <= radius; ++i) {
                         vec2 offset = vec2(float(i), float(j));
                         vec2 uv = vUv + offset / resolution;
-                        vec3 neighbor = texture2D(inputTexture, uv).rgb;
+                        vec3 neighbor = texture(inputTexture, uv).rgb;
 
                         float w = weight(offset, neighbor, center.rgb);
                         sumW += w;
@@ -63,7 +65,7 @@ export default function bilateral() {
                 }
 
                 vec3 filtered = sumC / sumW;
-                gl_FragColor = vec4(filtered, 1.0);
+                fragColor = vec4(filtered, 1.0);
             }
         `,
 	});

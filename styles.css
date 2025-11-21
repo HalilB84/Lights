@@ -1,6 +1,8 @@
-body {
+html, body {
 	margin: 0;
+	background-color: #000000;	
 }
+
 
 #media-controls {
 	position: fixed;

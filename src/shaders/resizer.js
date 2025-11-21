@@ -10,9 +10,9 @@ export default function resizer() {
 			sourceScale: { value: null },
 			mouse: { value: null },
 		},
-
+        glslVersion: THREE.GLSL3,
 		vertexShader: ` 
-            varying vec2 vUv;
+            out vec2 vUv;
             void main() { 
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -21,13 +21,15 @@ export default function resizer() {
 
 		fragmentShader: `
             precision highp float;
-            varying vec2 vUv;
+            in vec2 vUv;
             uniform sampler2D sourceTex;
             uniform vec2 resolution;
             uniform float sourceHeight;
             uniform float sourceWidth; 
             uniform float sourceScale;
             uniform vec2 mouse;
+            
+            out vec4 fragColor;
 
             void main() {
 
@@ -49,7 +51,7 @@ export default function resizer() {
                     discard;
                 }
 
-                gl_FragColor = texture2D(sourceTex, newUv);
+                fragColor = texture(sourceTex, newUv);
             }
         `,
 	});

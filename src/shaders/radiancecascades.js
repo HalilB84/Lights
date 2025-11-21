@@ -19,8 +19,9 @@ export default function radiancecascades() {
 			cascadeInterval: { value: null },
 			radianceModifier: { value: null },
 		},
+        glslVersion: THREE.GLSL3,
 		vertexShader: `  
-            varying vec2 vUv;
+            out vec2 vUv;
             void main() { 
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -28,7 +29,7 @@ export default function radiancecascades() {
         `,
 		fragmentShader: `
             precision highp float;
-            varying vec2 vUv;
+            in vec2 vUv;
             uniform sampler2D sceneTexture;
             uniform sampler2D distanceTexture;
             uniform sampler2D previousCascadeTexture;
@@ -39,6 +40,8 @@ export default function radiancecascades() {
             uniform float cascadeLinear;
             uniform float cascadeInterval;
             uniform float radianceModifier;
+            
+            out vec4 fragColor;
 
             #define TAU 6.283185
 
@@ -62,18 +65,18 @@ export default function radiancecascades() {
             }
 
             vec4 raymarch(vec2 point, float theta, probe_info info) {                               //Same logic as ray.js but also account for the offset and range of the cascade level
+
                 vec2 texel = 1.0 / resolution;
                 vec2 delta = vec2(cos(theta), -sin(theta));
                 vec2 ray = (point + (delta * info.offset)) * texel;
 
-                
                 for(float i = 0.0, df = 0.0, rd = 0.0; i < info.range; i++) {
-                    df = texture2D(distanceTexture, ray).r;
+                    df = texture(distanceTexture, ray).r;
                     rd += df;
                     ray += delta * df * texel;
                     
                     if (rd >= info.range || floor(ray) != vec2(0.0)) break;
-                    if (df == 0.0) return vec4(texture2D(sceneTexture, ray).rgb, 0.0);
+                    if (df == 0.0) return vec4(texture(sceneTexture, ray).rgb, 0.0);
                 }
                 
                 return vec4(0.0, 0.0, 0.0, 1.0);
@@ -88,7 +91,7 @@ export default function radiancecascades() {
                 vec2 probeN1 = vec2(mod(index, angularN1), floor(index / angularN1)) * sizeN1;          //Variable name is misleading. This is the topleft corner of the direction block in the upper cascade.
                 vec2 interpUVN1 = (pinfo.probe * 0.5) + 0.25;                                           //Relative probe position in that direction block. The 0.25 is to make sure the biliner interpolation works? I havent fully understood.
                 vec2 clampedUVN1 = max(vec2(2.0), min(interpUVN1, sizeN1 - 2.0));                       //Ohh this is good one. If we dont clamp, we might accidentally interpolate stuff from outher directions blocks. the max min stop that. 
-                                                                                                        // However for some magical reasons the light can still leak in some situations when using +-1. I am inclined to think that is because of non divisible resolutions. Fixed by making it +-2
+                                                                                                        // However for some magical reasons the light can still leak in some situations when using +-1. I am inclined to think that is because of non divisible resolutions, well now that I think about it there are no non divisible resolutions. No idea. Fixed by making it +-2
                                                                                                         
                 vec2 probeUVN1 = probeN1 + clampedUVN1;                                                 //Variable name is misleading. This is the actual probe position in the upper cascade in pixel position
                 vec4 interpolated = texture(previousCascadeTexture, probeUVN1 * (1.0 / cascadeExtent)); //Finally sample this position by getting the UV pos. Stuff will be automatically interpolated. The texture filter needs to be THREE.LinearFilter for this.
@@ -96,6 +99,7 @@ export default function radiancecascades() {
             }
 
             void main() {
+            
                 probe_info pinfo = calc(gl_FragCoord.xy - 0.5);   //Get the the pixel's coordinate. 0,0 being the bottom left one of the texture, then proceed to calculate relevant stuff about the pixel.
                 vec2 origin = (pinfo.probe + 0.5) * pinfo.linear; //The ray calculation starts from the center of the probe. Why add 0.5? Because we shoot from the center of the pixel. 
                                                                   //Remember that pinfo.probe is a integer pixel position. So muliply that by the pinfo.linear (the spacing between the probes) to get the proper position in the texture.
@@ -116,10 +120,10 @@ export default function radiancecascades() {
                 }
                 
                 if (cascadeIndex == 0.0) {
-                    color.rgb *= radianceModifier;                        //Last cascade, apply the radiance modifier, this is purely aesthetics
+                    if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier;                        //Last cascade, apply the radiance modifier, this is purely aesthetics
                     //color = vec4(pow(color.rgb, vec3(1.0 / 2.2)), 1.0); //All my homies hate srgb, jokes aside I still dont know how or why this works but without it looks better. 
                 }
-                gl_FragColor = color;
+                fragColor = color;
             }
         `,
 	});

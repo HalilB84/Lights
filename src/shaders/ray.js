@@ -12,9 +12,9 @@ export default function ray() {
 			radianceModifier: { value: null },
 			showProgram: { value: null },
 		},
-
+        glslVersion: THREE.GLSL3,
 		vertexShader: ` 
-            varying vec2 vUv;
+            out vec2 vUv;
             void main() { 
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -23,7 +23,7 @@ export default function ray() {
 
 		fragmentShader: `
             precision highp float;
-            varying vec2 vUv;
+            in vec2 vUv;
             uniform sampler2D iTexture;
             uniform sampler2D distanceTexture;
             uniform sampler2D blueNoise;
@@ -32,8 +32,10 @@ export default function ray() {
             uniform float frame;
             uniform float radianceModifier;
             uniform bool showProgram;
-            const float PI = 3.14159265;
-            const float TAU = 2.0 * PI;
+            
+            out vec4 fragColor;
+
+            #define TAU 6.283185
 
             bool outOfBounds(vec2 uv) {
                 return uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0;
@@ -48,7 +50,7 @@ export default function ray() {
                 vec2 offset = vec2(mod(frame, blueNoiseResolution.x), 
                                    mod(frame * 37.0, blueNoiseResolution.y)); //apparently we use 37 because its prime numbers create pesudo random patterns
                 vec2 noiseUV = mod(coord + offset, blueNoiseResolution) / blueNoiseResolution;
-                return texture2D(blueNoise, noiseUV).r;
+                return texture(blueNoise, noiseUV).r;
             }
 
             //https://www.shadertoy.com/view/4tXGWN - ign noise no idea how it works, but it does reduce noise, not the best sol
@@ -112,7 +114,7 @@ export default function ray() {
             }
 
             void main() {
-                gl_FragColor = raymarch();
+                fragColor = raymarch();
             }
         `,
 	});

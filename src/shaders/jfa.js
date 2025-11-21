@@ -8,9 +8,10 @@ export default function jfa() {
 			resolution: { value: null },
 			isLast: { value: null },
 		},
-
-		vertexShader: `  
-            varying vec2 vUv;
+        glslVersion: THREE.GLSL3,
+		vertexShader: `
+            out vec2 vUv;
+            
             void main() { 
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -19,11 +20,13 @@ export default function jfa() {
 
 		fragmentShader: `
             precision highp float;
-            varying vec2 vUv;
+            in vec2 vUv;
             uniform sampler2D inputTexture;
             uniform float offset;
             uniform vec2 resolution;
             uniform bool isLast;
+            
+            out vec4 fragColor;
 
             void main() {
                 vec4 nearestSeed = vec4(0.0); 
@@ -39,17 +42,15 @@ export default function jfa() {
 
                         if(sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) { continue; }
 
-                        vec4 sampleValue = texture2D(inputTexture, sampleUV);
+                        vec4 sampleValue = texture(inputTexture, sampleUV);
 
                         if(sampleValue.a != 0.0) {
-                            vec2 diff_px = sampleValue.zw - gl_FragCoord.xy;
+                            vec2 diff_px = sampleValue.xy - gl_FragCoord.xy;
                             float dist_raw = dot(diff_px, diff_px);
                             float dist_sq = dist_raw;
                             
-                            //IF THEY ARE THE SAME VALUE THEN WHYYYYYYYYYYYYYYYYYYYYYYY JFA
-
                             if (abs(dist_raw - nearestDist) == 0.0) { //this shit fixes something, not sure what but yes
-                                float seedBias = fract(sin(dot(sampleValue.zw, vec2(12.9898, 78.233))) * 43758.5453);
+                                float seedBias = fract(sin(dot(sampleValue.xy, vec2(12.9898, 78.233))) * 43758.5453);
                                 dist_sq -= seedBias * 1e-1; 
                             }
 
@@ -62,15 +63,14 @@ export default function jfa() {
                 }
 
                 if(isLast == false) {
-                    gl_FragColor = nearestSeed;
+                    fragColor = nearestSeed;
                     return;
                 }
 
                 //distance calculation last pass 
-                vec2 diff = nearestSeed.xy - vUv;
-                vec2 diff_px = vec2(diff.x * resolution.x, diff.y * resolution.y);
+                vec2 diff_px = nearestSeed.xy - gl_FragCoord.xy;
                 
-                gl_FragColor = vec4(length(diff_px), 0., 0., 1.);
+                fragColor = vec4(length(diff_px), 0., 0., 1.);
 
             }
         `,

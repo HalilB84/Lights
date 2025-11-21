@@ -79,7 +79,6 @@ class Main {
 			},
 			settings: {
 				showProgram: true,
-				showJFA: false,
 				radiance: 1.0,
 				textScale: this.isMobile ? 0.5 : 1,
 				enableRC: false,
@@ -93,12 +92,11 @@ class Main {
 		this.bus.on("settings:showProgram", (value) => {
 			this.state.settings.showProgram = value;
 		});
-		this.bus.on("settings:showJFA", (value) => {
-			this.state.settings.showJFA = value;
-		});
+		
 		this.bus.on("settings:radiance", (value) => {
 			this.state.settings.radiance = value;
 		});
+		
 		this.bus.on("settings:textScale", (value) => {
 			this.state.settings.textScale = value;
 			this.text.scale = this.state.settings.textScale;
@@ -106,6 +104,7 @@ class Main {
 			this.text.createText();
 			this.textOverlay.createText();
 		});
+
 		this.bus.on("settings:enableRC", (value) => {
 			this.state.settings.enableRC = value;
 		});
@@ -358,21 +357,13 @@ class Main {
 			//ping pong so webgl doesnt yell at me for reading and writing to the same texture
 			this.jfaMaterial.uniforms.inputTexture.value = curT;
 			this.jfaMaterial.uniforms.offset.value = Math.pow(2, passes - i - 1);
-			this.jfaMaterial.uniforms.isLast.value = i === passes - 1 && !this.state.settings.showJFA;
+			this.jfaMaterial.uniforms.isLast.value = i === passes - 1;
 
 			this.renderer.setRenderTarget(curJFA);
 			this.renderer.render(this.scene, this.camera);
 
 			curT = curJFA.texture;
 			[curJFA, nextJFA] = [nextJFA, curJFA];
-		}
-
-		if (this.state.settings.showJFA) {
-			this.displayMaterial.map = curT;
-			this.mesh.material = this.displayMaterial;
-			this.renderer.setRenderTarget(null);
-			this.renderer.render(this.scene, this.camera);
-			return;
 		}
 
 		let curCascade = this.cascadeA;
@@ -384,9 +375,6 @@ class Main {
 			this.radiancecascadesMaterial.uniforms.sceneTexture.value = nextTexture;
 			this.radiancecascadesMaterial.uniforms.distanceTexture.value = curT;
 			this.radiancecascadesMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
-
-			//let curCascade = this.cascadeA;
-			//let prevCascade = this.cascadeB;
 
 			for (let i = this.radiance_cascades - 1; i >= 0; i--) {
 				this.radiancecascadesMaterial.uniforms.cascadeIndex.value = i;

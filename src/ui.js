@@ -11,7 +11,6 @@ export default class UI {
 		this.scale = document.getElementById("video-scale");
 
 		this.showProgram = document.getElementById("show-program");
-		this.showJFA = document.getElementById("show-jfa");
 		this.radianceModifier = document.getElementById("radiance-modifier");
 		this.textScale = document.getElementById("text-scale");
 		this.enableRC = document.getElementById("enable-rc");
@@ -19,7 +18,6 @@ export default class UI {
 		//firefox shananigans
 		this.modeToggle.checked = false;
 		this.showProgram.checked = true;
-		this.showJFA.checked = false;
 		this.enableRC.checked = false;
 
 		this.videoInput.addEventListener("change", (e) => this.handleVideo(e));
@@ -67,10 +65,6 @@ export default class UI {
 
 		this.showProgram.addEventListener("change", () => {
 			this.bus.emit("settings:showProgram", this.showProgram.checked);
-		});
-
-		this.showJFA.addEventListener("change", () => {
-			this.bus.emit("settings:showJFA", this.showJFA.checked);
 		});
 
 		this.textScale.addEventListener("input", () => {
