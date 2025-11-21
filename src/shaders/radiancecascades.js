@@ -72,6 +72,11 @@ export default function radiancecascades() {
 
                 for(float i = 0.0, df = 0.0, rd = 0.0; i < info.range; i++) {
                     df = texture(distanceTexture, ray).r;
+                    
+                    if (df == 0.0 && i == 0.0) {                                                    //Basically the idea here is that if we are the the very edge of the text we actually sample 1px inwards to smooth out the edges by treating them as a part of the scene (the light receiving) This Looks goos because of the overlay, needs fix fix tho.
+                        df = 1.0;
+                    }
+                    
                     rd += df;
                     ray += delta * df * texel;
                     

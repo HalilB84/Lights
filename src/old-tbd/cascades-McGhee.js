@@ -341,7 +341,7 @@ const rayMaterial = new THREE.ShaderMaterial({
           ) * upperSize;
 
           vec2 offset = (probeRelativePosition + 0.5) / sqrtBase;
-          vec2 clamped = clamp(offset, vec2(1.0), upperSize - 1.0);
+          vec2 clamped = clamp(offset, vec2(2.0), upperSize - 2.0);
           vec4 upperSample = texture(
               lastTexture,
               (upperPosition + clamped) / resolution
