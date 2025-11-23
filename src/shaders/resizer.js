@@ -3,12 +3,11 @@ import * as THREE from "three";
 export default function resizer() {
 	return new THREE.ShaderMaterial({
 		uniforms: {
-			sourceTex: { value: null },
+			videoTexture: { value: null },
 			resolution: { value: null },
-			sourceHeight: { value: null },
-			sourceWidth: { value: null },
-			sourceScale: { value: null },
-			mouse: { value: null },
+			videoHeight: { value: null },
+			videoWidth: { value: null },
+			videoScale: { value: null },
 		},
         glslVersion: THREE.GLSL3,
 		vertexShader: ` 
@@ -22,21 +21,20 @@ export default function resizer() {
 		fragmentShader: `
             precision highp float;
             in vec2 vUv;
-            uniform sampler2D sourceTex;
+            uniform sampler2D videoTexture;
             uniform vec2 resolution;
-            uniform float sourceHeight;
-            uniform float sourceWidth; 
-            uniform float sourceScale;
-            uniform vec2 mouse;
+            uniform float videoHeight;
+            uniform float videoWidth; 
+            uniform float videoScale;
             
             out vec4 fragColor;
 
             void main() {
 
-                float originalAspect = sourceWidth / sourceHeight;
+                float originalAspect = videoWidth / videoHeight;
                 float jfaAspect = resolution.x / resolution.y;
 
-                vec2 mul = vec2(sourceScale); // think about this as how much uv space we are covering
+                vec2 mul = vec2(videoScale); // think about this as how much uv space we are covering
                 if (originalAspect >= jfaAspect) {
                     mul.y *= jfaAspect / originalAspect; //as a future note to me, we mul by jfaaspect so 1 u matches 1 v, then we can divide by the original aspect
                 } else {
@@ -51,7 +49,7 @@ export default function resizer() {
                     discard;
                 }
 
-                fragColor = texture(sourceTex, newUv);
+                fragColor = texture(videoTexture, newUv);
             }
         `,
 	});

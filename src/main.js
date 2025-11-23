@@ -21,11 +21,10 @@ class Main {
 		this.renderer.autoClear = false;
 		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 		// TODO: figure out what pixelratio actually is and how it works
-		this.renderer.setPixelRatio(window.devicePixelRatio); // only works on portrait mode?
+		this.renderer.setPixelRatio(window.devicePixelRatio); //not sure if this is fully working
 		document.body.appendChild(this.renderer.domElement);
 
 		this.stats = new Stats({
-			// wait I just realized I don't know how three js handles webgl
 			trackGPU: true,
 			trackHz: false,
 			trackCPT: false,
@@ -50,19 +49,53 @@ class Main {
 		this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
 		this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
 
-		//console.log("jfaWidth: " + this.jfaWidth, "jfaHeight: " + this.jfaHeight, "raymarchWidth: " + this.raymarchWidth, "raymarchHeight: " + this.raymarchHeight);
-		//console.log("window.innerWidth: " + window.innerWidth, "window.innerHeight: " + window.innerHeight);
-		//console.log("dpr: " + window.devicePixelRatio);
-
-		this.mouse = { x: null, y: null };
-
-		this.canvas = this.renderer.domElement;
-
 		this.bus = new EventBus();
 		this.ui = new UI(this.bus);
 		this.lrcPlayer = new LRC();
 
-		//state management? the default state should be matching with html needs workaround
+		this.state();
+		this.initialize();
+		this.shaders();
+
+		this.mouse = { x: null, y: null };
+		this.canvas = this.renderer.domElement;
+		this.canvas.addEventListener("mousemove", (e) => {
+			const rect = this.canvas.getBoundingClientRect();
+			this.mouse.x = (e.clientX - rect.left) / this.JFAscale;
+			this.mouse.y = (rect.height - (e.clientY - rect.top)) / this.JFAscale;
+		});
+
+		this.renderer.setAnimationLoop(this.animate.bind(this));
+		this.renderer.setSize(window.innerWidth, window.innerHeight);
+		//this.textOverlay.createText(`wdw: ${window.innerWidth} × ${window.innerHeight}`);
+
+		window.addEventListener("resize", () => {
+			this.jfaWidth = Math.floor(window.innerWidth / this.JFAscale);
+			this.jfaHeight = Math.floor(window.innerHeight / this.JFAscale);
+			this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
+			this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
+
+			this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+			this.modelRT.setSize(this.jfaWidth, this.jfaHeight);
+			this.seedRT.setSize(this.jfaWidth, this.jfaHeight);
+			this.jfaA.setSize(this.jfaWidth, this.jfaHeight);
+			this.jfaB.setSize(this.jfaWidth, this.jfaHeight);
+			this.rayColorRT.setSize(this.raymarchWidth, this.raymarchHeight);
+			this.bilateralRT.setSize(this.raymarchWidth, this.raymarchHeight);
+
+			//TODO: Resize radiance cascades although there is a very cool looking bug when you don't. Look into it
+			this.rcCalculations();
+			this.cascadeA.setSize(this.radiance_width, this.radiance_height);
+			this.cascadeB.setSize(this.radiance_width, this.radiance_height);
+
+			this.text.resize(this.jfaWidth, this.jfaHeight);
+			this.textOverlay.resize(window.innerWidth, window.innerHeight);
+		});
+	}
+
+	state() {
+		//state management. the default state should be matching with html needs workaround
 		this.state = {
 			modeIsVideo: false,
 			video: {
@@ -119,6 +152,8 @@ class Main {
 			this.state.video.texture.format = THREE.RGBAFormat;
 			this.state.video.height = video.videoHeight;
 			this.state.video.width = video.videoWidth;
+
+			this.bus.emit("video:toggle", false);
 		});
 
 		this.bus.on("video:toggle", (forcePause) => {
@@ -163,54 +198,6 @@ class Main {
 			else if (audio.paused) audio.play();
 			else audio.pause();
 		});
-
-		this.initialize();
-		this.shaders();
-
-		this.canvas.addEventListener("mousemove", (e) => {
-			const rect = this.canvas.getBoundingClientRect();
-			this.mouse.x = (e.clientX - rect.left) / this.JFAscale;
-			this.mouse.y = (rect.height - (e.clientY - rect.top)) / this.JFAscale;
-		});
-
-		window.addEventListener("resize", () => {
-			this.jfaWidth = Math.floor(window.innerWidth / this.JFAscale);
-			this.jfaHeight = Math.floor(window.innerHeight / this.JFAscale);
-			this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
-			this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
-
-			this.renderer.setSize(window.innerWidth, window.innerHeight);
-
-			this.modelRT.setSize(this.jfaWidth, this.jfaHeight);
-			this.seedRT.setSize(this.jfaWidth, this.jfaHeight);
-			this.jfaA.setSize(this.jfaWidth, this.jfaHeight);
-			this.jfaB.setSize(this.jfaWidth, this.jfaHeight);
-			this.rayColorRT.setSize(this.raymarchWidth, this.raymarchHeight);
-			this.bilateralRT.setSize(this.raymarchWidth, this.raymarchHeight);
-
-			this.resizerMaterial.uniforms.resolution.value.set(this.jfaWidth, this.jfaHeight);
-			this.seedMaterial.uniforms.resolution.value.set(this.jfaWidth, this.jfaHeight);
-			this.jfaMaterial.uniforms.resolution.value.set(this.jfaWidth, this.jfaHeight);
-			this.rayMaterial.uniforms.resolution.value.set(this.jfaWidth, this.jfaHeight);
-			this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth, this.raymarchHeight);
-
-			//TODO: Resize radiance cascades although there is a very cool looking bug when you don't. Look into it
-			this.rcCalculations();
-			this.cascadeA.setSize(this.radiance_width, this.radiance_height);
-			this.cascadeB.setSize(this.radiance_width, this.radiance_height);
-			this.radiancecascadesMaterial.uniforms.resolution.value.set(this.render_width, this.render_height);
-			this.radiancecascadesMaterial.uniforms.cascadeExtent.value.set(this.radiance_width, this.radiance_height);
-			this.radiancecascadesMaterial.uniforms.cascadeCount.value = this.radiance_cascades;
-			this.radiancecascadesMaterial.uniforms.cascadeLinear.value = this.radiance_linear;
-			this.radiancecascadesMaterial.uniforms.cascadeInterval.value = this.radiance_interval;
-
-			this.text.resize(this.jfaWidth, this.jfaHeight);
-			this.textOverlay.resize(window.innerWidth, window.innerHeight);
-		});
-
-		this.renderer.setAnimationLoop(this.animate.bind(this));
-		this.renderer.setSize(window.innerWidth, window.innerHeight);
-		//this.textOverlay.createText(`wdw: ${window.innerWidth} × ${window.innerHeight}`);
 	}
 
 	initialize() {
@@ -235,7 +222,6 @@ class Main {
 		this.blueNoiseTexture.minFilter = THREE.NearestFilter;
 		this.blueNoiseTexture.magFilter = THREE.NearestFilter;
 
-		//I named it model beause I guess in a way the models of the scene are being rendered here
 		this.modelRT = new THREE.WebGLRenderTarget(this.jfaWidth, this.jfaHeight, rtConfig);
 
 		this.seedRT = this.modelRT.clone();
@@ -272,45 +258,25 @@ class Main {
 	}
 
 	shaders() {
-		//needs cleaning up
 		this.resizerMaterial = resizer();
-		this.resizerMaterial.uniforms.sourceTex.value = null;
-		this.resizerMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
-		this.resizerMaterial.uniforms.sourceScale.value = 1.0;
 
 		this.seedMaterial = seed();
-		this.seedMaterial.uniforms.prevTexture.value = null;
-		this.seedMaterial.uniforms.mouse.value = this.mouse;
-		this.seedMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
 
 		this.jfaMaterial = jfa();
-		this.jfaMaterial.uniforms.inputTexture.value = null;
-		this.jfaMaterial.uniforms.offset.value = null;
-		this.jfaMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
 
 		this.rayMaterial = ray();
-		this.rayMaterial.uniforms.iTexture.value = null;
-		this.rayMaterial.uniforms.distanceTexture.value = null;
 		this.rayMaterial.uniforms.blueNoise.value = this.blueNoiseTexture;
 		this.rayMaterial.uniforms.rayCount.value = 32;
-		this.rayMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
 		this.rayMaterial.uniforms.frame.value = 0;
 
 		this.displayMaterial = new THREE.MeshBasicMaterial();
 
 		this.bilateralMaterial = bilateral();
-		this.bilateralMaterial.uniforms.inputTexture.value = null;
-		this.bilateralMaterial.uniforms.resolution.value = new THREE.Vector2(this.raymarchWidth, this.raymarchHeight);
 		this.bilateralMaterial.uniforms.sigmaSpatial.value = 2.0;
 		this.bilateralMaterial.uniforms.sigmaRange.value = 0.3;
 		this.bilateralMaterial.uniforms.radius.value = 2;
 
 		this.radiancecascadesMaterial = radiancecascades();
-		this.radiancecascadesMaterial.uniforms.resolution.value = new THREE.Vector2(this.render_width, this.render_height);
-		this.radiancecascadesMaterial.uniforms.cascadeExtent.value = new THREE.Vector2(this.radiance_width, this.radiance_height);
-		this.radiancecascadesMaterial.uniforms.cascadeCount.value = this.radiance_cascades;
-		this.radiancecascadesMaterial.uniforms.cascadeLinear.value = this.radiance_linear;
-		this.radiancecascadesMaterial.uniforms.cascadeInterval.value = this.radiance_interval;
 
 		this.geometry = new THREE.PlaneGeometry(2, 2);
 		this.mesh = new THREE.Mesh(this.geometry, this.seedMaterial);
@@ -324,12 +290,11 @@ class Main {
 
 		if (this.state.modeIsVideo) {
 			this.mesh.material = this.resizerMaterial;
-			this.resizerMaterial.uniforms.sourceTex.value = this.state.video.texture;
-			this.resizerMaterial.uniforms.sourceHeight.value = this.state.video.height;
-			this.resizerMaterial.uniforms.sourceWidth.value = this.state.video.width;
-			this.resizerMaterial.uniforms.sourceScale.value = this.state.video.scale;
-			this.resizerMaterial.uniforms.resolution.value = new THREE.Vector2(this.jfaWidth, this.jfaHeight);
-			this.resizerMaterial.uniforms.mouse.value = this.mouse;
+			this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+			this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
+			this.resizerMaterial.uniforms.videoHeight.value = this.state.video.height;
+			this.resizerMaterial.uniforms.videoWidth.value = this.state.video.width;
+			this.resizerMaterial.uniforms.videoScale.value = this.state.video.scale;
 
 			this.renderer.setRenderTarget(this.modelRT);
 			this.renderer.clear(); //this is incase the user changes the scale
@@ -342,7 +307,8 @@ class Main {
 
 		//seed phase
 		this.mesh.material = this.seedMaterial;
-		this.seedMaterial.uniforms.prevTexture.value = nextTexture;
+		this.seedMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+		this.seedMaterial.uniforms.inputTexture.value = nextTexture;
 		this.renderer.setRenderTarget(this.seedRT);
 		this.renderer.render(this.scene, this.camera);
 
@@ -352,6 +318,7 @@ class Main {
 		let nextJFA = this.jfaB;
 		const passes = Math.ceil(Math.log2(Math.max(this.jfaWidth, this.jfaHeight)));
 		this.mesh.material = this.jfaMaterial;
+		this.jfaMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
 
 		for (let i = 0; i < passes; i++) {
 			//ping pong so webgl doesnt yell at me for reading and writing to the same texture
@@ -375,15 +342,17 @@ class Main {
 			this.radiancecascadesMaterial.uniforms.sceneTexture.value = nextTexture;
 			this.radiancecascadesMaterial.uniforms.distanceTexture.value = curT;
 			this.radiancecascadesMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
+			this.radiancecascadesMaterial.uniforms.resolution.value = [this.render_width, this.render_height];
+			this.radiancecascadesMaterial.uniforms.cascadeExtent.value = [this.radiance_width, this.radiance_height];
+			this.radiancecascadesMaterial.uniforms.cascadeCount.value = this.radiance_cascades;
+			this.radiancecascadesMaterial.uniforms.cascadeLinear.value = this.radiance_linear;
+			this.radiancecascadesMaterial.uniforms.cascadeInterval.value = this.radiance_interval;
 
 			for (let i = this.radiance_cascades - 1; i >= 0; i--) {
 				this.radiancecascadesMaterial.uniforms.cascadeIndex.value = i;
 
-				
 				this.renderer.setRenderTarget(curCascade);
 				this.renderer.clear();
-				
-
 				this.renderer.render(this.scene, this.camera);
 
 				this.radiancecascadesMaterial.uniforms.previousCascadeTexture.value = curCascade.texture;
@@ -391,8 +360,9 @@ class Main {
 			}
 		} else {
 			this.mesh.material = this.rayMaterial;
-			this.rayMaterial.uniforms.iTexture.value = nextTexture;
+			this.rayMaterial.uniforms.sceneTexture.value = nextTexture;
 			this.rayMaterial.uniforms.distanceTexture.value = curT;
+			this.rayMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
 			this.rayMaterial.uniforms.frame.value += 1;
 			this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
 			this.rayMaterial.uniforms.showProgram.value = this.state.settings.showProgram;
@@ -400,12 +370,12 @@ class Main {
 			this.renderer.render(this.scene, this.camera);
 		}
 
-		//because of the error calculatin there will be a mismatch between the resolutions. since the streching is little its not really visible
+		//because of the error calculation there will be a mismatch between the resolutions. since the streching is little its not really visible
 
 		//bilateral filter phase (to smooth out noise/artifacts)
 		this.mesh.material = this.bilateralMaterial;
-		this.bilateralMaterial.uniforms.resolution.value.set(this.raymarchWidth, this.raymarchHeight);
 		this.bilateralMaterial.uniforms.inputTexture.value = this.state.settings.enableRC ? prevCascade.texture : this.rayColorRT.texture;
+		this.bilateralMaterial.uniforms.resolution.value = [this.raymarchWidth, this.raymarchHeight];
 		this.renderer.setRenderTarget(this.bilateralRT);
 		this.renderer.render(this.scene, this.camera);
 
@@ -419,8 +389,11 @@ class Main {
 			this.textOverlay.renderDirect(this.renderer);
 		} else if (this.state.video.texture) {
 			this.mesh.material = this.resizerMaterial;
-			this.resizerMaterial.uniforms.resolution.value = new THREE.Vector2(window.innerWidth, window.innerHeight);
-			this.resizerMaterial.uniforms.mouse.value = new THREE.Vector2(-9999, -9999);
+			this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+			this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
+			this.resizerMaterial.uniforms.videoHeight.value = this.state.video.height;
+			this.resizerMaterial.uniforms.videoWidth.value = this.state.video.width;
+			this.resizerMaterial.uniforms.videoScale.value = this.state.video.scale;
 			this.renderer.setRenderTarget(null);
 			this.renderer.render(this.scene, this.camera);
 		}

@@ -3,7 +3,7 @@ import * as THREE from "three";
 export default function ray() {
 	return new THREE.ShaderMaterial({
 		uniforms: {
-			iTexture: { value: null },
+			sceneTexture: { value: null },
 			distanceTexture: { value: null },
 			blueNoise: { value: null },
 			rayCount: { value: null },
@@ -24,7 +24,7 @@ export default function ray() {
 		fragmentShader: `
             precision highp float;
             in vec2 vUv;
-            uniform sampler2D iTexture;
+            uniform sampler2D sceneTexture;
             uniform sampler2D distanceTexture;
             uniform sampler2D blueNoise;
             uniform int rayCount;
@@ -60,7 +60,7 @@ export default function ray() {
             }
 
             vec4 raymarch(){
-                vec4 light = texture(iTexture, vUv);
+                vec4 light = texture(sceneTexture, vUv);
                 
                 if(light.a != 0.0 && !showProgram) {
                     return vec4(light.rgb, 1.0);
@@ -101,7 +101,7 @@ export default function ray() {
                         
                         if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) { 
                             // at this point we now we hit a seed, so get its color and add it to the radiance
-                            vec4 sampleColor = texture(iTexture, sampleUv);
+                            vec4 sampleColor = texture(sceneTexture, sampleUv);
                             radDelta += sampleColor;
                             break;
                         }

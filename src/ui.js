@@ -16,6 +16,13 @@ export default class UI {
 		this.enableRC = document.getElementById("enable-rc");
 
 		//firefox shananigans
+
+		this.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        this.volume.value = 0.5;
+		this.scale.value = 0.5;
+		this.textScale.value = this.isMobile ? 0.5 : 1;
+		this.radianceModifier.value = 1;
 		this.modeToggle.checked = false;
 		this.showProgram.checked = true;
 		this.enableRC.checked = false;
@@ -92,7 +99,6 @@ export default class UI {
 
 			this.modeToggle.checked = true;
 			this.modeToggle.dispatchEvent(new Event("change"));
-			this.bus.emit("video:toggle", false);
 		};
 	}
 

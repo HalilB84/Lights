@@ -3,8 +3,7 @@ import * as THREE from "three";
 export default function seed() {
 	return new THREE.ShaderMaterial({
 		uniforms: {
-			prevTexture: { value: null },
-			mouse: { value: null },
+			inputTexture: { value: null },
 			resolution: { value: null },
 		},
         glslVersion: THREE.GLSL3,
@@ -19,8 +18,7 @@ export default function seed() {
 		fragmentShader: `
             precision highp float;
             in vec2 vUv;
-            uniform sampler2D prevTexture;
-            uniform vec2 mouse;   
+            uniform sampler2D inputTexture;
             uniform vec2 resolution;
             
             out vec4 fragColor;
@@ -30,7 +28,7 @@ export default function seed() {
                 //to calculate the nearest seed in the jfa phase, we need to know the location of the seed in the input texture
                 //so we are storing the coordinates in a texture, this creates a nice looking gradient 
 
-                vec4 color = texture(prevTexture, vUv);
+                vec4 color = texture(inputTexture, vUv);
         
                 if(color.a != 0.) {
                     fragColor = vec4(gl_FragCoord.xy, 0.0, 1.0);
