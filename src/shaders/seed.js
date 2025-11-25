@@ -6,7 +6,7 @@ export default function seed() {
 			inputTexture: { value: null },
 			resolution: { value: null },
 		},
-        glslVersion: THREE.GLSL3,
+		glslVersion: THREE.GLSL3,
 		vertexShader: ` 
             out vec2 vUv;
             void main() { 

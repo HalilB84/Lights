@@ -8,7 +8,7 @@ export default function jfa() {
 			resolution: { value: null },
 			isLast: { value: null },
 		},
-        glslVersion: THREE.GLSL3,
+		glslVersion: THREE.GLSL3,
 		vertexShader: `
             out vec2 vUv;
             

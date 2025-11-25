@@ -3,7 +3,7 @@ import { MSDFTextGeometry, uniforms } from "three-msdf-text-utils";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 
 export default class Text {
-	constructor(width, height, scale, useBlending) {
+	constructor(width, height, scale) {
 		this.scene = new THREE.Scene();
 		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
 
@@ -19,7 +19,6 @@ export default class Text {
 		this.width = width;
 		this.height = height;
 		this.scale = scale;
-		this.useBlending = useBlending;
 
 		this.currentText = "The show is starting!";
 
@@ -57,7 +56,6 @@ export default class Text {
 
 		const material = new THREE.ShaderMaterial({
 			side: THREE.DoubleSide,
-			transparent: true,
 			defines: {
 				IS_SMALL: false,
 			},
@@ -187,7 +185,6 @@ export default class Text {
 		});
 
 		material.uniforms.uMap.value = this.atlas;
-		material.blending = this.useBlending ? THREE.NormalBlending : THREE.NoBlending; //Fixes the black pixels around the text but I havent fully understood why
 
 		this.mesh = new THREE.Mesh(geometry, material);
 
@@ -200,6 +197,8 @@ export default class Text {
 		this.mesh.scale.set(this.scale, -this.scale);
 		this.mesh.position.set(-centerX * this.scale, centerY * this.scale);
 
+		//console.log(this.mesh.position);
+
 		this.scene.clear();
 		this.scene.add(this.mesh);
 	}
@@ -210,8 +209,8 @@ export default class Text {
 		this.mesh.material.uniforms.time.value = performance.now() * 0.001;
 
 		renderer.setRenderTarget(this.renderTarget);
-		renderer.setClearColor(0x000000, 0); //ok so I think whats happening is the video counterpart goes through the resizer which discard pixels outside the texture so they are considered non opaque? However the clear color default is 1 no we have to set this
-		renderer.clear(); // we clear because the text moves
+		renderer.setClearColor(0x000000, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color (default is 1.0)
+		renderer.clear();
 		renderer.render(this.scene, this.camera);
 
 		return this.renderTarget.texture;

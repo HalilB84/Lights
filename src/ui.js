@@ -1,6 +1,6 @@
 export default class UI {
-	constructor(bus) {
-		this.bus = bus;
+	constructor(state) {
+		this.state = state;
 
 		this.videoInput = document.getElementById("video-upload");
 		this.audioInput = document.getElementById("audio-upload");
@@ -10,7 +10,7 @@ export default class UI {
 		this.volume = document.getElementById("video-volume");
 		this.scale = document.getElementById("video-scale");
 
-		this.showProgram = document.getElementById("show-program");
+		this.fixEdges = document.getElementById("fix-edges");
 		this.radianceModifier = document.getElementById("radiance-modifier");
 		this.textScale = document.getElementById("text-scale");
 		this.enableRC = document.getElementById("enable-rc");
@@ -19,67 +19,72 @@ export default class UI {
 
 		this.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        this.volume.value = 0.5;
-		this.scale.value = 0.5;
-		this.textScale.value = this.isMobile ? 0.5 : 1;
-		this.radianceModifier.value = 1;
-		this.modeToggle.checked = false;
-		this.showProgram.checked = true;
-		this.enableRC.checked = false;
+		this.state.modeIsVideo = this.modeToggle.checked = false;
+		this.state.isMobile = this.isMobile;
+
+		this.state.video.scale = this.scale.value = 0.5;
+		this.state.video.volume = this.state.audio.volume = this.volume.value = 0.5;
+
+		this.state.settings.textScale = this.textScale.value = this.isMobile ? 0.5 : 1;
+		this.state.settings.radiance = this.radianceModifier.value = 1;
+		this.state.settings.fixEdges = this.fixEdges.checked = true;
+		this.state.settings.enableRC = this.enableRC.checked = false;
+
+		//complex state changes call a function in state to handle them
+		//otherwise state values are updated inline, maybe change this later
 
 		this.videoInput.addEventListener("change", (e) => this.handleVideo(e));
 		this.audioInput.addEventListener("change", (e) => this.handleAudio(e));
 
 		this.playPause.addEventListener("click", () => {
 			if (this.modeToggle.checked) {
-				this.bus.emit("video:toggle", false);
+				this.state.toggleVideo(false);
 			} else {
-				this.bus.emit("audio:toggle", false);
+				this.state.toggleAudio(false);
 			}
 		});
 
 		this.modeToggle.addEventListener("change", () => {
 			if (this.modeToggle.checked) {
-				this.bus.emit("audio:toggle", true);
+				this.state.toggleAudio(true);
 			} else {
-				this.bus.emit("video:toggle", true);
+				this.state.toggleVideo(true);
 			}
 
-			this.bus.emit("mode:changed", this.modeToggle.checked);
+			this.state.modeIsVideo = this.modeToggle.checked;
 
-			const radiance = document.getElementById("radiance-modifier");
 			if (this.modeToggle.checked) {
-				radiance.value = 2;
+				this.radianceModifier.value = 2;
 			} else {
-				radiance.value = 1;
+				this.radianceModifier.value = 1;
 			}
 
-			this.bus.emit("settings:showProgram", (this.showProgram.checked = !this.modeToggle.checked));
-			this.bus.emit("settings:radiance", radiance.value);
+			this.state.settings.fixEdges = this.fixEdges.checked = !this.modeToggle.checked;
+			this.state.settings.radiance = this.radianceModifier.value;
 		});
 
 		this.volume.addEventListener("input", () => {
-			this.bus.emit("media:volume", this.volume.value);
+			this.state.setMediaVolume(this.volume.value);
 		});
 
 		this.scale.addEventListener("input", () => {
-			this.bus.emit("video:scale", this.scale.value);
+			this.state.video.scale = this.scale.value;
 		});
 
 		this.radianceModifier.addEventListener("input", () => {
-			this.bus.emit("settings:radiance", this.radianceModifier.value);
+			this.state.settings.radiance = this.radianceModifier.value;
 		});
 
-		this.showProgram.addEventListener("change", () => {
-			this.bus.emit("settings:showProgram", this.showProgram.checked);
+		this.fixEdges.addEventListener("change", () => {
+			this.state.settings.fixEdges = this.fixEdges.checked;
 		});
 
 		this.textScale.addEventListener("input", () => {
-			this.bus.emit("settings:textScale", this.textScale.value);
+			this.state.setTextScale(this.textScale.value);
 		});
 
 		this.enableRC.addEventListener("change", () => {
-			this.bus.emit("settings:enableRC", this.enableRC.checked);
+			this.state.settings.enableRC = this.enableRC.checked;
 		});
 	}
 
@@ -92,10 +97,7 @@ export default class UI {
 
 		video.onloadeddata = () => {
 			console.log("Video loaded");
-
-			this.bus.emit("video:loaded", video);
-			this.bus.emit("media:volume", this.volume.value);
-			this.bus.emit("video:scale", this.scale.value);
+			this.state.loadVideo(video);
 
 			this.modeToggle.checked = true;
 			this.modeToggle.dispatchEvent(new Event("change"));
@@ -104,7 +106,7 @@ export default class UI {
 
 	handleAudio(e) {
 		const file = e.target.files[0];
-		const audio = new Audio();
+		const audio = document.createElement("audio");
 		const url = URL.createObjectURL(file);
 		const trackName = file.name.split("-")[0];
 		const artistName = file.name.split("-")[1].replace(/\.[^.]+$/, "");
@@ -113,8 +115,7 @@ export default class UI {
 
 		audio.onloadeddata = () => {
 			console.log("Audio loaded");
-			this.bus.emit("audio:loaded", audio, trackName, artistName);
-			this.bus.emit("media:volume", this.volume.value);
+			this.state.loadAudio(audio, trackName, artistName);
 
 			this.modeToggle.checked = false;
 			this.modeToggle.dispatchEvent(new Event("change"));

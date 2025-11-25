@@ -9,7 +9,7 @@ export default function resizer() {
 			videoWidth: { value: null },
 			videoScale: { value: null },
 		},
-        glslVersion: THREE.GLSL3,
+		glslVersion: THREE.GLSL3,
 		vertexShader: ` 
             out vec2 vUv;
             void main() { 

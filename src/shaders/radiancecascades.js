@@ -3,7 +3,11 @@ import * as THREE from "three";
 //https://mini.gmshaders.com/p/radiance-cascades2
 //https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades/Shd_RadianceCascades.fsh
 //Vanilla RC code from Yaazarai's repo commented with my own understanding
-//At least for me the easiest way to build intution was to simulate the process on a 8x8 grid using 2 cascades. 
+//At least for me the easiest way to build intution was to simulate the process on a 8x8 grid using 2 cascades.
+
+//Things that need further explaining:
+//Why do we need to overlap the range? -> well I know why, but not the intution
+//Why is clamping +- 1 units is still failing on some resolutions
 
 export default function radiancecascades() {
 	return new THREE.ShaderMaterial({
@@ -18,8 +22,9 @@ export default function radiancecascades() {
 			cascadeLinear: { value: null },
 			cascadeInterval: { value: null },
 			radianceModifier: { value: null },
+            fixEdges: { value: null },
 		},
-        glslVersion: THREE.GLSL3,
+		glslVersion: THREE.GLSL3,
 		vertexShader: `  
             out vec2 vUv;
             void main() { 
@@ -40,6 +45,7 @@ export default function radiancecascades() {
             uniform float cascadeLinear;
             uniform float cascadeInterval;
             uniform float radianceModifier;
+            uniform bool fixEdges;
             
             out vec4 fragColor;
 
@@ -49,7 +55,7 @@ export default function radiancecascades() {
             vec3 tosrgb(vec3 color) { return pow(color, vec3(2.2)); }
 
             probe_info calc(vec2 coord) {
-                float angular = pow(2.0, cascadeIndex);                                             //I like to think about this as the number of direction blocks in each axis of the entire texture
+                float angular = pow(2.0, cascadeIndex);                                             //I like to think about this as the number of direction segments in each axis of the entire texture
                 vec2 linear = vec2(cascadeLinear * pow(2.0, cascadeIndex));                         //The spacing between the probes in the texture. Each cascade level (going up) linear resolution decreases, so there is more spacing. 
                                                                                                     //why pow2? Because we scale each axis, which comes out to 4x scaling overall. 
                                                                             
@@ -73,7 +79,7 @@ export default function radiancecascades() {
                 for(float i = 0.0, df = 0.0, rd = 0.0; i < info.range; i++) {
                     df = texture(distanceTexture, ray).r;
                     
-                    if (df == 0.0 && i == 0.0) {                                                    //Basically the idea here is that if we are the the very edge of the text we actually sample 1px inwards to smooth out the edges by treating them as a part of the scene (the light receiving) This Looks goos because of the overlay, needs fix fix tho.
+                    if (df == 0.0 && i == 0.0 && fixEdges) {                                                    //Basically the idea here is that if we are the the very edge of the text we actually sample 1px inwards to smooth out the edges by treating them as a part of the scene (the light receiving) This Looks goos because of the overlay, needs fix fix tho.
                         df = 1.0;
                     }
                     
@@ -88,15 +94,15 @@ export default function radiancecascades() {
             }
 
             vec4 merge(vec4 rinfo, float index, probe_info pinfo) {
-                if (rinfo.a == 0.0 || cascadeIndex >= cascadeCount - 1.0)                               //If the ray hit something (meaning we dont need to check upper cascades) or This is the first (topmost) cascade (there is no upper cascade) just return the color.                         
+                if (rinfo.a == 0.0 || cascadeIndex >= cascadeCount - 1.0)                               //If the ray hit something (meaning we dont need to check upper cascades) or this is the first (topmost) cascade (there is no upper cascade) just return the color.                         
                     return vec4(rinfo.rgb, 0.0);                                                        //The original code has 1.0 - rinfo.a, but since this output also goes through the bilateral filter we don't need it. 
                 
                 float angularN1 = pow(2.0, cascadeIndex + 1.0);                                         //The number of direction blocks in each axis in the upper cascade
                 vec2 sizeN1 = pinfo.size * 0.5;                                                         //The size of each direction block in the upper cascade
                 vec2 probeN1 = vec2(mod(index, angularN1), floor(index / angularN1)) * sizeN1;          //Variable name is misleading. This is the topleft corner of the direction block in the upper cascade.
-                vec2 interpUVN1 = (pinfo.probe * 0.5) + 0.25;                                           //Relative probe position in that direction block. The 0.25 is to make sure the biliner interpolation works? I havent fully understood.
+                vec2 interpUVN1 = (pinfo.probe * 0.5) + 0.25;                                           //Relative probe position in that direction block. I think the 0.25 is to account for the centering in the pixel in this cascade level. 
                 vec2 clampedUVN1 = max(vec2(2.0), min(interpUVN1, sizeN1 - 2.0));                       //Ohh this is good one. If we dont clamp, we might accidentally interpolate stuff from outher directions blocks. the max min stop that. 
-                                                                                                        // However for some magical reasons the light can still leak in some situations when using +-1. I am inclined to think that is because of non divisible resolutions, well now that I think about it there are no non divisible resolutions. No idea. Fixed by making it +-2
+                                                                                                        //However for some magical reasons the light can still leak in some situations when using +-1.Fixed by making it +-2. I lowkey gave up on understanding why, I'm blaming it one the bilinear filter because it makes my life easier.
                                                                                                         
                 vec2 probeUVN1 = probeN1 + clampedUVN1;                                                 //Variable name is misleading. This is the actual probe position in the upper cascade in pixel position
                 vec4 interpolated = texture(previousCascadeTexture, probeUVN1 * (1.0 / cascadeExtent)); //Finally sample this position by getting the UV pos. Stuff will be automatically interpolated. The texture filter needs to be THREE.LinearFilter for this.
@@ -111,7 +117,7 @@ export default function radiancecascades() {
 
                 float preavg_index = pinfo.index * 4.0;           //One ray in this cascade correspond to 4 rays in the upper cascade to account for this shift we multiply the index by 4
                                                                   //Remember that this pixel doesn't necessarily look at all directions, it only looks at directions it is responsible for in its prober group. 
-                                                                  //It only looks at all directions when it is the last cascade.
+                                                                  //It only looks at all directions (each pixel owns all of the rays) when it is the last cascade (cascade0).
                                                                   
                 float theta_scalar = TAU / (pinfo.angular * 4.0); //Divide the circle angles into the amount of rays we are shooting this cascade (we shoot this amount of rays from each probe, not per pixel)
                 
@@ -125,8 +131,8 @@ export default function radiancecascades() {
                 }
                 
                 if (cascadeIndex == 0.0) {
-                    if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier;                        //Last cascade, apply the radiance modifier, this is purely aesthetics
-                    //color = vec4(pow(color.rgb, vec3(1.0 / 2.2)), 1.0); //All my homies hate srgb, jokes aside I still dont know how or why this works but without it looks better. 
+                    if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier;    //Last cascade, apply the radiance modifier, this is purely aesthetics
+                    //color = vec4(pow(color.rgb, vec3(1.0 / 2.2)), 1.0);                     //All my homies hate srgb, jokes aside I still dont know how or why this works but without it looks better. 
                 }
                 fragColor = color;
             }

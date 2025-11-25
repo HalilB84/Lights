@@ -10,9 +10,9 @@ export default function ray() {
 			resolution: { value: null },
 			frame: { value: null },
 			radianceModifier: { value: null },
-			showProgram: { value: null },
+			fixEdges: { value: null },
 		},
-        glslVersion: THREE.GLSL3,
+		glslVersion: THREE.GLSL3,
 		vertexShader: ` 
             out vec2 vUv;
             void main() { 
@@ -31,7 +31,7 @@ export default function ray() {
             uniform vec2 resolution;
             uniform float frame;
             uniform float radianceModifier;
-            uniform bool showProgram;
+            uniform bool fixEdges;
             
             out vec4 fragColor;
 
@@ -62,7 +62,7 @@ export default function ray() {
             vec4 raymarch(){
                 vec4 light = texture(sceneTexture, vUv);
                 
-                if(light.a != 0.0 && !showProgram) {
+                if(light.a != 0.0 && !fixEdges) {
                     return vec4(light.rgb, 1.0);
                 }
 
@@ -78,7 +78,7 @@ export default function ray() {
                 vec4 radiance = vec4(0.0); //total light that will be accumulated
                 //calcualte and shoot rayCount rays that are equidstant from each other, expensive
                 
-                bool useBruteForce = light.a != 0.0 && showProgram; //if we are at a seed location use fixed stop size so when the full res element is overlaid the blocky edges smooth out
+                bool useBruteForce = light.a != 0.0 && fixEdges; //if we are at a seed location use fixed stop size so when the full res element is overlaid the blocky edges smooth out
                 int maxSteps = useBruteForce ? 20 : 10;
                 float fixedStepSize = 1.0;
 
