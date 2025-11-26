@@ -3,11 +3,11 @@ import * as THREE from "three";
 //https://mini.gmshaders.com/p/radiance-cascades2
 //https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades/Shd_RadianceCascades.fsh
 //Vanilla RC code from Yaazarai's repo commented with my own understanding
-//At least for me the easiest way to build intution was to simulate the process on a 8x8 grid using 2 cascades.
+//At least for me the easiest way to build intuition was to simulate the process on a 8x8 grid using 2 cascades.
 
 //Things that need further explaining:
-//Why do we need to overlap the range? -> well I know why, but not the intution
-//Why is clamping +- 1 units is still failing on some resolutions
+//Why do we need to overlap the range? -> well I know why, but not the intuition
+//Why is clamping +- 1 units is still failing on some resolutions?
 
 export default function radiancecascades() {
 	return new THREE.ShaderMaterial({

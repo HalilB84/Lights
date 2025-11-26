@@ -79,7 +79,7 @@ export default function ray() {
                 //calcualte and shoot rayCount rays that are equidstant from each other, expensive
                 
                 bool useBruteForce = light.a != 0.0 && fixEdges; //if we are at a seed location use fixed stop size so when the full res element is overlaid the blocky edges smooth out
-                int maxSteps = useBruteForce ? 20 : 10;
+                int maxSteps = useBruteForce ? 30 : 50;
                 float fixedStepSize = 1.0;
 
                 for(int i = 0; i < rayCount; i++) {
