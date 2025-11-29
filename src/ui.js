@@ -14,6 +14,7 @@ export default class UI {
 		this.radianceModifier = document.getElementById("radiance-modifier");
 		this.textScale = document.getElementById("text-scale");
 		this.enableRC = document.getElementById("enable-rc");
+		this.twoPassOptimization = document.getElementById("2-pass-optimization");
 
 		//firefox shananigans
 
@@ -22,13 +23,16 @@ export default class UI {
 		this.state.modeIsVideo = this.modeToggle.checked = false;
 		this.state.isMobile = this.isMobile;
 
-		this.state.video.scale = this.scale.value = 0.5;
+		this.state.video.scale = this.scale.value = 0.55;
 		this.state.video.volume = this.state.audio.volume = this.volume.value = 0.5;
 
-		this.state.settings.textScale = this.textScale.value = this.isMobile ? 0.5 : 1;
+		this.state.settings.textScale = this.textScale.value = 1;
 		this.state.settings.radiance = this.radianceModifier.value = 1;
 		this.state.settings.fixEdges = this.fixEdges.checked = true;
-		this.state.settings.enableRC = this.enableRC.checked = false;
+		this.state.settings.enableRC = this.enableRC.checked = this.isMobile ? true : false;
+		//special case
+		this.state.settings.twoPassOptimization = this.twoPassOptimization.checked = true;
+		document.getElementById("row-2").style.display = this.enableRC.checked ? "block" : "none";
 
 		//complex state changes call a function in state to handle them
 		//otherwise state values are updated inline, maybe change this later
@@ -85,6 +89,11 @@ export default class UI {
 
 		this.enableRC.addEventListener("change", () => {
 			this.state.settings.enableRC = this.enableRC.checked;
+			document.getElementById("row-2").style.display = this.enableRC.checked ? "block" : "none";
+		});
+
+		this.twoPassOptimization.addEventListener("change", () => {
+			this.state.settings.twoPassOptimization = this.twoPassOptimization.checked;
 		});
 	}
 

@@ -76,6 +76,9 @@ export default function radiancecascades() {
                 vec2 delta = vec2(cos(theta), -sin(theta));
                 vec2 ray = (point + (delta * info.offset)) * texel;
 
+                //bool isPointBad = texture(distanceTexture, point).r != 0.0;
+                //if(isPointBad && texture(distanceTexture, ray).r == 0.0 && texture(distanceTexture, ray - (delta * texel)).r == 0.0 ) {return vec4(0.0, 0.0, 0.0, 1.0);}
+
                 for(float i = 0.0, df = 0.0, rd = 0.0; i < info.range; i++) {
                     df = texture(distanceTexture, ray).r;
                     

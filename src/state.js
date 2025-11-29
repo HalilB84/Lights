@@ -34,6 +34,7 @@ class State {
 			radiance: null,
 			textScale: null,
 			enableRC: null,
+			twoPassOptimization: null,
 		};
 
 		this.ui = new UI(this);

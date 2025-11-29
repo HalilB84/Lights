@@ -58,3 +58,16 @@ input[type="range"] {
 .info:hover::after {
 	opacity: 1;
 }
+
+.rc {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+.rc-row {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 5px;
+}

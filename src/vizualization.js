@@ -40,11 +40,11 @@ export default class Vizualization {
 
 		document.body.appendChild(this.stats.dom);
 
-		this.JFAscale = this.state.isMobile ? 4 : 2;
+		this.JFAscale = this.state.isMobile ? 2 : 2;
 		this.jfaWidth = Math.floor(window.innerWidth / this.JFAscale);
 		this.jfaHeight = Math.floor(window.innerHeight / this.JFAscale);
 
-		this.raymarchScale = this.state.isMobile ? 4 : 2;
+		this.raymarchScale = this.state.isMobile ? 2 : 2;
 		this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
 		this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
 
@@ -123,6 +123,11 @@ export default class Vizualization {
 
 		this.cascadeA = new THREE.WebGLRenderTarget(this.radiance_width, this.radiance_height, cascadeRTConfig);
 		this.cascadeB = this.cascadeA.clone();
+
+		this.curCascade = this.cascadeA;
+		this.prevCascade = this.cascadeB;
+		this.nextTexture = null;
+		this.frameCount = 0;
 	}
 
 	rcCalculations() {
@@ -172,62 +177,62 @@ export default class Vizualization {
 	render() {
 		this.stats.begin();
 
-		let nextTexture = null; //I legitimately hate this, what even is proper code structure anyways?
+		if((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
 
-		if (this.state.modeIsVideo) {
-			this.mesh.material = this.resizerMaterial;
-			this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
-			this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
-			this.resizerMaterial.uniforms.videoHeight.value = this.state.video.height;
-			this.resizerMaterial.uniforms.videoWidth.value = this.state.video.width;
-			this.resizerMaterial.uniforms.videoScale.value = this.state.video.scale;
+			if (this.state.modeIsVideo) {
+				this.mesh.material = this.resizerMaterial;
+				this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+				this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
+				this.resizerMaterial.uniforms.videoHeight.value = this.state.video.height;
+				this.resizerMaterial.uniforms.videoWidth.value = this.state.video.width;
+				this.resizerMaterial.uniforms.videoScale.value = this.state.video.scale;
 
-			this.renderer.setRenderTarget(this.modelRT);
-			this.renderer.clear(); //this is incase the user changes the scale
+				this.renderer.setRenderTarget(this.modelRT);
+				this.renderer.clear(); //this is incase the user changes the scale
+				this.renderer.render(this.scene, this.camera);
+
+				this.nextTexture = this.modelRT.texture;
+			} else {
+				this.nextTexture = this.text.render(this.renderer);
+			}
+
+			//seed phase
+			this.mesh.material = this.seedMaterial;
+			this.seedMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+			this.seedMaterial.uniforms.inputTexture.value = this.nextTexture;
+
+			this.renderer.setRenderTarget(this.seedRT);
 			this.renderer.render(this.scene, this.camera);
 
-			nextTexture = this.modelRT.texture;
-		} else {
-			nextTexture = this.text.render(this.renderer);
-		}
+			// jfa + distance phase
 
-		//seed phase
-		this.mesh.material = this.seedMaterial;
-		this.seedMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
-		this.seedMaterial.uniforms.inputTexture.value = nextTexture;
+			let curT = this.seedRT.texture;
+			let curJFA = this.jfaA;
+			let nextJFA = this.jfaB;
+			const passes = Math.ceil(Math.log2(Math.max(this.jfaWidth, this.jfaHeight)));
+			this.mesh.material = this.jfaMaterial;
+			this.jfaMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
 
-		this.renderer.setRenderTarget(this.seedRT);
-		this.renderer.render(this.scene, this.camera);
+			for (let i = 0; i < passes; i++) {
+				//ping pong so webgl doesnt yell at me for reading and writing to the same texture
+				this.jfaMaterial.uniforms.inputTexture.value = curT;
+				this.jfaMaterial.uniforms.offset.value = Math.pow(2, passes - i - 1);
+				this.jfaMaterial.uniforms.isLast.value = i === passes - 1;
 
-		// jfa + distance phase
-		let curT = this.seedRT.texture;
-		let curJFA = this.jfaA;
-		let nextJFA = this.jfaB;
-		const passes = Math.ceil(Math.log2(Math.max(this.jfaWidth, this.jfaHeight)));
-		this.mesh.material = this.jfaMaterial;
-		this.jfaMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+				this.renderer.setRenderTarget(curJFA);
+				this.renderer.render(this.scene, this.camera);
 
-		for (let i = 0; i < passes; i++) {
-			//ping pong so webgl doesnt yell at me for reading and writing to the same texture
-			this.jfaMaterial.uniforms.inputTexture.value = curT;
-			this.jfaMaterial.uniforms.offset.value = Math.pow(2, passes - i - 1);
-			this.jfaMaterial.uniforms.isLast.value = i === passes - 1;
-
-			this.renderer.setRenderTarget(curJFA);
-			this.renderer.render(this.scene, this.camera);
-
-			curT = curJFA.texture;
-			[curJFA, nextJFA] = [nextJFA, curJFA];
-		}
-
-		let curCascade = this.cascadeA;
-		let prevCascade = this.cascadeB;
+				curT = curJFA.texture;
+				[curJFA, nextJFA] = [nextJFA, curJFA];
+			}
+			this.jfaa = curT;
+		}	
 
 		//Naive Ray Marching / RC phase
 		if (this.state.settings.enableRC) {
 			this.mesh.material = this.radiancecascadesMaterial;
-			this.radiancecascadesMaterial.uniforms.sceneTexture.value = nextTexture;
-			this.radiancecascadesMaterial.uniforms.distanceTexture.value = curT;
+			this.radiancecascadesMaterial.uniforms.sceneTexture.value = this.nextTexture;
+			this.radiancecascadesMaterial.uniforms.distanceTexture.value = this.jfaa;
 			this.radiancecascadesMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
 			this.radiancecascadesMaterial.uniforms.resolution.value = [this.render_width, this.render_height];
 			this.radiancecascadesMaterial.uniforms.cascadeExtent.value = [this.radiance_width, this.radiance_height];
@@ -236,20 +241,29 @@ export default class Vizualization {
 			this.radiancecascadesMaterial.uniforms.cascadeInterval.value = this.radiance_interval;
 			this.radiancecascadesMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
 
-			for (let i = this.radiance_cascades - 1; i >= 0; i--) {
+			let start = this.frameCount % 2 === 0 ? this.radiance_cascades - 1 : Math.ceil((this.radiance_cascades - 1) / 2) - 1; 
+			let end = this.frameCount % 2 === 0 ? Math.ceil((this.radiance_cascades - 1) / 2) : 0;
+
+			if(!this.state.settings.twoPassOptimization) {
+				start = this.radiance_cascades - 1;
+				end = 0;
+			}
+
+			for (let i = start; i >= end; i--) {
+				
 				this.radiancecascadesMaterial.uniforms.cascadeIndex.value = i;
 
-				this.renderer.setRenderTarget(curCascade);
+				this.renderer.setRenderTarget(this.curCascade);
 				this.renderer.clear();
 				this.renderer.render(this.scene, this.camera);
 
-				this.radiancecascadesMaterial.uniforms.previousCascadeTexture.value = curCascade.texture;
-				[curCascade, prevCascade] = [prevCascade, curCascade];
+				this.radiancecascadesMaterial.uniforms.previousCascadeTexture.value = this.curCascade.texture;
+				[this.curCascade, this.prevCascade] = [this.prevCascade, this.curCascade];
 			}
 		} else {
 			this.mesh.material = this.rayMaterial;
-			this.rayMaterial.uniforms.sceneTexture.value = nextTexture;
-			this.rayMaterial.uniforms.distanceTexture.value = curT;
+			this.rayMaterial.uniforms.sceneTexture.value = this.nextTexture;
+			this.rayMaterial.uniforms.distanceTexture.value = this.jfaa;
 			this.rayMaterial.uniforms.resolution.value = [this.raymarchWidth, this.raymarchHeight]; //this was jfaWH all this time? wut
 			this.rayMaterial.uniforms.frame.value += 1;
 			this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
@@ -262,12 +276,15 @@ export default class Vizualization {
 		//because of the error calculation there will be a mismatch between the RC and JFA resolutions. since the streching is little its not really visible
 
 		//bilateral filter phase (to smooth out noise/artifacts)
-		this.mesh.material = this.bilateralMaterial;
-		this.bilateralMaterial.uniforms.inputTexture.value = this.state.settings.enableRC ? prevCascade.texture : this.rayColorRT.texture;
-		this.bilateralMaterial.uniforms.resolution.value = [this.raymarchWidth, this.raymarchHeight];
 
-		this.renderer.setRenderTarget(this.bilateralRT);
-		this.renderer.render(this.scene, this.camera);
+		if (!this.state.settings.enableRC || !this.state.settings.twoPassOptimization || this.frameCount % 2 === 1) {
+			this.mesh.material = this.bilateralMaterial;
+			this.bilateralMaterial.uniforms.inputTexture.value = this.state.settings.enableRC ? this.prevCascade.texture : this.rayColorRT.texture;
+			this.bilateralMaterial.uniforms.resolution.value = [this.raymarchWidth, this.raymarchHeight];
+
+			this.renderer.setRenderTarget(this.bilateralRT);
+			this.renderer.render(this.scene, this.camera);
+		}
 
 		this.displayMaterial.map = this.bilateralRT.texture;
 		this.mesh.material = this.displayMaterial;
@@ -289,6 +306,8 @@ export default class Vizualization {
 			this.renderer.setRenderTarget(null);
 			this.renderer.render(this.scene, this.camera);
 		}
+
+		this.frameCount++;
 
 		this.stats.end();
 		this.stats.update();
