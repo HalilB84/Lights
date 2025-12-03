@@ -5,9 +5,10 @@ import jfa from "./shaders/jfa.js";
 import ray from "./shaders/ray.js";
 import resizer from "./shaders/resizer.js";
 import bilateral from "./shaders/bilateral.js";
-import Text from "./text.js";
-import LRC from "./lrcPlayer.js";
 import radiancecascades from "./shaders/radiancecascades.js";
+import Text from "./playables/text.js";
+import LRC from "./playables/lrcPlayer.js";
+import Playable1 from "./playables/playable1.js";
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
 
@@ -17,9 +18,11 @@ export default class Vizualization {
 
 		this.scene = new THREE.Scene();
 		this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-		this.renderer = new THREE.WebGLRenderer();
+		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.autoClear = false;
 		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+		this.renderer.setClearColor(0x000000, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color (default is 1.0)
+
 		// TODO: figure out what pixelratio actually is and how it works
 		this.renderer.setPixelRatio(window.devicePixelRatio); //not sure if this is fully working
 		document.body.appendChild(this.renderer.domElement);
@@ -47,17 +50,26 @@ export default class Vizualization {
 		this.raymarchScale = this.state.isMobile ? 2 : 2;
 		this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
 		this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
+		//playground
+		this.lrcPlayer = new LRC();
+		this.text = new Text(this.jfaWidth, this.jfaHeight, this.state.settings.textScale, window.innerWidth, window.innerHeight, this.JFAscale * this.state.settings.textScale);
+		this.playable1 = new Playable1(this.jfaWidth, this.jfaHeight, window.innerWidth, window.innerHeight, this.JFAscale);
 
 		this.initialize();
 		this.shaders();
 
-		this.mouse = { x: null, y: null };
 		this.canvas = this.renderer.domElement;
-		this.canvas.addEventListener("mousemove", (e) => {
+
+		this.mouse = { x: 9999, y: 9999 };
+		this.canvas.addEventListener("mousemove", (e) => { //bottom left corner is 0,0 to match UV coords
 			const rect = this.canvas.getBoundingClientRect();
 			this.mouse.x = (e.clientX - rect.left) / this.JFAscale;
 			this.mouse.y = (rect.height - (e.clientY - rect.top)) / this.JFAscale;
+			//console.log(this.mouse);
+			//console.log(this.mouse.x - this.jfaWidth / 2, this.mouse.y - this.jfaHeight / 2);
 		});
+
+		this.lastTime = 0;
 
 		this.renderer.setAnimationLoop(this.render.bind(this));
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -82,16 +94,12 @@ export default class Vizualization {
 			this.cascadeA.setSize(this.radiance_width, this.radiance_height);
 			this.cascadeB.setSize(this.radiance_width, this.radiance_height);
 
-			this.text.resize(this.jfaWidth, this.jfaHeight);
-			this.textOverlay.resize(window.innerWidth, window.innerHeight);
+			this.text.resize(this.jfaWidth, this.jfaHeight, window.innerWidth, window.innerHeight);
+			this.playable1.resize(this.jfaWidth, this.jfaHeight, window.innerWidth, window.innerHeight);
 		});
 	}
 
 	initialize() {
-		this.lrcPlayer = new LRC();
-		this.text = new Text(this.jfaWidth, this.jfaHeight, this.state.settings.textScale);
-		this.textOverlay = new Text(window.innerWidth, window.innerHeight, this.state.settings.textScale * this.JFAscale);
-
 		let rtConfig = {
 			minFilter: THREE.NearestFilter,
 			magFilter: THREE.NearestFilter,
@@ -126,6 +134,7 @@ export default class Vizualization {
 
 		this.curCascade = this.cascadeA;
 		this.prevCascade = this.cascadeB;
+		this.jfaa = null;
 		this.nextTexture = null;
 		this.frameCount = 0;
 	}
@@ -177,9 +186,16 @@ export default class Vizualization {
 	render() {
 		this.stats.begin();
 
-		if((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
+		const currentTime = performance.now();
+		const delta = currentTime - this.lastTime;
+		this.lastTime = currentTime;
 
-			if (this.state.modeIsVideo) {
+		if (this.state.mode === "playable1") {
+			this.playable1.update(delta, { x: this.mouse.x - this.jfaWidth / 2, y: this.mouse.y - this.jfaHeight / 2 });
+		}
+
+		if ((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
+			if (this.state.mode === "video") {
 				this.mesh.material = this.resizerMaterial;
 				this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
 				this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
@@ -191,10 +207,20 @@ export default class Vizualization {
 				this.renderer.clear(); //this is incase the user changes the scale
 				this.renderer.render(this.scene, this.camera);
 
-				this.nextTexture = this.modelRT.texture;
-			} else {
-				this.nextTexture = this.text.render(this.renderer);
+			} else if (this.state.mode === "lyrics" && this.text.isReady) {
+				this.text.mesh.material.uniforms.time.value = performance.now() * 0.001;
+				this.renderer.setRenderTarget(this.modelRT);
+				this.renderer.clear();
+				this.renderer.render(this.text.scene, this.text.camera);
+
+			} else if (this.state.mode === "playable1" && this.playable1.isReady) {
+
+				this.renderer.setRenderTarget(this.modelRT);
+				this.renderer.clear();
+				this.renderer.render(this.playable1.scene, this.playable1.camera);
 			}
+
+			this.nextTexture = this.modelRT.texture;
 
 			//seed phase
 			this.mesh.material = this.seedMaterial;
@@ -226,7 +252,7 @@ export default class Vizualization {
 				[curJFA, nextJFA] = [nextJFA, curJFA];
 			}
 			this.jfaa = curT;
-		}	
+		}
 
 		//Naive Ray Marching / RC phase
 		if (this.state.settings.enableRC) {
@@ -241,16 +267,15 @@ export default class Vizualization {
 			this.radiancecascadesMaterial.uniforms.cascadeInterval.value = this.radiance_interval;
 			this.radiancecascadesMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
 
-			let start = this.frameCount % 2 === 0 ? this.radiance_cascades - 1 : Math.ceil((this.radiance_cascades - 1) / 2) - 1; 
+			let start = this.frameCount % 2 === 0 ? this.radiance_cascades - 1 : Math.ceil((this.radiance_cascades - 1) / 2) - 1;
 			let end = this.frameCount % 2 === 0 ? Math.ceil((this.radiance_cascades - 1) / 2) : 0;
 
-			if(!this.state.settings.twoPassOptimization) {
+			if (!this.state.settings.twoPassOptimization) {
 				start = this.radiance_cascades - 1;
 				end = 0;
 			}
 
 			for (let i = start; i >= end; i--) {
-				
 				this.radiancecascadesMaterial.uniforms.cascadeIndex.value = i;
 
 				this.renderer.setRenderTarget(this.curCascade);
@@ -286,16 +311,18 @@ export default class Vizualization {
 			this.renderer.render(this.scene, this.camera);
 		}
 
-		this.displayMaterial.map = this.bilateralRT.texture;
 		this.mesh.material = this.displayMaterial;
+		this.displayMaterial.map = this.bilateralRT.texture;
 
 		this.renderer.setRenderTarget(null);
 		this.renderer.render(this.scene, this.camera);
 
 		//overlay phase (to display text/video on full res)
-		if (!this.state.modeIsVideo) {
-			this.textOverlay.renderDirect(this.renderer);
-		} else if (this.state.video.texture) {
+		if (this.state.mode === "playable1" && this.playable1.isReady) {
+			this.renderer.render(this.playable1.sceneOverlay, this.playable1.cameraOverlay);
+		} else if (this.state.mode === "lyrics" && this.text.isReady) {
+			this.renderer.render(this.text.sceneOverlay, this.text.cameraOverlay);
+		} else if (this.state.mode === "video") {
 			this.mesh.material = this.resizerMaterial;
 			this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
 			this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
@@ -303,7 +330,6 @@ export default class Vizualization {
 			this.resizerMaterial.uniforms.videoWidth.value = this.state.video.width;
 			this.resizerMaterial.uniforms.videoScale.value = this.state.video.scale;
 
-			this.renderer.setRenderTarget(null);
 			this.renderer.render(this.scene, this.camera);
 		}
 

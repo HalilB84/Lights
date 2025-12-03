@@ -8,11 +8,12 @@ import * as THREE from "three";
 //UI never deals with anything other than the state
 //If a class needs access to data, access it through the state
 
-//The methods of state are only responsible for updating its own state values and not for doing anything else (which is not even the case right now) 
+//The methods of state are only responsible for updating its own state values and not for doing anything else (which is not even the case right now)
 
 class State {
 	constructor() {
 		this.modeIsVideo = null;
+		this.mode = null;
 		this.isMobile = null;
 
 		this.video = {
@@ -44,9 +45,8 @@ class State {
 	setTextScale(value) {
 		this.settings.textScale = value;
 		this.vizualization.text.scale = this.settings.textScale;
-		this.vizualization.textOverlay.scale = this.settings.textScale * this.vizualization.JFAscale;
-		this.vizualization.text.createText();
-		this.vizualization.textOverlay.createText();
+		this.vizualization.text.scaleOverlay = this.settings.textScale * this.vizualization.JFAscale;
+		this.vizualization.text.createScene();
 	}
 
 	loadVideo(video) {
@@ -87,18 +87,19 @@ class State {
 	loadAudio(audio, trackName, artistName) {
 		if (this.audio.element) this.audio.element.pause();
 		this.audio.element = audio;
-        this.audio.element.volume = this.audio.volume;
+		this.audio.element.volume = this.audio.volume;
+
+		this.vizualization.text.createScene("Loading lyrics...");
 
 		this.vizualization.lrcPlayer.getLRCLIB(trackName, artistName).then(() => {
 			this.toggleAudio(false);
 		});
 
 		this.audio.element.addEventListener("timeupdate", () => {
-			const [lyric, changed] = this.vizualization.lrcPlayer.update(this.audio.element.currentTime * 1000);
+			const [lyric, changed] = this.vizualization.lrcPlayer.update(this.audio.element.currentTime);
 
-			if (changed) {
-				this.vizualization.text.createText(lyric);
-				this.vizualization.textOverlay.createText(lyric);
+			if (changed == "init" || changed == "changed") {
+				this.vizualization.text.createScene(lyric);
 			}
 		});
 	}

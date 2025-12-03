@@ -4,7 +4,7 @@ export default class UI {
 
 		this.videoInput = document.getElementById("video-upload");
 		this.audioInput = document.getElementById("audio-upload");
-		this.modeToggle = document.getElementById("mode-toggle");
+		this.mode = document.getElementById("mode");
 
 		this.playPause = document.getElementById("play-pause");
 		this.volume = document.getElementById("video-volume");
@@ -20,7 +20,7 @@ export default class UI {
 
 		this.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-		this.state.modeIsVideo = this.modeToggle.checked = false;
+		this.state.mode = this.mode.value = "lyrics";
 		this.state.isMobile = this.isMobile;
 
 		this.state.video.scale = this.scale.value = 0.55;
@@ -29,7 +29,7 @@ export default class UI {
 		this.state.settings.textScale = this.textScale.value = 1;
 		this.state.settings.radiance = this.radianceModifier.value = 1;
 		this.state.settings.fixEdges = this.fixEdges.checked = true;
-		this.state.settings.enableRC = this.enableRC.checked = this.isMobile ? true : false;
+		this.state.settings.enableRC = this.enableRC.checked = this.isMobile ? true : true;
 		//special case
 		this.state.settings.twoPassOptimization = this.twoPassOptimization.checked = true;
 		document.getElementById("row-2").style.display = this.enableRC.checked ? "block" : "none";
@@ -41,29 +41,32 @@ export default class UI {
 		this.audioInput.addEventListener("change", (e) => this.handleAudio(e));
 
 		this.playPause.addEventListener("click", () => {
-			if (this.modeToggle.checked) {
+			if (this.mode.value === "video") {
 				this.state.toggleVideo(false);
-			} else {
+			} else if (this.mode.value === "lyrics") {
 				this.state.toggleAudio(false);
 			}
 		});
 
-		this.modeToggle.addEventListener("change", () => {
-			if (this.modeToggle.checked) {
+		this.mode.addEventListener("change", () => {
+			if (this.mode.value !== "lyrics") {
 				this.state.toggleAudio(true);
-			} else {
+			}
+
+			if (this.mode.value !== "video") {
 				this.state.toggleVideo(true);
 			}
 
-			this.state.modeIsVideo = this.modeToggle.checked;
+			this.state.modeIsVideo = this.mode.value === "video";
+			this.state.mode = this.mode.value;
 
-			if (this.modeToggle.checked) {
+			if (this.mode.value === "video") {
 				this.radianceModifier.value = 2;
 			} else {
 				this.radianceModifier.value = 1;
 			}
 
-			this.state.settings.fixEdges = this.fixEdges.checked = !this.modeToggle.checked;
+			this.state.settings.fixEdges = this.fixEdges.checked = this.mode.value !== "video";
 			this.state.settings.radiance = this.radianceModifier.value;
 		});
 
@@ -108,8 +111,8 @@ export default class UI {
 			console.log("Video loaded");
 			this.state.loadVideo(video);
 
-			this.modeToggle.checked = true;
-			this.modeToggle.dispatchEvent(new Event("change"));
+			this.mode.value = "video";
+			this.mode.dispatchEvent(new Event("change"));
 		};
 	}
 
@@ -126,8 +129,8 @@ export default class UI {
 			console.log("Audio loaded");
 			this.state.loadAudio(audio, trackName, artistName);
 
-			this.modeToggle.checked = false;
-			this.modeToggle.dispatchEvent(new Event("change"));
+			this.mode.value = "lyrics";
+			this.mode.dispatchEvent(new Event("change"));
 		};
 	}
 }

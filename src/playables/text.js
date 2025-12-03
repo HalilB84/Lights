@@ -3,24 +3,27 @@ import { MSDFTextGeometry, uniforms } from "three-msdf-text-utils";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 
 export default class Text {
-	constructor(width, height, scale) {
+	constructor(width, height, scale, widthOverlay, heightOverlay, scaleOverlay) {
 		this.scene = new THREE.Scene();
 		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
 
-		this.renderTarget = new THREE.WebGLRenderTarget(width, height, {
-			minFilter: THREE.NearestFilter,
-			magFilter: THREE.NearestFilter,
-			format: THREE.RGBAFormat,
-			type: THREE.FloatType,
-		});
-
-		this.isReady = false;
+		this.sceneOverlay = new THREE.Scene();
+		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
 
 		this.width = width;
 		this.height = height;
 		this.scale = scale;
 
+		this.widthOverlay = widthOverlay;
+		this.heightOverlay = heightOverlay;
+		this.scaleOverlay = scaleOverlay;
+
+		this.mesh = null;
+		this.font = null;
+		this.atlas = null;
 		this.currentText = "The show is starting!";
+
+		this.isReady = false;
 
 		this.load();
 	}
@@ -31,20 +34,28 @@ export default class Text {
 
 		this.atlas = await new Promise((r) => loader.load(atlasPath, r));
 		this.font = (await new Promise((r) => fontLoader.load(fontPath, r))).data;
-		this.isReady = true;
 
-		this.createText();
+		this.createScene();
 	}
 
-	resize(width, height) {
+	resize(width, height, widthOverlay, heightOverlay) {
 		this.width = width;
 		this.height = height;
+
+		this.widthOverlay = widthOverlay;
+		this.heightOverlay = heightOverlay;
+
 		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
-		this.renderTarget.setSize(width, height);
-		this.createText();
+		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
+
+		this.createScene();
 	}
 
-	createText(text) {
+	createScene(text) {
+		this.isReady = false;
+		this.scene.clear();
+		this.sceneOverlay.clear();
+
 		if (text) this.currentText = text;
 
 		const geometry = new MSDFTextGeometry({
@@ -196,30 +207,13 @@ export default class Text {
 
 		this.mesh.scale.set(this.scale, -this.scale);
 		this.mesh.position.set(-centerX * this.scale, centerY * this.scale);
-
-		//console.log(this.mesh.position);
-
-		this.scene.clear();
 		this.scene.add(this.mesh);
-	}
 
-	render(renderer) {
-		if (!this.isReady) return;
+		this.meshOverlay = new THREE.Mesh(geometry, material);
+		this.meshOverlay.scale.set(this.scaleOverlay, -this.scaleOverlay);
+		this.meshOverlay.position.set(-centerX * this.scaleOverlay, centerY * this.scaleOverlay);
+		this.sceneOverlay.add(this.meshOverlay);
 
-		this.mesh.material.uniforms.time.value = performance.now() * 0.001;
-
-		renderer.setRenderTarget(this.renderTarget);
-		renderer.setClearColor(0x000000, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color (default is 1.0)
-		renderer.clear();
-		renderer.render(this.scene, this.camera);
-
-		return this.renderTarget.texture;
-	}
-
-	renderDirect(renderer) {
-		if (!this.isReady) return;
-
-		this.mesh.material.uniforms.time.value = performance.now() * 0.001;
-		renderer.render(this.scene, this.camera);
+		this.isReady = true;
 	}
 }

@@ -22,7 +22,7 @@ export default function radiancecascades() {
 			cascadeLinear: { value: null },
 			cascadeInterval: { value: null },
 			radianceModifier: { value: null },
-            fixEdges: { value: null },
+			fixEdges: { value: null },
 		},
 		glslVersion: THREE.GLSL3,
 		vertexShader: `  
@@ -76,13 +76,10 @@ export default function radiancecascades() {
                 vec2 delta = vec2(cos(theta), -sin(theta));
                 vec2 ray = (point + (delta * info.offset)) * texel;
 
-                //bool isPointBad = texture(distanceTexture, point).r != 0.0;
-                //if(isPointBad && texture(distanceTexture, ray).r == 0.0 && texture(distanceTexture, ray - (delta * texel)).r == 0.0 ) {return vec4(0.0, 0.0, 0.0, 1.0);}
-
                 for(float i = 0.0, df = 0.0, rd = 0.0; i < info.range; i++) {
                     df = texture(distanceTexture, ray).r;
                     
-                    if (df == 0.0 && i == 0.0 && fixEdges) {                                                    //Basically the idea here is that if we are the the very edge of the text we actually sample 1px inwards to smooth out the edges by treating them as a part of the scene (the light receiving) This Looks goos because of the overlay, needs fix fix tho.
+                    if (df == 0.0 && i == 0.0 && fixEdges) {                                        //Basically the idea here is that if we are the the very edge of the text we actually sample 1px inwards to smooth out the edges by treating them as a part of the scene (the light receiving) This Looks good because of the overlay, needs fix fix tho.
                         df = 1.0;
                     }
                     
