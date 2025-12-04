@@ -4,8 +4,8 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
 		<title>Lights!</title>
-		<script type="module" crossorigin src="/assets/index-2vleybl1.js"></script>
-		<link rel="stylesheet" crossorigin href="/assets/index-BtfR2cmt.css">
+		<script type="module" crossorigin src="/assets/index-M6xBVHsX.js"></script>
+		<link rel="stylesheet" crossorigin href="/assets/index-CbpPCiO6.css">
 	</head>
 
 	<body>
@@ -31,11 +31,11 @@
 			<div class="rc">
 				<div class="rc-row" id="row-1">
 					<label>Enable Radiance Cascades <input type="checkbox" id="enable-rc" /></label>
-					<span class="info" data-tooltip="Radiance Cascades is a noise free algorithm to achieve global illumination created by Alexander Sannikov. This 2D implementation is based on Yaazarai's Vanilla RC code. More info on Github. It is better from naive ray marching in a sense that there is no noise (it looks better, subjectively of course) and runs faster with the below '2 pass optimization' checkbox selected">?</span>
+					<span class="info" data-tooltip="Radiance Cascades is a noise free algorithm to achieve global illumination created by Alexander Sannikov. This 2D implementation is based on Yaazarai's Vanilla RC code. More info on Github. It is better from naive ray marching in a sense that there is no noise (it looks better, subjectively of course) and runs faster with the below '2 pass optimization' checkbox selected"><img src="help.svg"/></span>
 				</div>
 				<div class="rc-row" id="row-2">
 					<label id="2-pass-optimization-label">2 pass optimization <input type="checkbox" id="2-pass-optimization" /></label>
-					<span class="info" data-tooltip="If performance is an issue, enable this. The cascade calculation happens in 2 passes, meaning if the overlay is 60 fps, the lighting is calculated at 30 fps. Because the overlay and the light are calculated at different speeds, there will be artifacts where the previous frame is visible for a split second.">?</span>
+					<span class="info" data-tooltip="If performance is an issue, enable this. The cascade calculation happens in 2 passes, meaning if the overlay is 60 fps, the lighting is calculated at 30 fps. Because the overlay and the light are calculated at different speeds, there will be artifacts where the previous frame is visible for a split second."><img src="help.svg"/></span>
 				</div>
 			</div>
 		</div>
