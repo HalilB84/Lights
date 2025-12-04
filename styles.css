@@ -32,10 +32,13 @@ input[type="range"] {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 18px;
-	height: 18px;
-	border: 2px solid #fff;
-	border-radius: 50%;
+	vertical-align: middle;
+}
+
+.info img {
+	width: 20px;
+	height: 20px;
+	filter: invert(1);
 }
 
 .info::after {
@@ -43,7 +46,6 @@ input[type="range"] {
 	position: absolute;
 	right: 0;
 	top: calc(100%);
-	width: 100vw;
 	max-width: 400px;
 	background: rgba(0, 0, 0, 1);
 	color: #fff;

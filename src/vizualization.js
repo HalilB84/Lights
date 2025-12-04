@@ -320,8 +320,11 @@ export default class Vizualization {
 		//overlay phase (to display text/video on full res)
 		if (this.state.mode === "playable1" && this.playable1.isReady) {
 			this.renderer.render(this.playable1.sceneOverlay, this.playable1.cameraOverlay);
+			
 		} else if (this.state.mode === "lyrics" && this.text.isReady) {
+			this.text.mesh.material.uniforms.time.value = performance.now() * 0.001;
 			this.renderer.render(this.text.sceneOverlay, this.text.cameraOverlay);
+			
 		} else if (this.state.mode === "video") {
 			this.mesh.material = this.resizerMaterial;
 			this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
