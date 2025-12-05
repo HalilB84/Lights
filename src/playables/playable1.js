@@ -7,7 +7,7 @@ export default class Playable1 {
 		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
 
 		this.sceneOverlay = new THREE.Scene();
-		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, -100, 100);
+		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
 
 		this.width = width;
 		this.height = height;
@@ -32,7 +32,7 @@ export default class Playable1 {
 		this.heightOverlay = heightOverlay;
 
 		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
-		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, -100, 100);
+		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
 
 		this.rectangles = [];
 		this.walls = [];
@@ -55,7 +55,7 @@ export default class Playable1 {
 
 		for (let i = 0; i < 20; i++) {
 			const geometry = new THREE.PlaneGeometry(rectangleWidth, rectangleHeight);
-			const material = new THREE.MeshBasicMaterial({ depthTest: false });
+			const material = new THREE.MeshBasicMaterial();
 			const mesh = new THREE.Mesh(geometry, material);
 			this.scene.add(mesh);
 

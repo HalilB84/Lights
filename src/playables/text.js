@@ -188,9 +188,11 @@ export default class Text {
 
                     vec3 paletteColor = palette(r, c0, c1, c2, c3);
                     
-                    
                     gl_FragColor = vec4(paletteColor, alpha * uOpacity);
-                    if (gl_FragColor.a < 0.0001) discard;
+                    if (gl_FragColor.a != 1.0){ //ok so for pixels with alpha < 1.0, the overlay blends with the body background which if its white is a problem, so to completely disable this just cut off all pixels with alpha < 1.0. Looks the same?
+                        discard;
+                    }
+
                 }
             `,
 		});

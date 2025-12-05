@@ -7,7 +7,7 @@ import resizer from "./shaders/resizer.js";
 import bilateral from "./shaders/bilateral.js";
 import radiancecascades from "./shaders/radiancecascades.js";
 import Text from "./playables/text.js";
-import LRC from "./playables/lrcPlayer.js";
+import LRC from "./playables/lrcplayer.js";
 import Playable1 from "./playables/playable1.js";
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
@@ -17,11 +17,12 @@ export default class Vizualization {
 		this.state = state;
 
 		this.scene = new THREE.Scene();
-		this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+		this.camera = new THREE.OrthographicCamera(-window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, 0, 1);
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.autoClear = false;
 		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 		this.renderer.setClearColor(0x000000, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color (default is 1.0)
+		//also since its clear the body background will be visible, since the color is just black it blends. This is bugging me though
 
 		// TODO: figure out what pixelratio actually is and how it works
 		this.renderer.setPixelRatio(window.devicePixelRatio); //not sure if this is fully working
@@ -178,8 +179,9 @@ export default class Vizualization {
 		this.radiancecascadesMaterial = radiancecascades();
 		this.displayMaterial = new THREE.MeshBasicMaterial();
 
-		this.geometry = new THREE.PlaneGeometry(2, 2);
+		this.geometry = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
 		this.mesh = new THREE.Mesh(this.geometry, this.seedMaterial);
+		this.mesh.position.z = -1;
 		this.scene.add(this.mesh);
 	}
 
@@ -228,6 +230,7 @@ export default class Vizualization {
 			this.seedMaterial.uniforms.inputTexture.value = this.nextTexture;
 
 			this.renderer.setRenderTarget(this.seedRT);
+			this.renderer.clear();
 			this.renderer.render(this.scene, this.camera);
 
 			// jfa + distance phase
@@ -246,6 +249,7 @@ export default class Vizualization {
 				this.jfaMaterial.uniforms.isLast.value = i === passes - 1;
 
 				this.renderer.setRenderTarget(curJFA);
+				this.renderer.clear();
 				this.renderer.render(this.scene, this.camera);
 
 				curT = curJFA.texture;
@@ -295,6 +299,7 @@ export default class Vizualization {
 			this.rayMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
 
 			this.renderer.setRenderTarget(this.rayColorRT);
+			this.renderer.clear();
 			this.renderer.render(this.scene, this.camera);
 		}
 
@@ -308,6 +313,7 @@ export default class Vizualization {
 			this.bilateralMaterial.uniforms.resolution.value = [this.raymarchWidth, this.raymarchHeight];
 
 			this.renderer.setRenderTarget(this.bilateralRT);
+			this.renderer.clear();
 			this.renderer.render(this.scene, this.camera);
 		}
 
@@ -315,6 +321,7 @@ export default class Vizualization {
 		this.displayMaterial.map = this.bilateralRT.texture;
 
 		this.renderer.setRenderTarget(null);
+		this.renderer.clear();
 		this.renderer.render(this.scene, this.camera);
 
 		//overlay phase (to display text/video on full res)
