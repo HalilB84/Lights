@@ -28,7 +28,7 @@ export default class Text {
 		this.load();
 	}
 
-	async load(fontPath = "./fonts/roboto-regular.fnt", atlasPath = "./fonts/roboto-regular.png") {
+	async load(fontPath = "/fonts/roboto-regular.fnt", atlasPath = "/fonts/roboto-regular.png") {
 		const loader = new THREE.TextureLoader();
 		const fontLoader = new FontLoader();
 
@@ -77,7 +77,7 @@ export default class Text {
 				...uniforms.common,
 				...uniforms.rendering,
 				...uniforms.strokes,
-				time: { value: performance.now() * 0.001 },
+				time: { value: null },
 			},
 			vertexShader: `
                 attribute vec2 layoutUv;

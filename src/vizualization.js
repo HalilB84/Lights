@@ -152,7 +152,7 @@ export default class Vizualization {
 		//RC
 		//Calculations taken from Create_0.gml and needs explaining and im probably doing something wrong because it requires one more cascade?
 		const diagonal = Math.sqrt(this.jfaWidth * this.jfaWidth + this.jfaHeight * this.jfaHeight);
-		this.radiance_cascades = Math.ceil(Math.log(diagonal) / Math.log(4)) + 1;
+		this.radiance_cascades = Math.ceil(Math.log(diagonal) / Math.log(4));
 
 		const errorRate = Math.pow(2.0, this.radiance_cascades - 1);
 		const errorX = Math.ceil(this.jfaWidth / errorRate);

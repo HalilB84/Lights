@@ -6,8 +6,8 @@ import * as THREE from "three";
 //At least for me the easiest way to build intuition was to simulate the process on a 8x8 grid using 2 cascades.
 
 //Things that need further explaining:
-//Why do we need to overlap the range? -> well I know why, but not the intuition
-//Why is clamping +- 1 units still failing on some resolutions?
+//Why do we need to overlap the range? -> Explained below in the code
+//Why is clamping +- 1 units still failing on some resolutions? -> Still have no idea
 
 export default function radiancecascades() {
 	return new THREE.ShaderMaterial({
@@ -64,8 +64,17 @@ export default function radiancecascades() {
                 vec2 raypos = floor(vUv * angular);                                                 //This pixel is in this direction block but in 2D
                 float index = raypos.x + (angular * raypos.y);                                      //This pixel is in this direction block but in 1D
                 float offset = (cascadeInterval  * (1.0 - pow(4.0, cascadeIndex))) / (1.0 - 4.0);   //In each cascade level we are responsible for different ray ranges, thus we need to calculate the starting offset as follows.
-                float range = cascadeInterval * pow(4.0, cascadeIndex);                             //The range of rays we are responsible for.
-                range += length(vec2(cascadeLinear * pow(2.0, cascadeIndex+1.0)));                  //Some overlap is needed due to the nature of merging? I havent fully figured out why.
+                float range = cascadeInterval * pow(4.0, cascadeIndex);                             //The range of rays we are responsible for. 
+                
+                //Just to solidfy starting and ending points it goes like: Cascade0: [0, 1], Cascade1: [1, 5], Cascade2: [5, 21], Cascade3: [21, 85], Cascade4: [85, 341], Cascade5: [341, 1365], Cascade6: [1365, 5461], you won't need more than that
+
+                range += length(vec2(cascadeLinear * pow(2.0, cascadeIndex + 1.0)));                //The probe in cascadeN doesnt map the the same relative location in cascadeN+1, there will be some difference in the positions.
+                                                                                                    //So think about this example where the range is not extended: The probe I shot a ray from in cascadeN didn't hit anything. 
+                                                                                                    //In the merge step, I ask the upper cascade what happens to this ray?. However because of the difference in relative positions the probe in cascadeN+1 shoots the ray at a slight offset in addition to the normal offset. 
+                                                                                                    //Because of this unintended additional offset, the ray might skip over a light source and sample something behind it. I think this is what is meant by a light leak in the original post.
+
+                //Why extend it that much? Because that is the digonal (max) distance between probes in cascadeN+1, and the relative difference can be at most this much between the 4 interpolating probes.   
+
                 
                 return probe_info(angular * angular, linear, size, probe, index, offset, range);   
             }
