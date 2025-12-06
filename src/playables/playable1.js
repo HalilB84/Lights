@@ -46,7 +46,7 @@ export default class Playable1 {
 		this.engine = Matter.Engine.create({
 			gravity: { x: 0, y: 0, scale: 0 },
 		});
-		
+
 		this.scene.clear();
 		this.sceneOverlay.clear();
 
@@ -87,10 +87,10 @@ export default class Playable1 {
 	update(delta, mouse) {
 		if (!this.isReady) return;
 
-		Matter.Engine.update(this.engine, Math.min(delta, 1 / 30 * 1000));
+		Matter.Engine.update(this.engine, Math.min(delta, (1 / 60) * 1000));
 
 		for (let i = 0; i < this.rectangles.length; i++) {
-			let { body, mesh, meshOverlay} = this.rectangles[i];
+			let { body, mesh, meshOverlay } = this.rectangles[i];
 
 			//bound check rq
 			if (body.position.x < -this.width / 2 || body.position.x > this.width / 2 || body.position.y < -this.height / 2 || body.position.y > this.height / 2) {

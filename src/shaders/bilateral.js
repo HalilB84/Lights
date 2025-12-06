@@ -1,13 +1,14 @@
 import * as THREE from "three";
 
+//Direct implementation of the equations given in:
 //https://en.wikipedia.org/wiki/Bilateral_filter
 export default function bilateral() {
 	return new THREE.ShaderMaterial({
 		uniforms: {
 			inputTexture: { value: null },
 			resolution: { value: null },
-			sigmaSpatial: { value: null },
-			sigmaRange: { value: null },
+			sigma_d: { value: null },
+			sigma_r: { value: null },
 			radius: { value: null },
 		},
 		glslVersion: THREE.GLSL3,
@@ -25,47 +26,37 @@ export default function bilateral() {
 
             uniform sampler2D inputTexture;
             uniform vec2 resolution;
-            uniform float sigmaSpatial;
-            uniform float sigmaRange;
-            uniform int radius;
+
+            uniform float sigma_d;
+            uniform float sigma_r;
+            uniform float radius;
             
             out vec4 fragColor;
 
-            // Bilateral weight = exp( -(|p-q|^2 / 2σ_s^2 + |I(p)-I(q)|^2 / 2σ_r^2 ) )
-
-            float weight(vec2 spatialOffset, vec3 neighbor, vec3 center) {
-                float spatialDist2 = dot(spatialOffset, spatialOffset);
-                float rangeDist2   = dot(neighbor - center, neighbor - center);
-                float w = exp(-(spatialDist2 / (2.0 * sigmaSpatial * sigmaSpatial)
-                              + rangeDist2   / (2.0 * sigmaRange  * sigmaRange)));
-                return w;
-            }
-
             void main() {
-                vec4 center = texture(inputTexture, vUv);
+                vec2 ij = gl_FragCoord.xy;
+                vec3 I_ij = texture(inputTexture, vUv).rgb;
+                
+                vec3 I_DT = vec3(0.0);
+                float I_DB = 0.0;
 
-                // if(center.a != 0.0) {
-                //   fragColor = center;
-                //   return;
-                // }
+                for(float i = -radius; i <= radius; i++) {
+                    for(float j = -radius; j  <= radius; j++) {
+                       
+                        vec2 kl = ij + vec2(i, j);
+                        vec3 I_kl = texture(inputTexture, kl / resolution).rgb;
 
-                float sumW = 0.0;
-                vec3 sumC = vec3(0.0);
+                        float space_diff = dot(ij - kl, ij - kl);
+                        float image_diff = dot(I_ij - I_kl, I_ij - I_kl);
 
-                for (int j = -radius; j <= radius; ++j) {
-                    for (int i = -radius; i <= radius; ++i) {
-                        vec2 offset = vec2(float(i), float(j));
-                        vec2 uv = vUv + offset / resolution;
-                        vec3 neighbor = texture(inputTexture, uv).rgb;
+                        float w = exp( -(space_diff / (2.0 * sigma_d * sigma_d)) - (image_diff / (2.0 * sigma_r * sigma_r)) );
 
-                        float w = weight(offset, neighbor, center.rgb);
-                        sumW += w;
-                        sumC += neighbor * w;
+                        I_DT += w * I_kl;
+                        I_DB += w; 
                     }
                 }
-
-                vec3 filtered = sumC / sumW;
-                fragColor = vec4(filtered, 1.0);
+                
+                fragColor = vec4(I_DT / I_DB, 1.0);
             }
         `,
 	});

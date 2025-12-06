@@ -2,9 +2,16 @@ html,
 body {
 	margin: 0;
 	background-color: #000000;
+	height: 100%;
 }
 
-#media-controls {
+canvas {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+#settings {
 	position: fixed;
 	top: 0;
 	right: 0;
@@ -67,7 +74,7 @@ input[type="range"] {
 	align-items: flex-start;
 }
 
-.rc-row {
+.setting-row {
 	display: flex;
 	flex-direction: row;
 	align-items: center;

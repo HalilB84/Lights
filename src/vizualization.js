@@ -16,17 +16,24 @@ export default class Vizualization {
 	constructor(state) {
 		this.state = state;
 
-		this.scene = new THREE.Scene();
-		this.camera = new THREE.OrthographicCamera(-window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, 0, 1);
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.autoClear = false;
 		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 		this.renderer.setClearColor(0x000000, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color (default is 1.0)
 		//also since its clear the body background will be visible, since the color is just black it blends. This is bugging me though
 
-		// TODO: figure out what pixelratio actually is and how it works
-		this.renderer.setPixelRatio(window.devicePixelRatio); //not sure if this is fully working
 		document.body.appendChild(this.renderer.domElement);
+
+		this.canvas = this.renderer.domElement;
+		this.dpr = this.state.isMobile ? Math.max(window.devicePixelRatio * 0.75, 1) : window.devicePixelRatio;
+
+		this.width = Math.floor(this.canvas.clientWidth * this.dpr);
+		this.height = Math.floor(this.canvas.clientHeight * this.dpr);
+
+		this.renderer.setSize(this.width, this.height, false);
+
+		this.scene = new THREE.Scene();
+		this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
 		this.stats = new Stats({
 			trackGPU: true,
@@ -38,34 +45,33 @@ export default class Vizualization {
 			samplesGraph: 10,
 			precision: 2,
 			horizontal: true,
-			minimal: false,
+			minimal: true,
 			mode: 0,
 		});
 
 		document.body.appendChild(this.stats.dom);
 
 		this.JFAscale = this.state.isMobile ? 2 : 2;
-		this.jfaWidth = Math.floor(window.innerWidth / this.JFAscale);
-		this.jfaHeight = Math.floor(window.innerHeight / this.JFAscale);
+		this.jfaWidth = Math.floor(this.width / this.JFAscale);
+		this.jfaHeight = Math.floor(this.height / this.JFAscale);
 
 		this.raymarchScale = this.state.isMobile ? 2 : 2;
-		this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
-		this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
+		this.raymarchWidth = Math.floor(this.width / this.raymarchScale);
+		this.raymarchHeight = Math.floor(this.height / this.raymarchScale);
 		//playground
 		this.lrcPlayer = new LRC();
-		this.text = new Text(this.jfaWidth, this.jfaHeight, this.state.settings.textScale, window.innerWidth, window.innerHeight, this.JFAscale * this.state.settings.textScale);
-		this.playable1 = new Playable1(this.jfaWidth, this.jfaHeight, window.innerWidth, window.innerHeight, this.JFAscale);
+		this.text = new Text(this.jfaWidth, this.jfaHeight, this.state.settings.textScale, this.width, this.height, this.JFAscale * this.state.settings.textScale);
+		this.playable1 = new Playable1(this.jfaWidth, this.jfaHeight, this.width, this.height, this.JFAscale);
 
 		this.initialize();
 		this.shaders();
 
-		this.canvas = this.renderer.domElement;
-
 		this.mouse = { x: 9999, y: 9999 };
-		this.canvas.addEventListener("mousemove", (e) => { //bottom left corner is 0,0 to match UV coords
+		this.canvas.addEventListener("mousemove", (e) => {
+			//bottom left corner is 0,0 to match UV coords
 			const rect = this.canvas.getBoundingClientRect();
-			this.mouse.x = (e.clientX - rect.left) / this.JFAscale;
-			this.mouse.y = (rect.height - (e.clientY - rect.top)) / this.JFAscale;
+			this.mouse.x = ((e.clientX - rect.left) / this.JFAscale) * this.dpr;
+			this.mouse.y = ((rect.height - (e.clientY - rect.top)) / this.JFAscale) * this.dpr;
 			//console.log(this.mouse);
 			//console.log(this.mouse.x - this.jfaWidth / 2, this.mouse.y - this.jfaHeight / 2);
 		});
@@ -73,15 +79,17 @@ export default class Vizualization {
 		this.lastTime = 0;
 
 		this.renderer.setAnimationLoop(this.render.bind(this));
-		this.renderer.setSize(window.innerWidth, window.innerHeight);
 
 		window.addEventListener("resize", () => {
-			this.jfaWidth = Math.floor(window.innerWidth / this.JFAscale);
-			this.jfaHeight = Math.floor(window.innerHeight / this.JFAscale);
-			this.raymarchWidth = Math.floor(window.innerWidth / this.raymarchScale);
-			this.raymarchHeight = Math.floor(window.innerHeight / this.raymarchScale);
+			this.width = Math.floor(this.canvas.clientWidth * this.dpr);
+			this.height = Math.floor(this.canvas.clientHeight * this.dpr);
 
-			this.renderer.setSize(window.innerWidth, window.innerHeight);
+			this.renderer.setSize(this.width, this.height, false);
+
+			this.jfaWidth = Math.floor(this.width / this.JFAscale);
+			this.jfaHeight = Math.floor(this.height / this.JFAscale);
+			this.raymarchWidth = Math.floor(this.width / this.raymarchScale);
+			this.raymarchHeight = Math.floor(this.height / this.raymarchScale);
 
 			this.modelRT.setSize(this.jfaWidth, this.jfaHeight);
 			this.seedRT.setSize(this.jfaWidth, this.jfaHeight);
@@ -95,8 +103,8 @@ export default class Vizualization {
 			this.cascadeA.setSize(this.radiance_width, this.radiance_height);
 			this.cascadeB.setSize(this.radiance_width, this.radiance_height);
 
-			this.text.resize(this.jfaWidth, this.jfaHeight, window.innerWidth, window.innerHeight);
-			this.playable1.resize(this.jfaWidth, this.jfaHeight, window.innerWidth, window.innerHeight);
+			this.text.resize(this.jfaWidth, this.jfaHeight, this.width, this.height);
+			this.playable1.resize(this.jfaWidth, this.jfaHeight, this.width, this.height);
 		});
 	}
 
@@ -172,14 +180,14 @@ export default class Vizualization {
 		this.rayMaterial.uniforms.frame.value = 0;
 
 		this.bilateralMaterial = bilateral();
-		this.bilateralMaterial.uniforms.sigmaSpatial.value = 2.0;
-		this.bilateralMaterial.uniforms.sigmaRange.value = 0.3;
-		this.bilateralMaterial.uniforms.radius.value = 2;
+		this.bilateralMaterial.uniforms.sigma_d.value = 2.0;
+		this.bilateralMaterial.uniforms.sigma_r.value = 0.5;
+		this.bilateralMaterial.uniforms.radius.value = 2.0;
 
 		this.radiancecascadesMaterial = radiancecascades();
 		this.displayMaterial = new THREE.MeshBasicMaterial();
 
-		this.geometry = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
+		this.geometry = new THREE.PlaneGeometry(2, 2);
 		this.mesh = new THREE.Mesh(this.geometry, this.seedMaterial);
 		this.mesh.position.z = -1;
 		this.scene.add(this.mesh);
@@ -208,15 +216,12 @@ export default class Vizualization {
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear(); //this is incase the user changes the scale
 				this.renderer.render(this.scene, this.camera);
-
 			} else if (this.state.mode === "lyrics" && this.text.isReady) {
 				this.text.mesh.material.uniforms.time.value = performance.now() * 0.001;
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
 				this.renderer.render(this.text.scene, this.text.camera);
-
 			} else if (this.state.mode === "playable1" && this.playable1.isReady) {
-
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
 				this.renderer.render(this.playable1.scene, this.playable1.camera);
@@ -327,11 +332,9 @@ export default class Vizualization {
 		//overlay phase (to display text/video on full res)
 		if (this.state.mode === "playable1" && this.playable1.isReady) {
 			this.renderer.render(this.playable1.sceneOverlay, this.playable1.cameraOverlay);
-			
 		} else if (this.state.mode === "lyrics" && this.text.isReady) {
 			this.text.mesh.material.uniforms.time.value = performance.now() * 0.001;
 			this.renderer.render(this.text.sceneOverlay, this.text.cameraOverlay);
-			
 		} else if (this.state.mode === "video") {
 			this.mesh.material = this.resizerMaterial;
 			this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];

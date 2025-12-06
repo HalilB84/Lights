@@ -41,7 +41,7 @@ export default class LRC {
 			const minutes = parseInt(match[1]);
 			const seconds = parseFloat(match[2]);
 			let lyric = match[3].trim();
-			const time = (minutes * 60 + seconds);
+			const time = minutes * 60 + seconds;
 
 			if (lyric === "") lyric = "(Music)";
 
