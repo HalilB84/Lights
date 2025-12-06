@@ -68,7 +68,7 @@ export default class Playable1 {
 			const body = Matter.Bodies.rectangle(centerX, centerY, rectangleWidth, rectangleHeight, { restitution: 1.0 });
 			Matter.Composite.add(this.engine.world, body);
 
-			this.rectangles.push({ body, mesh, meshOverlay, color: Math.random() });
+			this.rectangles.push({ body, mesh, meshOverlay, color: Math.random() > 0.7 ? 1.0 : 0.0 });
 		}
 
 		const thickness = 10;
@@ -92,7 +92,7 @@ export default class Playable1 {
 		for (let i = 0; i < this.rectangles.length; i++) {
 			let { body, mesh, meshOverlay } = this.rectangles[i];
 
-			//bound check rq
+			//bound check rq because bodies can escape the walls
 			if (body.position.x < -this.width / 2 || body.position.x > this.width / 2 || body.position.y < -this.height / 2 || body.position.y > this.height / 2) {
 				Matter.Body.setPosition(body, { x: 0, y: 0 });
 			}
@@ -104,8 +104,9 @@ export default class Playable1 {
 			meshOverlay.scale.set(this.scaleOverlay, this.scaleOverlay);
 			meshOverlay.rotation.set(0, 0, body.angle);
 
-			this.rectangles[i].color = (this.rectangles[i].color + delta * 0.0004) % 1;
-			mesh.material.color.setHSL(this.rectangles[i].color, 1.0, 0.6);
+			//this.rectangles[i].color = (this.rectangles[i].color + delta * 0.0004) % 1;
+			//console.log(this.rectangles[i].color);
+			mesh.material.color.setHSL(0, 0, this.rectangles[i].color);
 
 			const dx = body.position.x - mouse.x;
 			const dy = body.position.y - mouse.y;

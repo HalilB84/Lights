@@ -1,8 +1,24 @@
+@font-face {
+	font-family: "Departure Mono";
+	src: url("./fonts/DepartureMono-Regular.woff2") format("woff2");
+}
+
+:root {
+	--bgt: rgba(0, 0, 0, 0.5);
+	--bgs: rgba(0, 0, 0, 1);
+	--border: 1px solid #fff;
+	--border-radius: 2px;
+	--text: #fff;
+	--font: "Departure Mono";
+	--padding: 8px;
+}
+
 html,
 body {
 	margin: 0;
 	background-color: #000000;
 	height: 100%;
+	font-family: var(--font);
 }
 
 canvas {
@@ -11,28 +27,65 @@ canvas {
 	display: block;
 }
 
-#settings {
+#settings-flex {
 	position: fixed;
 	top: 0;
 	right: 0;
-	background: rgba(0, 0, 0, 0.5);
-	color: #fff;
-	padding: 8px;
-	font-family: Arial;
-	font-size: 16px;
+
+	display: flex;
+	flex-direction: column;
+}
+
+#hide-settings,
+#settings {
+	background: var(--bgt);
+	color: var(--text);
+	padding: var(--padding);
+	border: var(--border);
+	border-radius: var(--border-radius);
+}
+
+#hide-settings {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 30px;
+}
+
+#settings {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
+
+	gap: 2px;
 }
 
-#video-upload,
-#audio-upload {
-	max-width: 200px;
+#settings.hidden {
+	display: none;
 }
+
+input,
+select,
+button {
+	background: var(--bgs);
+	border: var(--border);
+	border-radius: var(--border-radius);
+	color: var(--text);
+	font-family: var(--font);
+	font-size: 14px;
+	cursor: pointer;
+}
+
+
+/*below is to be refactored*/
 
 input[type="range"] {
 	height: 2px;
-	background: rgba(255, 255, 255, 0.2);
+}
+
+#audio-upload,
+#video-upload {
+	max-width: 200px;
 }
 
 .info {
@@ -54,11 +107,11 @@ input[type="range"] {
 	right: 0;
 	top: 100%;
 	max-width: 400px;
-	background: rgba(0, 0, 0, 1);
-	color: #fff;
-	padding: 8px 8px;
-	border-radius: 4px;
-	font-size: 14px;
+	background: var(--bgs);
+	color: var(--text);
+	padding: var(--padding);
+	border: var(--border);
+	border-radius: var(--border-radius);
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 0.2s;

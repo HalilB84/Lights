@@ -2,6 +2,9 @@ export default class UI {
 	constructor(state) {
 		this.state = state;
 
+		this.hideSettings = document.getElementById("hide-settings");
+		this.settings = document.getElementById("settings");
+
 		this.videoInput = document.getElementById("video-upload");
 		this.audioInput = document.getElementById("audio-upload");
 		this.mode = document.getElementById("mode");
@@ -36,6 +39,12 @@ export default class UI {
 
 		//complex state changes call a function in state to handle them
 		//otherwise state values are updated inline, maybe change this later
+
+		//pure ui should be somewhere else
+		this.hideSettings.addEventListener("click", () => {
+			const hidden = this.settings.classList.toggle("hidden");
+			this.hideSettings.textContent = hidden ? "Show Settings" : "Hide Settings";
+		});
 
 		this.videoInput.addEventListener("change", (e) => this.handleVideo(e));
 		this.audioInput.addEventListener("change", (e) => this.handleAudio(e));

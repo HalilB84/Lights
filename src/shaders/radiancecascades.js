@@ -76,6 +76,8 @@ export default function radiancecascades() {
                 vec2 delta = vec2(cos(theta), -sin(theta));
                 vec2 ray = (point + (delta * info.offset)) * texel;
 
+                //there is also the issue where a ray can accidentally sample a pixel that is not the edge of a light source since it starts at info.offset. Doesn't seem to change much
+
                 for(float i = 0.0, df = 0.0, rd = 0.0; i < info.range; i++) {
                     df = texture(distanceTexture, ray).r;
                     
@@ -95,7 +97,7 @@ export default function radiancecascades() {
 
             vec4 merge(vec4 rinfo, float index, probe_info pinfo) {
                 if (rinfo.a == 0.0 || cascadeIndex >= cascadeCount - 1.0)                               //If the ray hits something (meaning we dont need to check upper cascades) or this is the first (topmost) cascade (there is no upper cascade) just return the color.                         
-                    return vec4(rinfo.rgb, 0.0);                                                        //The original code has 1.0 - rinfo.a, but since this output also goes through the bilateral filter we don't need it. 
+                    return vec4(rinfo.rgb, 0.0);                                                        //The original code has 1.0 - rinfo.a, but at least here it doesn't matter. There is no alpha check in the merge step so alpha can be anything.
                 
                 float angularN1 = pow(2.0, cascadeIndex + 1.0);                                         //The number of direction segments in each axis in the upper cascade
                 vec2 sizeN1 = pinfo.size * 0.5;                                                         //The size of each direction block in the upper cascade
