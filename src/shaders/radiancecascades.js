@@ -1,13 +1,29 @@
 import * as THREE from "three";
 
+//appreciate the beauty of this algorithm for a minute
+
 //https://mini.gmshaders.com/p/radiance-cascades2
 //https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades/Shd_RadianceCascades.fsh
-//Vanilla RC code from Yaazarai's repo commented with my own understanding
+//Vanilla RC code from Yaazarai's repo commented with my own understanding + some small changes
 //At least for me the easiest way to build intuition was to simulate the process on a 8x8 grid using 2 cascades.
 
 //Things that need further explaining:
-//Why do we need to overlap the range? -> Explained below in the code
 //Why is clamping +- 1 units still failing on some resolutions? -> Still have no idea
+
+//Whats up with performance?
+//Quite puzzled on performance, I expected RC to be faster than naive ray marching as every other tutorial says it is
+//With 6 cascade passes and a fixed 4 rays per pixel, thats 24 rays per pixel not counting the ray marching phase.
+//How does naive ray marching run faster than RC with 32 rays per pixel? Is it beacuse RC is done in several passes? 
+//Also like why does this happen when the text on the screen is bigger? I get that its more ray steps but it shouldnt be slower than Naive RM????????
+
+//RC TODOS:
+//Implement and explain optional bilinear-fix. First of all why does the interpolation artifacts happen -> the probe in cascadeN might be blocked with an occluder but the probes in cascadeN+1 are not necessarily blocked.
+//So what is the fix? -> https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades_BilinearFix/Shd_RadianceCascades_BilinearFix.fsh
+//explaining that is for another day
+
+//Rewrite the code to be more understandable (including comments)
+//I should probably learn why sRGB is used
+//more advanced stuff?
 
 export default function radiancecascades() {
 	return new THREE.ShaderMaterial({
@@ -70,7 +86,7 @@ export default function radiancecascades() {
 
                 range += length(vec2(cascadeLinear * pow(2.0, cascadeIndex + 1.0)));                //The probe in cascadeN doesnt map the the same relative location in cascadeN+1, there will be some difference in the positions.
                                                                                                     //So think about this example where the range is not extended: The probe I shot a ray from in cascadeN didn't hit anything. 
-                                                                                                    //In the merge step, I ask the upper cascade what happens to this ray?. However because of the difference in relative positions the probe in cascadeN+1 shoots the ray at a slight offset in addition to the normal offset. 
+                                                                                                    //In the merge step, I ask the upper cascade what happened to this ray?. However because of the difference in relative positions the probe in cascadeN+1 shoots the ray at a slight offset in addition to the normal offset. 
                                                                                                     //Because of this unintended additional offset, the ray might skip over a light source and sample something behind it. I think this is what is meant by a light leak in the original post.
 
                 //Why extend it that much? Because that is the digonal (max) distance between probes in cascadeN+1, and the relative difference can be at most this much between the 4 interpolating probes.   
@@ -86,6 +102,7 @@ export default function radiancecascades() {
                 vec2 ray = (point + (delta * info.offset)) * texel;
 
                 //there is also the issue where a ray can accidentally sample a pixel that is not the edge of a light source since it starts at info.offset. Doesn't seem to change much
+                //wait no, because of the extended range in the previous cascade, this shouldnt be a problem, we never start a ray at a seed/light location. 
 
                 for(float i = 0.0, df = 0.0, rd = 0.0; i < info.range; i++) {
                     df = texture(distanceTexture, ray).r;

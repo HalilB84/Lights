@@ -149,10 +149,14 @@ export default class Vizualization {
 	}
 
 	rcCalculations() {
-		//RC
-		//Calculations taken from Create_0.gml and needs explaining and im probably doing something wrong because it requires one more cascade?
+		//some differences from the original code atp idc. 
+		this.radiance_interval = 1; //TODO: figure out why in the original code its set to 2?
+
 		const diagonal = Math.sqrt(this.jfaWidth * this.jfaWidth + this.jfaHeight * this.jfaHeight);
-		this.radiance_cascades = Math.ceil(Math.log(diagonal) / Math.log(4));
+
+		this.radiance_cascades = Math.ceil(Math.log((3 * diagonal / this.radiance_interval) + 1) / Math.log(4));
+		//console.log(diagonal);
+		//console.log(this.radiance_cascades);
 
 		const errorRate = Math.pow(2.0, this.radiance_cascades - 1);
 		const errorX = Math.ceil(this.jfaWidth / errorRate);
@@ -165,7 +169,6 @@ export default class Vizualization {
 		//console.log("end");
 
 		this.radiance_linear = 1; //spacing between probes/quality control however anything other than 1 either looks bad or tanks performance
-		this.radiance_interval = 1; //TODO: figure out why in the original code its set to 2?
 		this.radiance_width = Math.floor(this.render_width / this.radiance_linear);
 		this.radiance_height = Math.floor(this.render_height / this.radiance_linear);
 	}
