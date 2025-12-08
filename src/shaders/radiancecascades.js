@@ -13,7 +13,7 @@ import * as THREE from "three";
 //Whats up with performance?
 //Quite puzzled on performance, I expected RC to be faster than naive ray marching as every other tutorial says it is
 //With 6 cascade passes and a fixed 4 rays per pixel, thats 24 rays per pixel not counting the ray marching phase.
-//How does naive ray marching run faster than RC with 32 rays per pixel? Is it beacuse RC is done in several passes? 
+//How does naive ray marching run faster than RC with 32 rays per pixel? Is it beacuse RC is done in several passes?
 //Also like why does this happen when the text on the screen is bigger? I get that its more ray steps but it shouldnt be slower than Naive RM????????
 
 //RC TODOS:

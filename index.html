@@ -12,11 +12,13 @@
 			<button id="hide-settings">Hide Settings</button>
 			<div id="settings">
 				<div class="setting-row">
-					<label>Video <input type="file" id="video-upload" accept="video/*" /></label>
+					<label for="video-upload">Video</label>
+					<input type="file" id="video-upload" accept="video/*" />
 					<span class="info" data-tooltip="Upload a video to start the light show. The video data is only used locally so you don't have to worry about privacy."><img src="help.svg" /></span>
 				</div>
 				<div class="setting-row">
-					<label>Audio <input type="file" id="audio-upload" accept="audio/*" /></label>
+					<label for="audio-upload">Audio</label>
+					<input type="file" id="audio-upload" accept="audio/*" />
 					<span class="info" data-tooltip="For the lyrics mode upload an audio file with this naming convention for it to correctly work: songname-artist.mp3"><img src="help.svg" /></span>
 				</div>
 
@@ -30,20 +32,36 @@
 				</div>
 
 				<button id="play-pause">Play / Pause</button>
-				<label>Volume <input type="range" id="video-volume" min="0" max="1" step="0.01" value="0.5" /></label>
-				<label>Video scale <input type="range" id="video-scale" min="0.01" max="1" step="0.05" value="0.5" /></label>
-				<label>Text scale <input type="range" id="text-scale" min="0.1" max="2" step="0.05" value="0.5" /></label>
-				<label>Radiance modifier <input type="range" id="radiance-modifier" min="0" max="3" step="0.1" value="1" /></label>
-				<label>Fix blocky edges <input type="checkbox" id="fix-edges" /></label>
-				<div class="rc">
-					<div class="setting-row" id="row-1">
-						<label>Enable Radiance Cascades <input type="checkbox" id="enable-rc" /></label>
-						<span class="info" data-tooltip="Radiance Cascades is a noise free algorithm to achieve global illumination created by Alexander Sannikov. This 2D implementation is based on Yaazarai's Vanilla RC code. More info on Github. It is better from naive ray marching in a sense that there is no noise (it looks better, subjectively of course) and runs faster with the below '2 pass optimization' checkbox selected"><img src="help.svg" /></span>
-					</div>
-					<div class="setting-row" id="row-2">
-						<label id="2-pass-optimization-label">2 pass optimization <input type="checkbox" id="2-pass-optimization" /></label>
-						<span class="info" data-tooltip="If performance is an issue, enable this. The cascade calculation happens in 2 passes, meaning if the overlay is 60 fps, the lighting is calculated at 30 fps. Because the overlay and the light are calculated at different speeds, there will be artifacts where the previous frame is visible for a split second."><img src="help.svg" /></span>
-					</div>
+				<div class="setting-row">
+					<label for="video-volume">Volume</label>
+					<input type="range" id="video-volume" min="0" max="1" step="0.01" value="0.5" />
+				</div>
+				<div class="setting-row">
+					<label for="video-scale">Video scale</label>
+					<input type="range" id="video-scale" min="0" max="1" step="0.05" value="0.5" />
+				</div>
+				<div class="setting-row">
+					<label for="text-scale">Text scale</label>
+					<input type="range" id="text-scale" min="0" max="2" step="0.05" value="0.5" />
+				</div>
+				<div class="setting-row">
+					<label for="radiance-modifier">Radiance modifier</label>
+					<input type="range" id="radiance-modifier" min="0" max="2" step="0.1" value="1" />
+				</div>
+				<div class="setting-row">
+					<label for="fix-edges">Fix blocky edges</label>
+					<input type="checkbox" id="fix-edges" />
+				</div>
+
+				<div class="setting-row" id="row-1">
+					<label for="enable-rc">Enable Radiance Cascades</label>
+					<input type="checkbox" id="enable-rc" />
+					<span class="info" data-tooltip="Radiance Cascades is a noise free algorithm to achieve global illumination created by Alexander Sannikov. This 2D implementation is based on Yaazarai's Vanilla RC code. More info on Github. It is better from naive ray marching in a sense that there is no noise (it looks better, subjectively of course) and runs faster with the below '2 pass optimization' checkbox selected"><img src="help.svg" /></span>
+				</div>
+				<div class="setting-row" id="row-2">
+					<label id="2-pass-optimization-label">2 pass optimization</label>
+					<input type="checkbox" id="2-pass-optimization" />
+					<span class="info" data-tooltip="If performance is an issue, enable this. The cascade calculation happens in 2 passes, meaning if the overlay is 60 fps, the lighting is calculated at 30 fps. Because the overlay and the light are calculated at different speeds, there will be artifacts where the previous frame is visible for a split second."><img src="help.svg" /></span>
 				</div>
 			</div>
 		</div>

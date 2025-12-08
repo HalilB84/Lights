@@ -70,8 +70,8 @@ export default class Vizualization {
 		this.canvas.addEventListener("mousemove", (e) => {
 			//bottom left corner is 0,0 to match UV coords
 			const rect = this.canvas.getBoundingClientRect();
-			this.mouse.x = ((e.clientX - rect.left) / this.JFAscale) * this.dpr;
-			this.mouse.y = ((rect.height - (e.clientY - rect.top)) / this.JFAscale) * this.dpr;
+			this.mouse.x = ((e.clientX - rect.left) * this.dpr) / this.JFAscale;
+			this.mouse.y = ((rect.height - (e.clientY - rect.top)) * this.dpr) / this.JFAscale;
 			//console.log(this.mouse);
 			//console.log(this.mouse.x - this.jfaWidth / 2, this.mouse.y - this.jfaHeight / 2);
 		});
@@ -149,12 +149,12 @@ export default class Vizualization {
 	}
 
 	rcCalculations() {
-		//some differences from the original code atp idc. 
+		//some differences from the original code atp idc.
 		this.radiance_interval = 1; //TODO: figure out why in the original code its set to 2?
 
 		const diagonal = Math.sqrt(this.jfaWidth * this.jfaWidth + this.jfaHeight * this.jfaHeight);
 
-		this.radiance_cascades = Math.ceil(Math.log((3 * diagonal / this.radiance_interval) + 1) / Math.log(4));
+		this.radiance_cascades = Math.ceil(Math.log((3 * diagonal) / this.radiance_interval + 1) / Math.log(4));
 		//console.log(diagonal);
 		//console.log(this.radiance_cascades);
 
@@ -219,11 +219,13 @@ export default class Vizualization {
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear(); //this is incase the user changes the scale
 				this.renderer.render(this.scene, this.camera);
+				//
 			} else if (this.state.mode === "lyrics" && this.text.isReady) {
 				this.text.mesh.material.uniforms.time.value = performance.now() * 0.001;
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
 				this.renderer.render(this.text.scene, this.text.camera);
+				//
 			} else if (this.state.mode === "playable1" && this.playable1.isReady) {
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
@@ -335,9 +337,11 @@ export default class Vizualization {
 		//overlay phase (to display text/video on full res)
 		if (this.state.mode === "playable1" && this.playable1.isReady) {
 			this.renderer.render(this.playable1.sceneOverlay, this.playable1.cameraOverlay);
+			//
 		} else if (this.state.mode === "lyrics" && this.text.isReady) {
 			this.text.mesh.material.uniforms.time.value = performance.now() * 0.001;
 			this.renderer.render(this.text.sceneOverlay, this.text.cameraOverlay);
+			//
 		} else if (this.state.mode === "video") {
 			this.mesh.material = this.resizerMaterial;
 			this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];

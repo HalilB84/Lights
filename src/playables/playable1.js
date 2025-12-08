@@ -68,7 +68,7 @@ export default class Playable1 {
 			const body = Matter.Bodies.rectangle(centerX, centerY, rectangleWidth, rectangleHeight, { restitution: 1.0 });
 			Matter.Composite.add(this.engine.world, body);
 
-			this.rectangles.push({ body, mesh, meshOverlay, color: Math.random() > 0.7 ? 1.0 : 0.0 });
+			this.rectangles.push({ body, mesh, meshOverlay, color: Math.random() });
 		}
 
 		const thickness = 10;
@@ -106,7 +106,7 @@ export default class Playable1 {
 
 			//this.rectangles[i].color = (this.rectangles[i].color + delta * 0.0004) % 1;
 			//console.log(this.rectangles[i].color);
-			mesh.material.color.setHSL(0, 0, this.rectangles[i].color);
+			mesh.material.color.setHSL(1, 1, this.rectangles[i].color);
 
 			const dx = body.position.x - mouse.x;
 			const dy = body.position.y - mouse.y;
