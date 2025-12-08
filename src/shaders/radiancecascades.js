@@ -82,7 +82,7 @@ export default function radiancecascades() {
                 float offset = (cascadeInterval  * (1.0 - pow(4.0, cascadeIndex))) / (1.0 - 4.0);   //In each cascade level we are responsible for different ray ranges, thus we need to calculate the starting offset as follows.
                 float range = cascadeInterval * pow(4.0, cascadeIndex);                             //The range of rays we are responsible for. 
                 
-                //Just to solidfy starting and ending points it goes like: Cascade0: [0, 1], Cascade1: [1, 5], Cascade2: [5, 21], Cascade3: [21, 85], Cascade4: [85, 341], Cascade5: [341, 1365], Cascade6: [1365, 5461], you won't need more than that
+                //Just to solidfy starting and ending points it goes like (assuming cascadeInterval is 1): Cascade0: [0, 1], Cascade1: [1, 5], Cascade2: [5, 21], Cascade3: [21, 85], Cascade4: [85, 341], Cascade5: [341, 1365], Cascade6: [1365, 5461], you won't need more than that
 
                 range += length(vec2(cascadeLinear * pow(2.0, cascadeIndex + 1.0)));                //The probe in cascadeN doesnt map the the same relative location in cascadeN+1, there will be some difference in the positions.
                                                                                                     //So think about this example where the range is not extended: The probe I shot a ray from in cascadeN didn't hit anything. 

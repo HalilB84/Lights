@@ -74,6 +74,8 @@ canvas {
 	gap: 5px;
 }
 
+#video-button,
+#audio-button,
 select,
 button {
 	background: var(--bgs);
@@ -86,7 +88,17 @@ button {
 
 	display: flex; /*this is actually nuts doesnt work on firefox???*/
 	align-items: center;
-	height: 20px;
+
+	height: 22px;
+}
+
+#video-name,
+#audio-name {
+	max-width: 120px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	cursor: pointer;
 }
 
 input[type="range"] {
@@ -99,7 +111,7 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-thumb {
 	-webkit-appearance: none;
 	appearance: none;
-	background-color: #fff;
+	background-color: #ffffff;
 	width: 17px;
 	height: 17px;
 }
@@ -115,6 +127,7 @@ input[type="range"]::-webkit-slider-runnable-track {
 input[type="range"]::-moz-range-thumb {
 	border: none;
 	border-radius: 0;
+	background-color: #ffffff;
 	height: 18px;
 	width: 18px;
 }
@@ -125,9 +138,11 @@ input[type="range"]::-moz-range-track {
 	height: 18px;
 }
 
-input[type="file"] {
-	width: 180px;
+
+input[type="checkbox"] {
+	accent-color: #333;
 }
+
 
 /*premium rage bait here. I genuinely have no idea how people do this shit*/
 @media (max-width: 600px) and (orientation: portrait) {
@@ -140,7 +155,7 @@ input[type="file"] {
 @media (max-height: 600px) and (orientation: landscape) {
 	#hide-settings,
 	#settings {
-		zoom: 0.65;
+		zoom: 0.5;
 	}
 }
 
@@ -169,6 +184,9 @@ input[type="file"] {
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 0.2s;
+
+	width: 450px;
+
 }
 
 .info:hover::after {

@@ -187,7 +187,7 @@ export default class Text {
                     vec3 c3 = vec3(0.00, 0.25, 0.25);
 
                     vec3 paletteColor = palette(r, c0, c1, c2, c3);
-                    
+
                     gl_FragColor = vec4(paletteColor, alpha * uOpacity);
                     if (gl_FragColor.a < 0.00001){ //I initially thought that gl_FragColor.a != 1.0 would suffice since there would be no blending issues but It does look blocky, I mean its fine it works right now with the black body color. 
                         discard;

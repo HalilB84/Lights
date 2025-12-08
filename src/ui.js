@@ -6,7 +6,9 @@ export default class UI {
 		this.settings = document.getElementById("settings");
 
 		this.videoInput = document.getElementById("video-upload");
+		this.videoName = document.getElementById("video-name");
 		this.audioInput = document.getElementById("audio-upload");
+		this.audioName = document.getElementById("audio-name");
 		this.mode = document.getElementById("mode");
 
 		this.playPause = document.getElementById("play-pause");
@@ -115,7 +117,7 @@ export default class UI {
 		const url = URL.createObjectURL(file);
 
 		video.src = url;
-
+		this.videoName.textContent = file.name;
 		video.onloadeddata = () => {
 			console.log("Video loaded");
 			this.state.loadVideo(video);
@@ -133,7 +135,8 @@ export default class UI {
 		const artistName = file.name.split("-")[1].replace(/\.[^.]+$/, "");
 
 		audio.src = url;
-
+		this.audioName.textContent = file.name;
+		
 		audio.onloadeddata = () => {
 			console.log("Audio loaded");
 			this.state.loadAudio(audio, trackName, artistName);

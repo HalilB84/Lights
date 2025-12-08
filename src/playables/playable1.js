@@ -96,7 +96,7 @@ export default class Playable1 {
 			if (body.position.x < -this.width / 2 || body.position.x > this.width / 2 || body.position.y < -this.height / 2 || body.position.y > this.height / 2) {
 				Matter.Body.setPosition(body, { x: 0, y: 0 });
 			}
-
+ 
 			mesh.position.set(body.position.x, body.position.y, 0);
 			mesh.rotation.set(0, 0, body.angle);
 

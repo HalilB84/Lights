@@ -9,6 +9,7 @@ import radiancecascades from "./shaders/radiancecascades.js";
 import Text from "./playables/text.js";
 import LRC from "./playables/lrcplayer.js";
 import Playable1 from "./playables/playable1.js";
+import Playable2 from "./playables/playable2.js";
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
 
@@ -62,7 +63,7 @@ export default class Vizualization {
 		this.lrcPlayer = new LRC();
 		this.text = new Text(this.jfaWidth, this.jfaHeight, this.state.settings.textScale, this.width, this.height, this.JFAscale * this.state.settings.textScale);
 		this.playable1 = new Playable1(this.jfaWidth, this.jfaHeight, this.width, this.height, this.JFAscale);
-
+		this.playable2 = new Playable2(this.jfaWidth, this.jfaHeight, this.width, this.height, this.JFAscale);
 		this.initialize();
 		this.shaders();
 
@@ -105,6 +106,7 @@ export default class Vizualization {
 
 			this.text.resize(this.jfaWidth, this.jfaHeight, this.width, this.height);
 			this.playable1.resize(this.jfaWidth, this.jfaHeight, this.width, this.height);
+			this.playable2.resize(this.jfaWidth, this.jfaHeight, this.width, this.height);
 		});
 	}
 
@@ -205,6 +207,8 @@ export default class Vizualization {
 
 		if (this.state.mode === "playable1") {
 			this.playable1.update(delta, { x: this.mouse.x - this.jfaWidth / 2, y: this.mouse.y - this.jfaHeight / 2 });
+		} else if (this.state.mode === "playable2") {
+			this.playable2.update(delta, { x: this.mouse.x - this.jfaWidth / 2, y: this.mouse.y - this.jfaHeight / 2 });
 		}
 
 		if ((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
@@ -230,6 +234,10 @@ export default class Vizualization {
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
 				this.renderer.render(this.playable1.scene, this.playable1.camera);
+			} else if (this.state.mode === "playable2" && this.playable2.isReady) {
+				this.renderer.setRenderTarget(this.modelRT);
+				this.renderer.clear();
+				this.renderer.render(this.playable2.scene, this.playable2.camera);
 			}
 
 			this.nextTexture = this.modelRT.texture;
@@ -351,6 +359,8 @@ export default class Vizualization {
 			this.resizerMaterial.uniforms.videoScale.value = this.state.video.scale;
 
 			this.renderer.render(this.scene, this.camera);
+		} else if (this.state.mode === "playable2" && this.playable2.isReady) {
+			this.renderer.render(this.playable2.sceneOverlay, this.playable2.cameraOverlay);
 		}
 
 		this.frameCount++;

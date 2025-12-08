@@ -85,7 +85,11 @@ class State {
 	}
 
 	loadAudio(audio, trackName, artistName) {
-		if (this.audio.element) this.audio.element.pause();
+		if (this.audio.element) {
+			this.audio.element.pause();
+			this.audio.element.removeEventListener("timeupdate", this.audioUpdateFunction);
+		}
+
 		this.audio.element = audio;
 		this.audio.element.volume = this.audio.volume;
 
@@ -93,14 +97,16 @@ class State {
 
 		this.vizualization.lrcPlayer.getLRCLIB(trackName, artistName).then(() => {
 			this.toggleAudio(false);
-		});
 
-		this.audio.element.addEventListener("timeupdate", () => {
-			const [lyric, changed] = this.vizualization.lrcPlayer.update(this.audio.element.currentTime);
+			this.audioUpdateFunction = () => {
+				const [lyric, changed] = this.vizualization.lrcPlayer.update(this.audio.element.currentTime);
 
-			if (changed == "init" || changed == "changed") {
-				this.vizualization.text.createScene(lyric);
-			}
+				if (changed == "init" || changed == "changed") {
+					this.vizualization.text.createScene(lyric);
+				}
+			};
+
+			this.audio.element.addEventListener("timeupdate", this.audioUpdateFunction);
 		});
 	}
 

@@ -33,7 +33,7 @@ https://github.com/user-attachments/assets/b8725f49-4634-4391-911b-90c8e33ae27c
 
 Planned Features:
 
-- Audio visual feature where lights react to music
+- Audio visual feature where lights react to music -> yeahhh about that
 - Playground for playing with light [Inspired by Lusion Labs](https://akari.lusion.co/#home)
 - Many more cool things you can do with light
 
