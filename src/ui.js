@@ -52,7 +52,7 @@ export default class UI {
 		this.audioInput.addEventListener("change", (e) => this.handleAudio(e));
 
 		this.playPause.addEventListener("click", () => {
-			if (this.mode.value === "video") {
+			if (this.mode.value === "playable2" || this.mode.value === "video") {
 				this.state.toggleVideo(false);
 			} else if (this.mode.value === "lyrics") {
 				this.state.toggleAudio(false);
@@ -136,7 +136,7 @@ export default class UI {
 
 		audio.src = url;
 		this.audioName.textContent = file.name;
-		
+
 		audio.onloadeddata = () => {
 			console.log("Audio loaded");
 			this.state.loadAudio(audio, trackName, artistName);

@@ -208,7 +208,7 @@ export default class Vizualization {
 		if (this.state.mode === "playable1") {
 			this.playable1.update(delta, { x: this.mouse.x - this.jfaWidth / 2, y: this.mouse.y - this.jfaHeight / 2 });
 		} else if (this.state.mode === "playable2") {
-			this.playable2.update(delta, { x: this.mouse.x - this.jfaWidth / 2, y: this.mouse.y - this.jfaHeight / 2 });
+			this.playable2.update(this.state.video.texture);
 		}
 
 		if ((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {

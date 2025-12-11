@@ -3,6 +3,14 @@
 	src: url("/fonts/DepartureMono-Regular.woff2") format("woff2");
 }
 
+/*sooo i just learned that css resets exist.*/
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
 /*css of doom and despair, I genuinely have no idea how to properly design anything*/
 
 :root {
@@ -49,13 +57,6 @@ canvas {
 	border-radius: var(--border-radius);
 }
 
-#hide-settings {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	height: 30px;
-}
-
 #settings {
 	display: flex;
 	flex-direction: column;
@@ -71,7 +72,7 @@ canvas {
 .setting-row {
 	display: flex;
 	align-items: center;
-	gap: 5px;
+	gap: 3px;
 }
 
 #video-button,
@@ -83,13 +84,16 @@ button {
 	border-radius: var(--border-radius);
 	color: var(--text);
 	font-family: var(--font);
+	font-weight: normal;
 	cursor: pointer;
 	font-size: var(--font-size);
 
-	display: flex; /*this is actually nuts doesnt work on firefox???*/
-	align-items: center;
+	padding: 2px;
+	height: 26px;
 
-	height: 22px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 #video-name,
@@ -101,48 +105,47 @@ button {
 	cursor: pointer;
 }
 
+/*its off wtf man its 2025 why cant I style sliders properly. THE FIREFOX SLIDERs ARE OFF WHY???????*/
+
 input[type="range"] {
 	-webkit-appearance: none;
 	appearance: none;
 	background: transparent;
 	cursor: pointer;
+	margin: 0;
 }
 
 input[type="range"]::-webkit-slider-thumb {
 	-webkit-appearance: none;
 	appearance: none;
 	background-color: #ffffff;
-	width: 17px;
-	height: 17px;
+	width: 19px;
+	height: 19px;
 }
-
-/*its off wtf man its 2025 why cant I style sliders properly*/
 
 input[type="range"]::-webkit-slider-runnable-track {
 	background: var(--bgs);
 	border: var(--border);
-	height: 18px;
+	height: 20px;
 }
 
 input[type="range"]::-moz-range-thumb {
 	border: none;
 	border-radius: 0;
 	background-color: #ffffff;
-	height: 18px;
-	width: 18px;
+	height: 20px;
+	width: 20px;
 }
 
 input[type="range"]::-moz-range-track {
 	background: var(--bgs);
 	border: var(--border);
-	height: 18px;
+	height: 18.5px;
 }
-
 
 input[type="checkbox"] {
 	accent-color: #333;
 }
-
 
 /*premium rage bait here. I genuinely have no idea how people do this shit*/
 @media (max-width: 600px) and (orientation: portrait) {
@@ -185,8 +188,7 @@ input[type="checkbox"] {
 	pointer-events: none;
 	transition: opacity 0.2s;
 
-	width: 450px;
-
+	width: 140%;
 }
 
 .info:hover::after {
