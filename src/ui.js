@@ -37,7 +37,7 @@ export default class UI {
 		this.state.settings.enableRC = this.enableRC.checked = this.isMobile ? true : true;
 		//special case
 		this.state.settings.twoPassOptimization = this.twoPassOptimization.checked = true;
-		document.getElementById("row-2").style.display = this.enableRC.checked ? "block" : "none";
+		document.getElementById("row-2").style.display = this.enableRC.checked ? "flex" : "none";
 
 		//complex state changes call a function in state to handle them
 		//otherwise state values are updated inline, maybe change this later

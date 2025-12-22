@@ -13,7 +13,7 @@ import Playable2 from "./playables/playable2.js";
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
 
-export default class Vizualization {
+export default class Visualization {
 	constructor(state) {
 		this.state = state;
 

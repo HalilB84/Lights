@@ -1,4 +1,4 @@
-import Vizualization from "./vizualization.js";
+import Visualization from "./visualization.js";
 import UI from "./ui.js";
 import * as THREE from "three";
 
@@ -39,14 +39,14 @@ class State {
 		};
 
 		this.ui = new UI(this);
-		this.vizualization = new Vizualization(this);
+		this.visualization = new Visualization(this);
 	}
 
 	setTextScale(value) {
 		this.settings.textScale = value;
-		this.vizualization.text.scale = this.settings.textScale;
-		this.vizualization.text.scaleOverlay = this.settings.textScale * this.vizualization.JFAscale;
-		this.vizualization.text.createScene();
+		this.visualization.text.scale = this.settings.textScale;
+		this.visualization.text.scaleOverlay = this.settings.textScale * this.visualization.JFAscale;
+		this.visualization.text.createScene();
 	}
 
 	loadVideo(video) {
@@ -60,9 +60,6 @@ class State {
 		this.video.element = video;
 		this.video.element.volume = this.video.volume;
 		this.video.texture = new THREE.VideoTexture(video);
-		this.video.texture.minFilter = THREE.LinearFilter;
-		this.video.texture.magFilter = THREE.LinearFilter;
-		this.video.texture.format = THREE.RGBAFormat;
 		this.video.height = video.videoHeight;
 		this.video.width = video.videoWidth;
 
@@ -93,16 +90,16 @@ class State {
 		this.audio.element = audio;
 		this.audio.element.volume = this.audio.volume;
 
-		this.vizualization.text.createScene("Loading lyrics...");
+		this.visualization.text.createScene("Loading lyrics...");
 
-		this.vizualization.lrcPlayer.getLRCLIB(trackName, artistName).then(() => {
+		this.visualization.lrcPlayer.getLRCLIB(trackName, artistName).then(() => {
 			this.toggleAudio(false);
 
 			this.audioUpdateFunction = () => {
-				const [lyric, changed] = this.vizualization.lrcPlayer.update(this.audio.element.currentTime);
+				const [lyric, changed] = this.visualization.lrcPlayer.update(this.audio.element.currentTime);
 
 				if (changed == "init" || changed == "changed") {
-					this.vizualization.text.createScene(lyric);
+					this.visualization.text.createScene(lyric);
 				}
 			};
 
@@ -112,7 +109,7 @@ class State {
 
 	toggleAudio(forcePause) {
 		const audio = this.audio.element;
-		if (!audio || !this.vizualization.lrcPlayer.isReady) return;
+		if (!audio || !this.visualization.lrcPlayer.isReady) return;
 		if (forcePause) audio.pause();
 		else if (audio.paused) audio.play();
 		else audio.pause();

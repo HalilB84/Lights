@@ -49,11 +49,6 @@ export default function jfa() {
                             float dist_raw = dot(diff_px, diff_px);
                             float dist_sq = dist_raw;
                             
-                            if (abs(dist_raw - nearestDist) == 0.0) { //this shit fixes something, not sure what but yes
-                                float seedBias = fract(sin(dot(sampleValue.xy, vec2(12.9898, 78.233))) * 43758.5453);
-                                dist_sq -= seedBias * 1e-1; 
-                            }
-
                             if(dist_sq  < nearestDist){
                                 nearestDist = dist_sq;
                                 nearestSeed = sampleValue; 

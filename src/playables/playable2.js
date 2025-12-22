@@ -49,10 +49,10 @@ export default class Playable2 {
 		const numCircles = 10;
 
 		this.material = this.createShaderMaterial();
-		this.material.uniforms.resolution.value = new THREE.Vector2(this.width, this.height);
+		this.material.uniforms.resolution.value = [this.width, this.height];
 
 		this.materialOverlay = this.createShaderMaterial();
-		this.materialOverlay.uniforms.resolution.value = new THREE.Vector2(this.widthOverlay, this.heightOverlay);
+		this.materialOverlay.uniforms.resolution.value = [this.widthOverlay, this.heightOverlay];
 
 		for (let i = 0; i < numCircles; i++) {
 			for (let j = 0; j < numCircles; j++) {
