@@ -32,21 +32,17 @@ export default class LRC {
 			return;
 		}
 
-		const text = results[0].syncedLyrics;
-		const lines = text.split("\n");
-		const regex = /\[(\d{2}):(\d{2}\.\d{2})\]\s*(.*)/;
+		const lines = results[0].syncedLyrics.split("\n");
+
 		for (const line of lines) {
-			const match = line.match(regex);
+			const time = line.substring(1, 9).split(":");
+			const lyric = line.substring(10).trim();
 
-			const minutes = parseInt(match[1]);
-			const seconds = parseFloat(match[2]);
-			let lyric = match[3].trim();
-			const time = minutes * 60 + seconds;
-
-			if (lyric === "") lyric = "(Music)";
-
-			this.timedLyrics.push({ time, lyric });
-		}
+			this.timedLyrics.push({
+				time:  parseFloat(time[0]) * 60 + parseFloat(time[1]),
+				lyric: lyric
+			})
+		}	
 
 		this.prevIndex = -1;
 		this.isReady = true;

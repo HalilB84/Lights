@@ -68,7 +68,6 @@ export default class UI {
 				this.state.toggleVideo(true);
 			}
 
-			this.state.modeIsVideo = this.mode.value === "video";
 			this.state.mode = this.mode.value;
 
 			if (this.mode.value === "video") {
@@ -78,7 +77,8 @@ export default class UI {
 			}
 
 			this.state.settings.fixEdges = this.fixEdges.checked = this.mode.value !== "video";
-			this.state.settings.radiance = this.radianceModifier.value;
+			this.fixEdges.dispatchEvent(new Event("change"));
+			this.radianceModifier.dispatchEvent(new Event("input"));
 		});
 
 		this.volume.addEventListener("input", () => {
@@ -103,7 +103,7 @@ export default class UI {
 
 		this.enableRC.addEventListener("change", () => {
 			this.state.settings.enableRC = this.enableRC.checked;
-			document.getElementById("row-2").style.display = this.enableRC.checked ? "block" : "none";
+			document.getElementById("row-2").style.display = this.enableRC.checked ? "flex" : "none";
 		});
 
 		this.twoPassOptimization.addEventListener("change", () => {

@@ -12,7 +12,6 @@ import * as THREE from "three";
 
 class State {
 	constructor() {
-		this.modeIsVideo = null;
 		this.mode = null;
 		this.isMobile = null;
 

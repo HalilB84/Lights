@@ -30,6 +30,7 @@ https://github.com/user-attachments/assets/b8725f49-4634-4391-911b-90c8e33ae27c
 - ~~Research how to make this runable on an average device~~ -> ~~Solved by downscaling, filtering and upscaling, still can be improved~~ -> ~~calculate cascades between two passes, looks no different and finally realtime on mobile!~~
 - Figure out dpr shenanigans and proper scaling based on which platform the user is on
 - Look into holographic radiance cascades
+- Switch to TypeScript as a learning experience because it looks way better
 
 Planned Features:
 

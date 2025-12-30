@@ -73,8 +73,6 @@ export default class Visualization {
 			const rect = this.canvas.getBoundingClientRect();
 			this.mouse.x = ((e.clientX - rect.left) * this.dpr) / this.JFAscale;
 			this.mouse.y = ((rect.height - (e.clientY - rect.top)) * this.dpr) / this.JFAscale;
-			//console.log(this.mouse);
-			//console.log(this.mouse.x - this.jfaWidth / 2, this.mouse.y - this.jfaHeight / 2);
 		});
 
 		this.lastTime = 0;
@@ -111,13 +109,13 @@ export default class Visualization {
 	}
 
 	initialize() {
-		let rtConfig = {
+		const rtConfig = {
 			minFilter: THREE.NearestFilter,
 			magFilter: THREE.NearestFilter,
 			type: THREE.FloatType,
 		};
 
-		let cascadeRTConfig = {
+		const cascadeRTConfig = {
 			minFilter: THREE.LinearFilter,
 			magFilter: THREE.LinearFilter,
 			type: THREE.FloatType,
@@ -199,8 +197,6 @@ export default class Visualization {
 	}
 
 	render() {
-		this.stats.begin();
-
 		const currentTime = performance.now();
 		const delta = currentTime - this.lastTime;
 		this.lastTime = currentTime;
@@ -365,7 +361,6 @@ export default class Visualization {
 
 		this.frameCount++;
 
-		this.stats.end();
 		this.stats.update();
 	}
 }

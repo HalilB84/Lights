@@ -183,11 +183,10 @@ img {
 	padding: var(--padding);
 	border: var(--border);
 	border-radius: var(--border-radius);
-	white-space: pre-line;
 	width: 140%;
 	word-spacing: -0.15em;
 }
 
-img:hover + .tooltiptext{
+img:hover + .tooltiptext {
 	visibility: visible;
 }

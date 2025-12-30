@@ -19,29 +19,22 @@
 						<option value="playable1">Playable 1</option>
 						<option value="playable2">Playable 2</option>
 					</select>
-					<img src="help.svg"/>
-					<span class="tooltiptext">Here you can switch between different modes, these are in development with more to be added.
-
-						You might need to upload video or audio files to see the experience.
-
-						Video needed for: Video and Playable2 modes
-						Audio needed for: Lyrics mode
-						None needed for: Playable1
-					</span>
+					<img src="help.svg" />
+					<span class="tooltiptext">Here you can switch between different modes, these are in development with more to be added. You might need to upload video or audio files to see the experience. Video needed for: Video and Playable2 modes Audio needed for: Lyrics mode None needed for: Playable1 </span>
 				</div>
 
 				<div class="setting-row">
 					<label id="video-button" for="video-upload">Upload Video File</label>
 					<label id="video-name" for="video-upload">No file</label>
 					<input id="video-upload" type="file" accept="video/*" hidden />
-					<img src="help.svg"/>
+					<img src="help.svg" />
 					<span class="tooltiptext">Upload a video to start the light show. The video data is only used locally so you don't have to worry about privacy.</span>
 				</div>
 				<div class="setting-row">
 					<label id="audio-button" for="audio-upload">Upload Audio File</label>
 					<label id="audio-name" for="audio-upload">No file</label>
 					<input id="audio-upload" type="file" accept="audio/*" hidden />
-					<img src="help.svg"/>
+					<img src="help.svg" />
 					<span class="tooltiptext">For the lyrics mode upload an audio file with this naming convention for it to correctly work: songname-artist.mp3</span>
 				</div>
 
@@ -71,13 +64,13 @@
 				<div id="row-1" class="setting-row">
 					<label for="enable-rc">Enable Radiance Cascades</label>
 					<input id="enable-rc" type="checkbox" />
-					<img src="help.svg"/>
+					<img src="help.svg" />
 					<span class="tooltiptext">Radiance Cascades is a noise free algorithm to achieve global illumination created by Alexander Sannikov. This 2D implementation is based on Yaazarai's Vanilla RC code. More info on Github. It is better from naive ray marching in a sense that there is no noise (it looks better, subjectively of course) and runs faster with the below '2 pass optimization' checkbox selected</span>
 				</div>
 				<div id="row-2" class="setting-row">
 					<label for="2-pass-optimization">2 pass optimization</label>
 					<input id="2-pass-optimization" type="checkbox" />
-					<img src="help.svg"/>
+					<img src="help.svg" />
 					<span class="tooltiptext">If performance is an issue, enable this. The cascade calculation happens in 2 passes, meaning if the overlay is 60 fps, the lighting is calculated at 30 fps. Because the overlay and the light are calculated at different speeds, there will be artifacts where the previous frame is visible for a split second.</span>
 				</div>
 			</div>
