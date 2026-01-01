@@ -53,11 +53,6 @@ export default function ray() {
                 return texture(blueNoise, noiseUV).r;
             }
 
-            //https://www.shadertoy.com/view/4tXGWN - ign noise no idea how it works, but it does reduce noise, not the best sol
-            float ign(vec2 p) {
-                const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
-                return fract(magic.z * fract(dot(p, magic.xy)));
-            }
 
             vec4 raymarch(){
                 vec4 light = texture(sceneTexture, vUv);
@@ -71,12 +66,10 @@ export default function ray() {
 
                 float noise = blueNoiseSample(gl_FragCoord.xy);
 
-                //float noise = ign(gl_FragCoord.xy);
-
                 //float noise = rand(vUv);
 
                 vec4 radiance = vec4(0.0); //total light that will be accumulated
-                //calcualte and shoot rayCount rays that are equidstant from each other, expensive
+                //calculate and shoot rayCount rays that are equidstant from each other, expensive
                 
                 bool useBruteForce = light.a != 0.0 && fixEdges; //if we are at a seed location use fixed stop size so when the full res element is overlaid the blocky edges smooth out
                 int maxSteps = useBruteForce ? 30 : 50;

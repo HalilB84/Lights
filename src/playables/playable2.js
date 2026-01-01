@@ -83,6 +83,7 @@ export default class Playable2 {
 			uniforms: {
 				resolution: { value: null },
 				videoTexture: { value: null },
+				time: { value: 0.0 },
 			},
 			glslVersion: THREE.GLSL3,
 			vertexShader: `
@@ -98,6 +99,7 @@ export default class Playable2 {
 				in vec3 vWorldPosition;
 				uniform vec2 resolution;
 				uniform sampler2D videoTexture;
+				uniform float time;
 
 				out vec4 fragColor;
 
@@ -117,3 +119,23 @@ export default class Playable2 {
 		this.materialOverlay.uniforms.videoTexture.value = videoTexture;
 	}
 }
+
+
+/*
+//this.material.uniforms.time.value = performance.now() / 1000;
+//this.materialOverlay.uniforms.time.value = performance.now() / 1000;
+
+float speed = 1.0;
+float scale = 1.5;
+
+vec2 p = uv * scale;
+
+for(int i = 1; i < 10; i++) {
+	p.x += 0.45 / float(i) * sin(float(i) * 3.0 * p.y + time * speed );
+	p.y += 0.45 / float(i) * cos(float(i) * 3.0 * p.x + time * speed );
+}
+
+vec3 color = vec3(0.03, 0.008, 0.0);
+
+fragColor = vec4(color / max(abs(sin(time + p.y - p.x)), 0.03), 1.0); 
+*/ 

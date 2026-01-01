@@ -30,7 +30,8 @@ https://github.com/user-attachments/assets/b8725f49-4634-4391-911b-90c8e33ae27c
 - ~~Research how to make this runable on an average device~~ -> ~~Solved by downscaling, filtering and upscaling, still can be improved~~ -> ~~calculate cascades between two passes, looks no different and finally realtime on mobile!~~
 - Figure out dpr shenanigans and proper scaling based on which platform the user is on
 - Look into holographic radiance cascades
-- Switch to TypeScript as a learning experience because it looks way better
+- Switch to TypeScript as a learning experience because it looks way better 
+- Hall of tiny problems that don't really matter but I can't live not knowing why: 1. Text edges blending with body color? 2. Mysterious way three msdf-text-utils handles wrapping and positioning 3. css select text not center positioning 4. how exactly ray marching resolves when it lands and gets pulled -> also what this means for extra range on rc 5. colorspace
 
 Planned Features:
 

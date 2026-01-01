@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+//https://en.wikipedia.org/wiki/Jump_flooding_algorithm
 export default function jfa() {
 	return new THREE.ShaderMaterial({
 		uniforms: {

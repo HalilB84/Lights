@@ -11,7 +11,7 @@
   "dependencies": {
     "matter-js": "^0.20.0",
     "stats-gl": "^3.6.0",
-    "three": "^0.182.0",
+    "three": "^0.181.0",
     "three-msdf-text-utils": "^1.2.1"
   },
   "devDependencies": {

@@ -161,12 +161,10 @@ export default class Text {
                     float speed = 1.35;
                     float scale = 10.0;
 
-                    //if(true) { gl_FragColor = vec4(vUv.y, 0.0, 0.0, 1.0); return; }
-
                     vec2 p = vUv * scale;
 
                     for(int i = 1; i < 10; i++) {
-                        p.x += 0.45 / float(i) * sin(float(i) * 3.0 * p.y +  vLetterIndex + time * speed );
+                        p.x += 0.45 / float(i) * sin(float(i) * 3.0 * p.y + vLetterIndex + time * speed );
                         p.y += 0.45 / float(i) * cos(float(i) * 3.0 * p.x + vLetterIndex + time * speed );
                     }
 

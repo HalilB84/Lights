@@ -19,7 +19,7 @@ export default class Visualization {
 
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.autoClear = false;
-		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // <- I dont know why this works needs research
 		this.renderer.setClearColor(0x000000, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color (default is 1.0)
 		//also since its clear the body background will be visible, since the color is just black it blends. This is bugging me though
 
@@ -28,8 +28,7 @@ export default class Visualization {
 		this.canvas = this.renderer.domElement;
 		this.dpr = this.state.isMobile ? Math.max(window.devicePixelRatio * 0.75, 1) : window.devicePixelRatio;
 
-		this.width = Math.floor(this.canvas.clientWidth * this.dpr);
-		this.height = Math.floor(this.canvas.clientHeight * this.dpr);
+		this.calculateBounds();
 
 		this.renderer.setSize(this.width, this.height, false);
 
@@ -52,20 +51,14 @@ export default class Visualization {
 
 		document.body.appendChild(this.stats.dom);
 
-		this.JFAscale = this.state.isMobile ? 2 : 2;
-		this.jfaWidth = Math.floor(this.width / this.JFAscale);
-		this.jfaHeight = Math.floor(this.height / this.JFAscale);
-
-		this.raymarchScale = this.state.isMobile ? 2 : 2;
-		this.raymarchWidth = Math.floor(this.width / this.raymarchScale);
-		this.raymarchHeight = Math.floor(this.height / this.raymarchScale);
-		//playground
-		this.lrcPlayer = new LRC();
-		this.text = new Text(this.jfaWidth, this.jfaHeight, this.state.settings.textScale, this.width, this.height, this.JFAscale * this.state.settings.textScale);
-		this.playable1 = new Playable1(this.jfaWidth, this.jfaHeight, this.width, this.height, this.JFAscale);
-		this.playable2 = new Playable2(this.jfaWidth, this.jfaHeight, this.width, this.height, this.JFAscale);
 		this.initialize();
 		this.shaders();
+
+		//playground
+		this.lrcPlayer = new LRC();
+		this.text = new Text(this.jfaWidth, this.jfaHeight, this.state.settings.textScale, this.fullJfaWidth, this.fullJfaHeight, this.JFAscale * this.state.settings.textScale);
+		this.playable1 = new Playable1(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight, this.JFAscale);
+		this.playable2 = new Playable2(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight, this.JFAscale);
 
 		this.mouse = { x: 9999, y: 9999 };
 		this.canvas.addEventListener("mousemove", (e) => {
@@ -80,32 +73,62 @@ export default class Visualization {
 		this.renderer.setAnimationLoop(this.render.bind(this));
 
 		window.addEventListener("resize", () => {
-			this.width = Math.floor(this.canvas.clientWidth * this.dpr);
-			this.height = Math.floor(this.canvas.clientHeight * this.dpr);
+			this.calculateBounds();
 
 			this.renderer.setSize(this.width, this.height, false);
-
-			this.jfaWidth = Math.floor(this.width / this.JFAscale);
-			this.jfaHeight = Math.floor(this.height / this.JFAscale);
-			this.raymarchWidth = Math.floor(this.width / this.raymarchScale);
-			this.raymarchHeight = Math.floor(this.height / this.raymarchScale);
-
 			this.modelRT.setSize(this.jfaWidth, this.jfaHeight);
 			this.seedRT.setSize(this.jfaWidth, this.jfaHeight);
 			this.jfaA.setSize(this.jfaWidth, this.jfaHeight);
 			this.jfaB.setSize(this.jfaWidth, this.jfaHeight);
-			this.rayColorRT.setSize(this.raymarchWidth, this.raymarchHeight);
-			this.bilateralRT.setSize(this.raymarchWidth, this.raymarchHeight);
+			this.rayColorRT.setSize(this.jfaWidth, this.jfaHeight);
+			this.bilateralRT.setSize(this.jfaWidth, this.jfaHeight);
 
 			//TODO: Resize radiance cascades although there is a very cool looking bug when you don't. Look into it
-			this.rcCalculations();
 			this.cascadeA.setSize(this.radiance_width, this.radiance_height);
 			this.cascadeB.setSize(this.radiance_width, this.radiance_height);
 
-			this.text.resize(this.jfaWidth, this.jfaHeight, this.width, this.height);
-			this.playable1.resize(this.jfaWidth, this.jfaHeight, this.width, this.height);
-			this.playable2.resize(this.jfaWidth, this.jfaHeight, this.width, this.height);
+			this.text.resize(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight);
+			this.playable1.resize(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight);
+			this.playable2.resize(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight);
 		});
+	}
+
+	calculateBounds() {
+		this.width = Math.floor(this.canvas.clientWidth * this.dpr);
+		this.height = Math.floor(this.canvas.clientHeight * this.dpr);
+
+		this.JFAscale = this.state.isMobile ? 2 : 2;
+		this.jfaWidth = Math.floor(this.width / this.JFAscale);
+		this.jfaHeight = Math.floor(this.height / this.JFAscale);
+
+		//some differences from the original code atp idc.
+		this.radiance_interval = 1; //TODO: figure out why in the original code its set to 2?
+
+		const diagonal = Math.sqrt(this.jfaWidth * this.jfaWidth + this.jfaHeight * this.jfaHeight);
+
+		this.radiance_cascades = Math.ceil(Math.log((3 * diagonal) / this.radiance_interval + 1) / Math.log(4));
+		//console.log(diagonal);
+		//console.log(this.radiance_cascades);
+
+		const errorRate = Math.pow(2.0, this.radiance_cascades - 1);
+		const errorX = Math.ceil(this.jfaWidth / errorRate);
+		const errorY = Math.ceil(this.jfaHeight / errorRate);
+		this.render_width = errorX * errorRate;
+		this.render_height = errorY * errorRate;
+
+		//console.log(this.render_width, this.render_height);
+		//console.log(this.jfaWidth, this.jfaHeight);
+		//console.log("end");
+
+		this.radiance_linear = 1; //spacing between probes/quality control however anything other than 1 either looks bad or tanks performance
+		this.radiance_width = Math.floor(this.render_width / this.radiance_linear);
+		this.radiance_height = Math.floor(this.render_height / this.radiance_linear);
+
+		this.jfaWidth = this.render_width;
+		this.jfaHeight = this.render_height;
+
+		this.fullJfaWidth = this.jfaWidth * this.JFAscale;
+		this.fullJfaHeight = this.jfaHeight * this.JFAscale;
 	}
 
 	initialize() {
@@ -133,10 +156,8 @@ export default class Visualization {
 		this.jfaA = this.modelRT.clone();
 		this.jfaB = this.modelRT.clone();
 
-		this.rayColorRT = new THREE.WebGLRenderTarget(this.raymarchWidth, this.raymarchHeight, rtConfig);
+		this.rayColorRT = new THREE.WebGLRenderTarget(this.jfaWidth, this.jfaHeight, rtConfig);
 		this.bilateralRT = this.rayColorRT.clone();
-
-		this.rcCalculations();
 
 		this.cascadeA = new THREE.WebGLRenderTarget(this.radiance_width, this.radiance_height, cascadeRTConfig);
 		this.cascadeB = this.cascadeA.clone();
@@ -146,31 +167,6 @@ export default class Visualization {
 		this.jfaa = null;
 		this.nextTexture = null;
 		this.frameCount = 0;
-	}
-
-	rcCalculations() {
-		//some differences from the original code atp idc.
-		this.radiance_interval = 1; //TODO: figure out why in the original code its set to 2?
-
-		const diagonal = Math.sqrt(this.jfaWidth * this.jfaWidth + this.jfaHeight * this.jfaHeight);
-
-		this.radiance_cascades = Math.ceil(Math.log((3 * diagonal) / this.radiance_interval + 1) / Math.log(4));
-		//console.log(diagonal);
-		//console.log(this.radiance_cascades);
-
-		const errorRate = Math.pow(2.0, this.radiance_cascades - 1);
-		const errorX = Math.ceil(this.jfaWidth / errorRate);
-		const errorY = Math.ceil(this.jfaHeight / errorRate);
-		this.render_width = errorX * errorRate;
-		this.render_height = errorY * errorRate;
-
-		//console.log(this.render_width, this.render_height);
-		//console.log(this.jfaWidth, this.jfaHeight);
-		//console.log("end");
-
-		this.radiance_linear = 1; //spacing between probes/quality control however anything other than 1 either looks bad or tanks performance
-		this.radiance_width = Math.floor(this.render_width / this.radiance_linear);
-		this.radiance_height = Math.floor(this.render_height / this.radiance_linear);
 	}
 
 	shaders() {
@@ -248,7 +244,6 @@ export default class Visualization {
 			this.renderer.render(this.scene, this.camera);
 
 			// jfa + distance phase
-
 			let curT = this.seedRT.texture;
 			let curJFA = this.jfaA;
 			let nextJFA = this.jfaB;
@@ -278,11 +273,11 @@ export default class Visualization {
 			this.radiancecascadesMaterial.uniforms.sceneTexture.value = this.nextTexture;
 			this.radiancecascadesMaterial.uniforms.distanceTexture.value = this.jfaa;
 			this.radiancecascadesMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
-			this.radiancecascadesMaterial.uniforms.resolution.value = [this.render_width, this.render_height];
-			this.radiancecascadesMaterial.uniforms.cascadeExtent.value = [this.radiance_width, this.radiance_height];
+			this.radiancecascadesMaterial.uniforms.distanceResolution.value = [this.render_width, this.render_height];
+			this.radiancecascadesMaterial.uniforms.cascadeResolution.value = [this.radiance_width, this.radiance_height];
 			this.radiancecascadesMaterial.uniforms.cascadeCount.value = this.radiance_cascades;
-			this.radiancecascadesMaterial.uniforms.cascadeLinear.value = this.radiance_linear;
-			this.radiancecascadesMaterial.uniforms.cascadeInterval.value = this.radiance_interval;
+			this.radiancecascadesMaterial.uniforms.probeSpacing.value = this.radiance_linear;
+			this.radiancecascadesMaterial.uniforms.interval.value = this.radiance_interval;
 			this.radiancecascadesMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
 
 			let start = this.frameCount % 2 === 0 ? this.radiance_cascades - 1 : Math.ceil((this.radiance_cascades - 1) / 2) - 1;
@@ -307,7 +302,7 @@ export default class Visualization {
 			this.mesh.material = this.rayMaterial;
 			this.rayMaterial.uniforms.sceneTexture.value = this.nextTexture;
 			this.rayMaterial.uniforms.distanceTexture.value = this.jfaa;
-			this.rayMaterial.uniforms.resolution.value = [this.raymarchWidth, this.raymarchHeight]; //this was jfaWH all this time? wut
+			this.rayMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight]; //this was jfaWH all this time? wut
 			this.rayMaterial.uniforms.frame.value += 1;
 			this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
 			this.rayMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
@@ -317,14 +312,12 @@ export default class Visualization {
 			this.renderer.render(this.scene, this.camera);
 		}
 
-		//because of the error calculation there will be a mismatch between the RC and JFA resolutions. since the streching is little its not really visible
-
 		//bilateral filter phase (to smooth out noise/artifacts)
 
 		if (!this.state.settings.enableRC || !this.state.settings.twoPassOptimization || this.frameCount % 2 === 1) {
 			this.mesh.material = this.bilateralMaterial;
 			this.bilateralMaterial.uniforms.inputTexture.value = this.state.settings.enableRC ? this.prevCascade.texture : this.rayColorRT.texture;
-			this.bilateralMaterial.uniforms.resolution.value = [this.raymarchWidth, this.raymarchHeight];
+			this.bilateralMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
 
 			this.renderer.setRenderTarget(this.bilateralRT);
 			this.renderer.clear();
@@ -333,6 +326,10 @@ export default class Visualization {
 
 		this.mesh.material = this.displayMaterial;
 		this.displayMaterial.map = this.bilateralRT.texture;
+		//why write more if three does it for you
+		//https://github.com/mrdoob/three.js/blob/dev/src/renderers/shaders/ShaderChunk/map_fragment.glsl.js
+
+		//because of the error calculation there will be a mismatch main rendering and the RC and JFA resolutions. since the streching is little its not really visible
 
 		this.renderer.setRenderTarget(null);
 		this.renderer.clear();

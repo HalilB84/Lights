@@ -39,10 +39,10 @@ export default class LRC {
 			const lyric = line.substring(10).trim();
 
 			this.timedLyrics.push({
-				time:  parseFloat(time[0]) * 60 + parseFloat(time[1]),
-				lyric: lyric
-			})
-		}	
+				time: parseFloat(time[0]) * 60 + parseFloat(time[1]),
+				lyric: lyric,
+			});
+		}
 
 		this.prevIndex = -1;
 		this.isReady = true;
