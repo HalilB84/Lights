@@ -11,15 +11,15 @@ The basic idea is that from each pixel you shoot rays and if it hits something y
 
 Using Radiance Cascades (direction first, 4x scaling -> no noise but now there are artificats, however it looks considerably better than naive ray marching with noise) (credits: [ Imagine Dragons x J.I.D - Enemy (from the series Arcane League of Legends) ](https://www.youtube.com/watch?v=D9G1VOjN_84)):
 
-https://github.com/user-attachments/assets/0c577f64-2c95-40f3-8de5-27ef6a08529c
+https://github.com/user-attachments/assets/e264af89-6ed3-499f-ad51-b51f78119f40
 
 Using JFA + naive ray marching + (blue noise + bilateral filter) (credits: [@animeclips_edits](https://www.instagram.com/animeclips__edits/)):
 
-https://github.com/user-attachments/assets/504476ca-20a2-43fc-b8cd-25775eadcc38
+https://github.com/user-attachments/assets/51e49c7a-dfaa-4357-9ad4-52e02dd73a94
 
 Lyrics (same as above + lrclib.net + three-msdf-text-utils) (credits: LIKE A ROCKSTAR - Chase Atlantic):
 
-https://github.com/user-attachments/assets/b8725f49-4634-4391-911b-90c8e33ae27c
+https://github.com/user-attachments/assets/9b813066-decc-499d-bb85-567a3b426d8f
 
 ## Todos:
 
