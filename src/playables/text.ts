@@ -1,62 +1,45 @@
 import * as THREE from "three";
 import { MSDFTextGeometry, uniforms } from "three-msdf-text-utils";
-import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+import { FontLoader, type FontData } from "three/examples/jsm/loaders/FontLoader.js";
+import Playable from "./playable";
 
-export default class Text {
-	constructor(width, height, scale, widthOverlay, heightOverlay, scaleOverlay) {
-		this.scene = new THREE.Scene();
-		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
+export default class Text extends Playable {
+	scale: number;
+	currentText: string;
 
-		this.sceneOverlay = new THREE.Scene();
-		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
+	atlas: THREE.Texture;
+	font: FontData;
 
-		this.width = width;
-		this.height = height;
+	mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
+	meshOverlay: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
+
+	constructor(width: number, height: number, scale: number, widthOverlay: number, heightOverlay: number, scaleOverlay: number) {
+		super(width, height, widthOverlay, heightOverlay, scaleOverlay);
+
 		this.scale = scale;
-
-		this.widthOverlay = widthOverlay;
-		this.heightOverlay = heightOverlay;
-		this.scaleOverlay = scaleOverlay;
-
-		this.mesh = null;
-		this.font = null;
-		this.atlas = null;
 		this.currentText = "The show is starting!";
-
-		this.isReady = false;
 
 		this.load();
 	}
 
-	async load(fontPath = "/fonts/roboto-regular.fnt", atlasPath = "/fonts/roboto-regular.png") {
+	async load() {
 		const loader = new THREE.TextureLoader();
 		const fontLoader = new FontLoader();
 
-		this.atlas = await new Promise((r) => loader.load(atlasPath, r));
-		this.font = (await new Promise((r) => fontLoader.load(fontPath, r))).data;
+		this.atlas = await loader.loadAsync("/fonts/roboto-regular.png");
+		this.font = (await fontLoader.loadAsync("/fonts/roboto-regular.fnt")).data;
 
 		this.createScene();
 	}
 
-	resize(width, height, widthOverlay, heightOverlay) {
-		this.width = width;
-		this.height = height;
-
-		this.widthOverlay = widthOverlay;
-		this.heightOverlay = heightOverlay;
-
-		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
-		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
-
+	reset() {
 		this.createScene();
 	}
 
-	createScene(text) {
+	createScene() {
 		this.isReady = false;
 		this.scene.clear();
 		this.sceneOverlay.clear();
-
-		if (text) this.currentText = text;
 
 		const geometry = new MSDFTextGeometry({
 			text: this.currentText,
@@ -69,9 +52,6 @@ export default class Text {
 			side: THREE.DoubleSide,
 			defines: {
 				IS_SMALL: false,
-			},
-			extensions: {
-				derivatives: true,
 			},
 			uniforms: {
 				...uniforms.common,
@@ -131,10 +111,6 @@ export default class Text {
                 }
             `,
 			fragmentShader: `
-                #ifdef GL_OES_standard_derivatives
-                #extension GL_OES_standard_derivatives : enable
-                #endif
-
                 precision highp float;
                 
                 varying vec2 vUv;
@@ -205,15 +181,20 @@ export default class Text {
 		const centerX = (bbox.min.x + bbox.max.x) / 2;
 		const centerY = (bbox.min.y + bbox.max.y) / 2;
 
-		this.mesh.scale.set(this.scale, -this.scale);
-		this.mesh.position.set(-centerX * this.scale, centerY * this.scale);
+		this.mesh.scale.set(this.scale, -this.scale, 0);
+		this.mesh.position.set(-centerX * this.scale, centerY * this.scale, 0);
 		this.scene.add(this.mesh);
 
 		this.meshOverlay = new THREE.Mesh(geometry, material);
-		this.meshOverlay.scale.set(this.scaleOverlay, -this.scaleOverlay);
-		this.meshOverlay.position.set(-centerX * this.scaleOverlay, centerY * this.scaleOverlay);
+		this.meshOverlay.scale.set(this.scaleOverlay, -this.scaleOverlay, 0);
+		this.meshOverlay.position.set(-centerX * this.scaleOverlay, centerY * this.scaleOverlay, 0);
 		this.sceneOverlay.add(this.meshOverlay);
 
 		this.isReady = true;
+	}
+
+	update(text?: string) {
+		if (text) this.currentText = text;
+		this.createScene();
 	}
 }

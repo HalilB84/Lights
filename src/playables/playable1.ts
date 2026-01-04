@@ -1,39 +1,21 @@
 import * as THREE from "three";
 import Matter from "matter-js";
+import Playable from "./playable";
 
-export default class Playable1 {
-	constructor(width, height, widthOverlay, heightOverlay, scaleOverlay) {
-		this.scene = new THREE.Scene();
-		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
+export default class Playable1 extends Playable {
+	rectangles: { body: Matter.Body; mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>; meshOverlay: THREE.Mesh; color: number }[];
+	walls: Matter.Body[];
+	engine: Matter.Engine;
 
-		this.sceneOverlay = new THREE.Scene();
-		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
-
-		this.width = width;
-		this.height = height;
-
-		this.widthOverlay = widthOverlay;
-		this.heightOverlay = heightOverlay;
-		this.scaleOverlay = scaleOverlay;
+	constructor(width: number, height: number, widthOverlay: number, heightOverlay: number, scaleOverlay: number) {
+		super(width, height, widthOverlay, heightOverlay, scaleOverlay);
 
 		this.rectangles = [];
 		this.walls = [];
-
-		this.isReady = false;
-
 		this.createScene();
 	}
 
-	resize(width, height, widthOverlay, heightOverlay) {
-		this.width = width;
-		this.height = height;
-
-		this.widthOverlay = widthOverlay;
-		this.heightOverlay = heightOverlay;
-
-		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
-		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
-
+	reset() {
 		this.rectangles = [];
 		this.walls = [];
 
@@ -84,7 +66,7 @@ export default class Playable1 {
 		this.isReady = true;
 	}
 
-	update(delta, mouse) {
+	update(delta: number, mouse: { x: number; y: number }) {
 		if (!this.isReady) return;
 
 		Matter.Engine.update(this.engine, Math.min(delta, (1 / 60) * 1000));
@@ -101,7 +83,7 @@ export default class Playable1 {
 			mesh.rotation.set(0, 0, body.angle);
 
 			meshOverlay.position.set(body.position.x * this.scaleOverlay, body.position.y * this.scaleOverlay, 0);
-			meshOverlay.scale.set(this.scaleOverlay, this.scaleOverlay);
+			meshOverlay.scale.set(this.scaleOverlay, this.scaleOverlay, 0);
 			meshOverlay.rotation.set(0, 0, body.angle);
 
 			//this.rectangles[i].color = (this.rectangles[i].color + delta * 0.0004) % 1;

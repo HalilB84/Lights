@@ -1,9 +1,9 @@
 export default class LRC {
-	constructor() {
-		this.isReady = false;
-	}
+	isReady: boolean;
+	timedLyrics: { time: number; lyric: string }[];
+	prevIndex: number;
 
-	async getLRCLIB(trackName, artistName) {
+	async getLRCLIB(trackName: string, artistName: string) {
 		this.isReady = false;
 		this.timedLyrics = [];
 
@@ -24,7 +24,7 @@ export default class LRC {
 			return;
 		}
 
-		const results = await response.json();
+		const results = await response.json(); //returns any?
 
 		if (results.length === 0) {
 			console.log("No lyrics found. Are you sure the track name and artist name are correct?");
@@ -32,7 +32,7 @@ export default class LRC {
 			return;
 		}
 
-		const lines = results[0].syncedLyrics.split("\n");
+		const lines: string = results[0].syncedLyrics.split("\n");
 
 		for (const line of lines) {
 			const time = line.substring(1, 9).split(":");
@@ -48,10 +48,10 @@ export default class LRC {
 		this.isReady = true;
 	}
 
-	update(currentTimeMs) {
+	update(currentTimeMs: number) {
 		if (this.timedLyrics.length === 0) return ["No lyrics found? Check console", "init"];
 
-		const newIndex = this.timedLyrics.findLastIndex((lyric) => currentTimeMs >= lyric.time);
+		const newIndex = this.timedLyrics.findLastIndex((index: { time: number; lyric: string }) => currentTimeMs >= index.time);
 
 		if (newIndex >= 0) {
 			const changed = newIndex !== this.prevIndex;

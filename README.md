@@ -26,16 +26,16 @@ https://github.com/user-attachments/assets/b8725f49-4634-4391-911b-90c8e33ae27c
 - ~~Switch to webgl2 glsl~~
 - ~~Cleanup/structure code~~ -> ~~Better but still needs cleaning but I need to adopt a way to transfer data between ui and the backend. Basically eliminate tight coupling -> Done to some extent?~~ -> ~~consider making state its own file~~ -> More work?
 - ~~Start adding audio visual support using canvas textures / add interesting things, play with light~~ -> ~~Progress but never done~~ -> progress (the code is at a good state to just mass create experiences now)
-- ~~Completely document radiance cascades and attempt to fix problems with radiance cascades~~ -> Still not fully fixed but better
+- ~~Completely document radiance cascades and attempt to fix problems with radiance cascades~~ -> ~~Still not fully fixed but better~~ -> Implement and comment optional Bilinear fix
 - ~~Research how to make this runable on an average device~~ -> ~~Solved by downscaling, filtering and upscaling, still can be improved~~ -> ~~calculate cascades between two passes, looks no different and finally realtime on mobile!~~
-- Figure out dpr shenanigans and proper scaling based on which platform the user is on
+- ~~Figure out dpr shenanigans and proper scaling based on which platform the user is on~~
 - Look into holographic radiance cascades
-- Switch to TypeScript as a learning experience because it looks way better 
+- ~~Switch to TypeScript as a learning experience because it looks way better~~ -> Convert to tailwind css as a learning experience
 - Hall of tiny problems that don't really matter but I can't live not knowing why: 1. Text edges blending with body color? 2. Mysterious way three msdf-text-utils handles wrapping and positioning 3. css select text not center positioning 4. how exactly ray marching resolves when it lands and gets pulled -> also what this means for extra range on rc 5. colorspace
 
 Planned Features:
 
-- Audio visual feature where lights react to music -> yeahhh about that
+- Audio visual feature where lights react to music -> on hold because not sure how it will work
 - Playground for playing with light [Inspired by Lusion Labs](https://akari.lusion.co/#home)
 - Many more cool things you can do with light
 

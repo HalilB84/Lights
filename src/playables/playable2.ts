@@ -1,42 +1,25 @@
 //THIS IS JUST A TESTING CONCEPT, PLAYABLE 2 IS NOT THIS. THIS IS NOT FINAL
 
 import * as THREE from "three";
+import Playable from "./playable";
 
-export default class Playable2 {
-	constructor(width, height, widthOverlay, heightOverlay, scaleOverlay) {
-		this.scene = new THREE.Scene();
-		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
+export default class Playable2 extends Playable {
+	circles: { mesh: THREE.Mesh; meshOverlay: THREE.Mesh }[];
+	videoTexture: THREE.Texture | null;
 
-		this.sceneOverlay = new THREE.Scene();
-		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
+	material: THREE.ShaderMaterial;
+	materialOverlay: THREE.ShaderMaterial;
 
-		this.width = width;
-		this.height = height;
-
-		this.widthOverlay = widthOverlay;
-		this.heightOverlay = heightOverlay;
-		this.scaleOverlay = scaleOverlay;
+	constructor(width: number, height: number, widthOverlay: number, heightOverlay: number, scaleOverlay: number) {
+		super(width, height, widthOverlay, heightOverlay, scaleOverlay);
 
 		this.circles = [];
 		this.videoTexture = null;
-
-		this.isReady = false;
-
 		this.createScene();
 	}
 
-	resize(width, height, widthOverlay, heightOverlay) {
-		this.width = width;
-		this.height = height;
-
-		this.widthOverlay = widthOverlay;
-		this.heightOverlay = heightOverlay;
-
-		this.camera = new THREE.OrthographicCamera(-width / 2, width / 2, height / 2, -height / 2, 0, 1);
-		this.cameraOverlay = new THREE.OrthographicCamera(-widthOverlay / 2, widthOverlay / 2, heightOverlay / 2, -heightOverlay / 2, 0, 1);
-
+	reset() {
 		this.circles = [];
-
 		this.createScene();
 	}
 
@@ -112,30 +95,10 @@ export default class Playable2 {
 		});
 	}
 
-	update(videoTexture) {
+	update(videoTexture: THREE.VideoTexture) {
 		if (!this.isReady) return;
 
 		this.material.uniforms.videoTexture.value = videoTexture;
 		this.materialOverlay.uniforms.videoTexture.value = videoTexture;
 	}
 }
-
-
-/*
-//this.material.uniforms.time.value = performance.now() / 1000;
-//this.materialOverlay.uniforms.time.value = performance.now() / 1000;
-
-float speed = 1.0;
-float scale = 1.5;
-
-vec2 p = uv * scale;
-
-for(int i = 1; i < 10; i++) {
-	p.x += 0.45 / float(i) * sin(float(i) * 3.0 * p.y + time * speed );
-	p.y += 0.45 / float(i) * cos(float(i) * 3.0 * p.x + time * speed );
-}
-
-vec3 color = vec3(0.03, 0.008, 0.0);
-
-fragColor = vec4(color / max(abs(sin(time + p.y - p.x)), 0.03), 1.0); 
-*/ 

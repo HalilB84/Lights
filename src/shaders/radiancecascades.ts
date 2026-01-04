@@ -98,7 +98,8 @@ export default function radiancecascades() {
                 float upperAngular = pow(2.0, cascadeIndex + 1.0);                         //The number of direction segments in each axis in the upper cascade
                 vec2 upperSize = directionSize * 0.5;                                      //The size of each direction block in the upper cascade
 
-                vec2 upperPos = vec2(mod(upperRayIndex, upperAngular), floor(upperRayIndex / upperAngular)) * upperSize;  //This is the topleft corner of the direction block in the upper cascade.
+                vec2 upperPos = vec2(mod(upperRayIndex, upperAngular), 
+                                    floor(upperRayIndex / upperAngular)) * upperSize;      //This is the topleft corner of the direction block in the upper cascade.
                                                                                           
                 vec2 upperAdjust = (probe * 0.5) + 0.25;                                   //Relative probe position in that direction block. I think the 0.25 is to account for the centering of the pixel in this cascade level. 
                 vec2 upperClamped = max(vec2(2.0), min(upperAdjust, upperSize - 2.0));     //Ohh this is good one. If we dont clamp, we might accidentally interpolate stuff from other direction blocks. the max min stop that. 
@@ -106,8 +107,8 @@ export default function radiancecascades() {
                                                                                         
                 vec2 upperProbe = upperPos + upperClamped;                                 //Variable name is misleading. This is the actual probe position in the upper cascade in pixel coordinates
 
-                vec4 interpolated = texture(previousCascadeTexture, upperProbe * (1.0 / cascadeResolution)); 
-                                                                                           //Finally sample this position by getting the UV pos. Stuff will be automatically interpolated. The texture filter needs to be THREE.LinearFilter for this.
+                vec4 interpolated = texture(previousCascadeTexture, 
+                                            upperProbe * (1.0 / cascadeResolution));       //Finally sample this position by getting the UV pos. Stuff will be automatically interpolated. The texture filter needs to be THREE.LinearFilter for this.
                                                                                            //Also the reason we interpolate is because the probe from the lower cascade does not have an exact match with the probe in the upper cascade. 
                                                                                            //Using nearest filter makes the light look blocky, whereas bilinear filtering blends the nearest 4 probes together making it look more smooth. 
                 return rayColor + interpolated;
