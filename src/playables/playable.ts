@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export default abstract class PlayableBase {
+export default abstract class Playable {
 	scene: THREE.Scene;
 	camera: THREE.OrthographicCamera;
 	sceneOverlay: THREE.Scene;

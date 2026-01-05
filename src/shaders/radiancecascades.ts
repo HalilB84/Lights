@@ -5,10 +5,7 @@ import * as THREE from "three";
 //https://mini.gmshaders.com/p/radiance-cascades2
 //https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades/Shd_RadianceCascades.fsh
 //Vanilla RC code from Yaazarai's repo commented with my own understanding + some small changes
-//At least for me the easiest way to build intuition was to simulate the process on a 8x8 grid using 2 cascades.
-
-//Things that need further explaining:
-//Why is clamping +- 1 units still failing on some resolutions? -> Still have no idea
+//At least for me the easiest way to build intuition was to simulate the process on a 8x8 grid using 2 cascades -> SEE NOTES
 
 //Whats up with performance?
 //Quite puzzled on performance, I expected RC to be faster than naive ray marching as every other tutorial says it is
@@ -17,12 +14,10 @@ import * as THREE from "three";
 //Also like why does this happen when the text on the screen is bigger? I get that its more ray steps but it shouldnt be slower than Naive RM????????
 
 //RC TODOS:
-//Implement and explain optional bilinear-fix. First of all why does the interpolation artifacts happen -> the probe in cascadeN might be blocked with an occluder but the probes in cascadeN+1 are not necessarily blocked.
+//1. Implement and explain optional bilinear-fix. First of all why does the interpolation artifacts happen -> the probe in cascadeN might be blocked with an occluder but the probes in cascadeN+1 are not necessarily blocked.
 //So what is the fix? -> https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades_BilinearFix/Shd_RadianceCascades_BilinearFix.fsh
-//explaining that is for another day
-
-//I should probably learn why sRGB is used
-//more advanced stuff?
+//2. I should probably learn why sRGB is used
+//3. Explain why is clamping +- 1 units still failing on some resolutions? -> Still have no idea
 
 export default function radiancecascades() {
 	return new THREE.ShaderMaterial({
@@ -68,12 +63,10 @@ export default function radiancecascades() {
 
             vec4 raymarch(vec2 rayOrigin, float theta, float offset, float range) {        //Same logic as ray.js but also accounting for the offset and range of the cascade level
                 vec2 texel = 1.0 / distanceResolution;
-                vec2 delta = vec2(cos(theta), -sin(theta));
+                vec2 delta = vec2(cos(theta), sin(theta));
                 vec2 ray = (rayOrigin + (delta * offset)) * texel;
-
                                                                                            //there is also the issue where a ray can accidentally sample a pixel that is not the edge of a light source since it starts at info.offset. Doesn't seem to change much
                                                                                            //wait no, because of the extended range in the previous cascade, this shouldnt be a problem, we never start a ray at a seed/light location. 
-
                 for(float i = 0.0, df = 0.0, rd = 0.0; i < range; i++) {
                     df = texture(distanceTexture, ray).r;
                     
@@ -99,7 +92,7 @@ export default function radiancecascades() {
                 vec2 upperSize = directionSize * 0.5;                                      //The size of each direction block in the upper cascade
 
                 vec2 upperPos = vec2(mod(upperRayIndex, upperAngular), 
-                                    floor(upperRayIndex / upperAngular)) * upperSize;      //This is the topleft corner of the direction block in the upper cascade.
+                                    floor(upperRayIndex / upperAngular)) * upperSize;      //This is the bottom left corner of the direction block in the upper cascade.
                                                                                           
                 vec2 upperAdjust = (probe * 0.5) + 0.25;                                   //Relative probe position in that direction block. I think the 0.25 is to account for the centering of the pixel in this cascade level. 
                 vec2 upperClamped = max(vec2(2.0), min(upperAdjust, upperSize - 2.0));     //Ohh this is good one. If we dont clamp, we might accidentally interpolate stuff from other direction blocks. the max min stop that. 

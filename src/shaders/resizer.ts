@@ -45,7 +45,7 @@ export default function resizer() {
 
                 vec2 newUv = (vUv - offset) / mul;
 
-                if (newUv.x < 0.0 || newUv.x > 1.0 || newUv.y < 0.0 || newUv.y > 1.0) {
+                if (newUv.x < 0.01 || newUv.x > 0.99 || newUv.y < 0.01 || newUv.y > 0.99) { //hmmm black bars?
                     discard;
                 }
 

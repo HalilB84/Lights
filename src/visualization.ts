@@ -56,7 +56,6 @@ export default class Visualization {
 	prevCascade: THREE.WebGLRenderTarget;
 
 	mouse = { x: 9999, y: 9999 };
-	nextTexture: THREE.Texture | null = null;
 	frameCount = 0;
 	lastTime = 0;
 
@@ -285,12 +284,10 @@ export default class Visualization {
 				this.renderer.render(this.playable2.scene, this.playable2.camera);
 			}
 
-			this.nextTexture = this.modelRT.texture;
-
 			//seed phase
 			this.mesh.material = this.seedMaterial;
 			this.seedMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
-			this.seedMaterial.uniforms.inputTexture.value = this.nextTexture;
+			this.seedMaterial.uniforms.inputTexture.value = this.modelRT.texture;
 
 			this.renderer.setRenderTarget(this.seedRT);
 			this.renderer.clear();
@@ -318,7 +315,7 @@ export default class Visualization {
 		//Naive Ray Marching / RC phase
 		if (this.state.settings.enableRC) {
 			this.mesh.material = this.radiancecascadesMaterial;
-			this.radiancecascadesMaterial.uniforms.sceneTexture.value = this.nextTexture;
+			this.radiancecascadesMaterial.uniforms.sceneTexture.value = this.modelRT.texture;
 			this.radiancecascadesMaterial.uniforms.distanceTexture.value = this.prevJFA.texture;
 			this.radiancecascadesMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
 			this.radiancecascadesMaterial.uniforms.distanceResolution.value = [this.render_width, this.render_height];
@@ -348,7 +345,7 @@ export default class Visualization {
 			}
 		} else {
 			this.mesh.material = this.rayMaterial;
-			this.rayMaterial.uniforms.sceneTexture.value = this.nextTexture;
+			this.rayMaterial.uniforms.sceneTexture.value = this.modelRT.texture;
 			this.rayMaterial.uniforms.distanceTexture.value = this.prevJFA.texture;
 			this.rayMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
 			this.rayMaterial.uniforms.frame.value += 1;
