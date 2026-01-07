@@ -1,9 +1,9 @@
 //THIS IS JUST A TESTING CONCEPT, PLAYABLE 2 IS NOT THIS. THIS IS NOT FINAL
 
 import * as THREE from "three";
-import Playable from "./playable";
+import { Playable } from "./playable";
 
-export default class Playable2 extends Playable {
+export class Playable2 extends Playable {
 	circles: { mesh: THREE.Mesh; meshOverlay: THREE.Mesh }[];
 	videoTexture: THREE.Texture | null;
 
@@ -19,6 +19,9 @@ export default class Playable2 extends Playable {
 	}
 
 	reset() {
+
+		this.dispose();
+		
 		this.circles = [];
 		this.createScene();
 	}
@@ -37,9 +40,10 @@ export default class Playable2 extends Playable {
 		this.materialOverlay = this.createShaderMaterial();
 		this.materialOverlay.uniforms.resolution.value = [this.widthOverlay, this.heightOverlay];
 
+		const geometry = new THREE.CircleGeometry(10, 16);
+
 		for (let i = 0; i < numCircles; i++) {
 			for (let j = 0; j < numCircles; j++) {
-				const geometry = new THREE.CircleGeometry(10, 32);
 
 				const mesh = new THREE.Mesh(geometry, this.material);
 
@@ -100,5 +104,11 @@ export default class Playable2 extends Playable {
 
 		this.material.uniforms.videoTexture.value = videoTexture;
 		this.materialOverlay.uniforms.videoTexture.value = videoTexture;
+	}
+
+	dispose(): void {
+		this.circles[0]?.mesh.geometry.dispose();
+		this.material?.dispose();
+		this.materialOverlay?.dispose();
 	}
 }

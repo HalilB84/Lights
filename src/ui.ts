@@ -1,7 +1,7 @@
-import type State from "./state.js";
+import type { State } from "./state.js";
 
 //https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions
-export default class UI {
+export class UI {
 	state: State;
 
 	hideSettings = document.getElementById("hide-settings") as HTMLInputElement;
@@ -122,13 +122,13 @@ export default class UI {
 		video.src = url;
 		this.videoName.textContent = file.name;
 
-		video.oncanplay = () => {
+		video.addEventListener("canplay", () => {
 			console.log("Video loaded");
 			this.state.loadVideo(video);
 
 			this.mode.value = "video";
 			this.mode.dispatchEvent(new Event("change"));
-		};
+		});
 	}
 
 	handleAudio() {
@@ -148,12 +148,12 @@ export default class UI {
 		audio.src = url;
 		this.audioName.textContent = file.name;
 
-		audio.oncanplay = () => {
+		audio.addEventListener("canplay", () => {
 			console.log("Audio loaded");
 			this.state.loadAudio(audio, trackName, artistName);
 
 			this.mode.value = "lyrics";
 			this.mode.dispatchEvent(new Event("change"));
-		};
+		});
 	}
 }

@@ -19,7 +19,7 @@ import * as THREE from "three";
 //2. I should probably learn why sRGB is used
 //3. Explain why is clamping +- 1 units still failing on some resolutions? -> Still have no idea
 
-export default function radiancecascades() {
+export function radiancecascades() {
 	return new THREE.ShaderMaterial({
 		uniforms: {
 			sceneTexture: { value: null },
@@ -52,7 +52,7 @@ export default function radiancecascades() {
             uniform vec2 cascadeResolution;
             uniform float cascadeCount;
             uniform float cascadeIndex;
-            uniform float probeSpacing;
+            uniform float probeSpacing;                                                    //Basically controls the probe spacing in the intended resolution (this is very hard to put into words). Remember that cascadeResolution = intended res / probe spacing. So if the spacing was 0.5 the cascadeTexture would be bigger to hold more data. In the 0.5 case in the intended res space each texel would have 4 probes in cascade0. The math checks out but hard to wrap your head around without visualizing it. 
             uniform float interval;
             uniform float radianceModifier;
             uniform bool fixEdges;
@@ -140,7 +140,7 @@ export default function radiancecascades() {
                 float raySpacing = TAU / (angular * angular * 4.0);                        //Divide the circle angles into the amount of rays we are shooting in this cascade (we shoot this amount of rays from each probe, not per pixel)
 
                 vec4 color = vec4(0.0);                                                    //Total light stored in this pixel
-                for(float i = 0.0; i < 4.0; i++) {                                         //Shoot 4 rays per pixel
+                for(float i = 0.0; i < 4.0; i++) {                                         //Shoot 4 rays per pixel. This has to be 4. If it was higher then some rays wouldn't have a direction block in the upper Cascade. It also can't be less.
                     float upperRayIndex = upperRayBase + i;                                //Which ray are we dealing with? This is important because the index tells us which direction block we are in the upper cascade. 
                     float theta = (upperRayIndex + 0.5) * raySpacing;                      //Calculate the angle of the ray, I think the 0.5 is to offset the rays to they are not purely horizontal.vertical, idk doesnt make any difference 
                     

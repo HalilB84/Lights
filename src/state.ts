@@ -1,5 +1,5 @@
-import Visualization from "./visualization.ts";
-import UI from "./ui.ts";
+import { Visualization } from "./visualization.ts";
+import { UI } from "./ui.ts";
 import * as THREE from "three";
 
 //Current architecture (I am not even sure this is how you are supposed to do it)
@@ -11,7 +11,7 @@ import * as THREE from "three";
 //The methods of state are only responsible for updating its own state values and not for doing anything else (which is not even the case right now)
 //type assertions here because of syntax issues? Js doesn't know about types and you initialize things with the : operator which can't we used to specify types (inside an object).
 
-export default class State {
+export class State {
 	settings: {
 		mode: string;
 		isMobile: boolean;
@@ -29,6 +29,7 @@ export default class State {
 		width: number;
 		scale: number;
 		volume: number;
+		loading: boolean;
 	};
 
 	audio: {
@@ -60,6 +61,7 @@ export default class State {
 			width: 0,
 			scale: 0,
 			volume: 0,
+			loading: false,
 		};
 
 		this.audio = {
@@ -94,13 +96,20 @@ export default class State {
 			URL.revokeObjectURL(this.video.element.src);
 		}
 
-		this.video.texture?.dispose();
+		//I probably shouldve read: https://threejs.org/manual/#en/how-to-dispose-of-objects
+		//lesson here is that whenever dealing with GPU data always think about dispose()
+		this.video.loading = false;
+		this.video.texture?.dispose(); 
+
+		//console.log(this.visualization.renderer.info.memory.textures); //they were right!!!
 
 		this.video.element = video;
 		this.video.element.volume = this.video.volume;
 		this.video.texture = new THREE.VideoTexture(video);
 		this.video.height = video.videoHeight;
 		this.video.width = video.videoWidth;
+
+		this.video.loading = true;
 
 		this.toggleVideo(false);
 	}
@@ -114,7 +123,7 @@ export default class State {
 	}
 
 	//from what I understand not removing event liseners to an element that is not used anymore is not a problem im modern browsers
-	//however in this case not removing does cause a problem with the playbacl
+	//however in this case not removing does cause a problem with the playback
 	loadAudio(audio: HTMLAudioElement, trackName: string, artistName: string) {
 		if (this.audio.element) {
 			this.audio.element.pause();

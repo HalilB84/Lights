@@ -1,9 +1,9 @@
 import * as THREE from "three";
 import { MSDFTextGeometry, uniforms } from "three-msdf-text-utils";
 import { FontLoader, type FontData } from "three/examples/jsm/loaders/FontLoader.js";
-import Playable from "./playable";
+import { Playable } from "./playable";
 
-export default class Text extends Playable {
+export class Text extends Playable {
 	scale: number;
 	currentText: string;
 
@@ -33,14 +33,17 @@ export default class Text extends Playable {
 	}
 
 	reset() {
+        this.dispose();
 		this.createScene();
 	}
 
 	createScene() {
 		this.isReady = false;
+
 		this.scene.clear();
 		this.sceneOverlay.clear();
 
+		//uses px size from the bitmap so thats what determines size
 		const geometry = new MSDFTextGeometry({
 			text: this.currentText,
 			font: this.font,
@@ -195,6 +198,12 @@ export default class Text extends Playable {
 
 	update(text?: string) {
 		if (text) this.currentText = text;
+        this.dispose();
 		this.createScene();
 	}
+
+    dispose(): void {
+        this.mesh?.geometry.dispose();
+        this.mesh?.material.dispose();
+    }
 }

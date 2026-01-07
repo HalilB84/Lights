@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export default function resizer() {
+export function resizer() {
 	return new THREE.ShaderMaterial({
 		uniforms: {
 			videoTexture: { value: null },

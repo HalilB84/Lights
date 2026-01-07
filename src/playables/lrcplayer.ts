@@ -1,4 +1,4 @@
-export default class LRC {
+export class LRC {
 	isReady: boolean;
 	timedLyrics: { time: number; lyric: string }[];
 	prevIndex: number;
@@ -19,7 +19,7 @@ export default class LRC {
 		});
 
 		if (!response.ok) {
-			console.error("Error getting lyrics, LRCLIB didn't respond");
+			console.log("Error getting lyrics, LRCLIB didn't respond or something else went wrong");
 			this.isReady = true;
 			return;
 		}

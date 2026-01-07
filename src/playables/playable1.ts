@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import Matter from "matter-js";
-import Playable from "./playable";
+import { Playable } from "./playable";
 
-export default class Playable1 extends Playable {
+//https://brm.io/matter-js/docs/classes/Engine.html
+export class Playable1 extends Playable {
 	rectangles: { body: Matter.Body; mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>; meshOverlay: THREE.Mesh; color: number }[];
 	walls: Matter.Body[];
 	engine: Matter.Engine;
@@ -16,6 +17,8 @@ export default class Playable1 extends Playable {
 	}
 
 	reset() {
+		this.dispose();
+
 		this.rectangles = [];
 		this.walls = [];
 
@@ -35,9 +38,12 @@ export default class Playable1 extends Playable {
 		const rectangleWidth = 100;
 		const rectangleHeight = 5;
 
+		const geometry = new THREE.PlaneGeometry(rectangleWidth, rectangleHeight);
+
 		for (let i = 0; i < 20; i++) {
-			const geometry = new THREE.PlaneGeometry(rectangleWidth, rectangleHeight);
+
 			const material = new THREE.MeshBasicMaterial();
+
 			const mesh = new THREE.Mesh(geometry, material);
 			this.scene.add(mesh);
 
@@ -101,6 +107,14 @@ export default class Playable1 extends Playable {
 					y: 0.005 * Math.sin(angle),
 				});
 			}
+		}
+	}
+
+	dispose(): void {
+		this.rectangles[0]?.mesh.geometry.dispose();
+		
+		for (const rec of this.rectangles) {
+			rec.mesh.material.dispose();
 		}
 	}
 }

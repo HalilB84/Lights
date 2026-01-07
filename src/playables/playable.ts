@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export default abstract class Playable {
+export abstract class Playable {
 	scene: THREE.Scene;
 	camera: THREE.OrthographicCamera;
 	sceneOverlay: THREE.Scene;
@@ -45,4 +45,5 @@ export default abstract class Playable {
 	abstract reset(): void;
 	abstract createScene(): void;
 	abstract update(...args: any[]): void;
+	abstract dispose(): void;
 }

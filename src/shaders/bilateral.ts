@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 //Direct implementation of the equations given in:
 //https://en.wikipedia.org/wiki/Bilateral_filter
-export default function bilateral() {
+export function bilateral() {
 	return new THREE.ShaderMaterial({
 		uniforms: {
 			inputTexture: { value: null },

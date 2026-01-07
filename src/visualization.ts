@@ -1,22 +1,22 @@
 import * as THREE from "three";
 import Stats from "stats-gl";
-import seed from "./shaders/seed.ts";
-import jfa from "./shaders/jfa.ts";
-import ray from "./shaders/ray.ts";
-import resizer from "./shaders/resizer.ts";
-import bilateral from "./shaders/bilateral.ts";
-import radiancecascades from "./shaders/radiancecascades.ts";
-import Text from "./playables/text.ts";
-import LRC from "./playables/lrcplayer.ts";
-import Playable1 from "./playables/playable1.ts";
-import Playable2 from "./playables/playable2.ts";
-import type State from "./state.js";
+import { seed } from "./shaders/seed.ts";
+import { jfa } from "./shaders/jfa.ts";
+import { ray } from "./shaders/ray.ts";
+import { resizer } from "./shaders/resizer.ts";
+import { bilateral } from "./shaders/bilateral.ts";
+import { radiancecascades } from "./shaders/radiancecascades.ts";
+import { Text } from "./playables/text.ts";
+import { LRC } from "./playables/lrcplayer.ts";
+import { Playable1 } from "./playables/playable1.ts";
+import { Playable2 } from "./playables/playable2.ts";
+import type { State } from "./state.js";
 
 //realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
 
 //https://www.typescriptlang.org/docs/handbook/2/classes.html
 //!'s because of strict mode
-export default class Visualization {
+export class Visualization {
 	state: State;
 	renderer: THREE.WebGLRenderer;
 	canvas: HTMLCanvasElement;
@@ -75,8 +75,9 @@ export default class Visualization {
 
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.autoClear = false;
+		this.renderer.info.autoReset = false; 
 		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // <- I dont know why this works needs research
-		this.renderer.setClearColor(0x848484, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color (default is 1.0)
+		this.renderer.setClearColor(0x848484, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color ( is 1.0)
 		//also since its clear the body background will be visible, since the color is just black it blends. This is bugging me though
 
 		document.body.appendChild(this.renderer.domElement);
@@ -156,7 +157,7 @@ export default class Visualization {
 		//console.log(this.jfaWidth, this.jfaHeight);
 		//console.log("end");
 
-		this.radiance_linear = 1; //spacing between probes/quality control however anything other than 1 either looks bad or tanks performance
+		this.radiance_linear = 1.0; //spacing between probes/quality control however anything other than 1 either looks bad or tanks performance
 		this.radiance_width = Math.floor(this.render_width / this.radiance_linear);
 		this.radiance_height = Math.floor(this.render_height / this.radiance_linear);
 
@@ -206,7 +207,7 @@ export default class Visualization {
 		blueNoiseTexture.magFilter = THREE.NearestFilter;
 
 		this.rayMaterial.uniforms.blueNoise.value = blueNoiseTexture;
-		this.rayMaterial.uniforms.rayCount.value = 32;
+		this.rayMaterial.uniforms.rayCount.value = 64;
 		this.rayMaterial.uniforms.frame.value = 0;
 
 		this.bilateralMaterial = bilateral();
@@ -226,6 +227,7 @@ export default class Visualization {
 	resize() {
 		this.calculateBounds();
 
+		//https://github.com/mrdoob/three.js/blob/dev/src/core/RenderTarget.js setSize disposes for us! love that
 		this.renderer.setSize(this.width, this.height, false);
 
 		this.modelRT.setSize(this.jfaWidth, this.jfaHeight);
@@ -249,6 +251,8 @@ export default class Visualization {
 		const delta = currentTime - this.lastTime;
 		this.lastTime = currentTime;
 
+		//ok so its messy here text calls update via the event listener, but these updates are called by frame - fix or make it better 
+
 		if (this.state.settings.mode === "playable1") {
 			this.playable1.update(delta, { x: this.mouse.x - this.jfaWidth / 2, y: this.mouse.y - this.jfaHeight / 2 });
 		} else if (this.state.settings.mode === "playable2" && this.state.video.texture) {
@@ -256,7 +260,7 @@ export default class Visualization {
 		}
 
 		if ((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
-			if (this.state.settings.mode === "video") {
+			if (this.state.settings.mode === "video") { // && this.state.video.loading
 				this.mesh.material = this.resizerMaterial;
 				this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
 				this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
@@ -388,7 +392,7 @@ export default class Visualization {
 			this.text.mesh.material.uniforms.time.value = performance.now() / 1000;
 			this.renderer.render(this.text.sceneOverlay, this.text.cameraOverlay);
 			//
-		} else if (this.state.settings.mode === "video") {
+		} else if (this.state.settings.mode === "video" && this.state.video.loading) {
 			this.mesh.material = this.resizerMaterial;
 			this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
 			this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
@@ -401,8 +405,19 @@ export default class Visualization {
 			this.renderer.render(this.playable2.sceneOverlay, this.playable2.cameraOverlay);
 		}
 
-		this.frameCount = (this.frameCount + 1) % 2;
+		this.frameCount = (this.frameCount + 1);// % 2;
 
 		this.stats.update();
+		
+		//https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLInfo.js 
+		/*if(this.frameCount % 100 === 1) { 
+			console.clear();
+			console.log("geom", this.renderer.info.memory.geometries);
+			console.log("tex", this.renderer.info.memory.textures);
+			console.log("calls:", this.renderer.info.render.calls); //meshes in all scene renders
+			console.log("triangles", this.renderer.info.render.triangles); //total triangles in all scene renders
+		}*/
+		
+		this.renderer.info.reset();
 	}
 }

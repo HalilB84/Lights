@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export default function seed() {
+export function seed() {
 	return new THREE.ShaderMaterial({
 		uniforms: {
 			inputTexture: { value: null },

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export default function ray() {
+export function ray() {
 	return new THREE.ShaderMaterial({
 		uniforms: {
 			sceneTexture: { value: null },
