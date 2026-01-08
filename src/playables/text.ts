@@ -4,19 +4,19 @@ import { FontLoader, type FontData } from "three/examples/jsm/loaders/FontLoader
 import { Playable } from "./playable";
 
 export class Text extends Playable {
-	scale: number;
+	textscale: number;
 	currentText: string;
 
 	atlas: THREE.Texture;
 	font: FontData;
 
-	mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
+	mesh: THREE.Mesh<any, THREE.ShaderMaterial>;
 	meshOverlay: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
 
-	constructor(width: number, height: number, scale: number, widthOverlay: number, heightOverlay: number, scaleOverlay: number) {
-		super(width, height, widthOverlay, heightOverlay, scaleOverlay);
+	constructor(width: number, height: number, textscale: number, scaleOverlay: number) {
+		super(width, height, scaleOverlay);
 
-		this.scale = scale;
+		this.textscale = textscale;
 		this.currentText = "The show is starting!";
 
 		this.load();
@@ -33,7 +33,7 @@ export class Text extends Playable {
 	}
 
 	reset() {
-        this.dispose();
+		this.dispose();
 		this.createScene();
 	}
 
@@ -48,7 +48,7 @@ export class Text extends Playable {
 			text: this.currentText,
 			font: this.font,
 			align: "center",
-			width: this.width / this.scale,
+			width: this.width / this.textscale,
 		});
 
 		const material = new THREE.ShaderMaterial({
@@ -124,6 +124,7 @@ export class Text extends Playable {
                 uniform sampler2D uMap;
                 uniform float time;
 
+                //https://iquilezles.org/articles/palettes/
                 vec3 palette(in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d) {
                     return a + b*cos(6.28318*(c*t+d));
                 }
@@ -132,7 +133,9 @@ export class Text extends Playable {
                     return max(min(r, g), min(max(r, g), b));
                 }
 
-                void main() { // https://tympanus.net/codrops/2020/06/02/kinetic-typography-with-three-js/
+                void main() { 
+                    // https://codesandbox.io/p/sandbox/cosmos-slll9?file=%2Fsrc%2Fcomponents%2FWebGLFont%2Ffragment%2Fdemo-05.glsl%3A24%2C1-25%2C1&from-embed
+                    // the exact same code is in map of reddit under MIT so like am i breaking rules here? potential problem!!!
                     vec3 sample1 = texture2D(uMap, vUv).rgb;
                     float sigDist = median(sample1.r, sample1.g, sample1.b) - 0.5;
                     float alpha = clamp(sigDist/fwidth(sigDist) + 0.5, 0.0, 1.0);
@@ -146,8 +149,6 @@ export class Text extends Playable {
                         p.x += 0.45 / float(i) * sin(float(i) * 3.0 * p.y + vLetterIndex + time * speed );
                         p.y += 0.45 / float(i) * cos(float(i) * 3.0 * p.x + vLetterIndex + time * speed );
                     }
-
-                    //https://iquilezles.org/articles/palettes/
 
                     float r = cos(p.x + p.y + 1.0) * 0.5 + 0.5;
                     float g = sin(p.x + p.y + 1.0) * 0.5 + 0.5;
@@ -177,20 +178,20 @@ export class Text extends Playable {
 		material.uniforms.uMap.value = this.atlas;
 
 		this.mesh = new THREE.Mesh(geometry, material);
-
 		geometry.computeBoundingBox();
 		const bbox = geometry.boundingBox;
 
 		const centerX = (bbox.min.x + bbox.max.x) / 2;
 		const centerY = (bbox.min.y + bbox.max.y) / 2;
 
-		this.mesh.scale.set(this.scale, -this.scale, 0);
-		this.mesh.position.set(-centerX * this.scale, centerY * this.scale, 0);
+		this.mesh.scale.set(this.textscale, -this.textscale, 0);
+		this.mesh.position.set(-centerX * this.textscale, centerY * this.textscale, 0);
 		this.scene.add(this.mesh);
 
 		this.meshOverlay = new THREE.Mesh(geometry, material);
 		this.meshOverlay.scale.set(this.scaleOverlay, -this.scaleOverlay, 0);
 		this.meshOverlay.position.set(-centerX * this.scaleOverlay, centerY * this.scaleOverlay, 0);
+
 		this.sceneOverlay.add(this.meshOverlay);
 
 		this.isReady = true;
@@ -198,12 +199,12 @@ export class Text extends Playable {
 
 	update(text?: string) {
 		if (text) this.currentText = text;
-        this.dispose();
+		this.dispose();
 		this.createScene();
 	}
 
-    dispose(): void {
-        this.mesh?.geometry.dispose();
-        this.mesh?.material.dispose();
-    }
+	dispose(): void {
+		this.mesh?.geometry.dispose();
+		this.mesh?.material.dispose();
+	}
 }

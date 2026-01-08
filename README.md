@@ -4,7 +4,7 @@ This project is meant to be a light experiment running in your browser!
 
 ## Technical
 
-The basic idea is that from each pixel you shoot rays and if it hits something you accumulate color. Of course this is sped up with clever algorithms (Jump Flooding Algorithm, Radiance Cascades). The current state of the code is a mix of the [Radiance Cascades](https://jason.today/rc) blog post and Yaazarai's RC implementation, with some fixes + a video player and a lyrics player.
+The basic idea is that from each pixel you shoot rays and if it hits something you accumulate color. Of course this is sped up with clever algorithms (Jump Flooding Algorithm, Radiance Cascades). The current state of the code is a mix of the [Radiance Cascades](https://jason.today/rc) blog post and Yaazarai's RC implementation, with some fixes + a video player and a lyrics player. 
 
 
 ## Showcase
@@ -17,7 +17,7 @@ Using JFA + naive ray marching + (blue noise + bilateral filter) (credits: [@ani
 
 https://github.com/user-attachments/assets/51e49c7a-dfaa-4357-9ad4-52e02dd73a94
 
-Lyrics (same as above + lrclib.net + three-msdf-text-utils) (credits: LIKE A ROCKSTAR - Chase Atlantic):
+Lyrics (same as above + lrclib.net + three-msdf-text-utils) (credits: Planet - The Neighbourhood):
 
 https://github.com/user-attachments/assets/9b813066-decc-499d-bb85-567a3b426d8f
 
@@ -43,3 +43,5 @@ Planned Features:
 Parts of this project are based on code from [Radiance Cascades](https://jason.today/rc) ([by  Jason McGhee](https://github.com/jasonjmcghee)), used under the MIT License.
 
 At least as of now the Radiance Cascade implementation is based on [GMShaders-Radiance-Cascades](https://github.com/Yaazarai/GMShaders-Radiance-Cascades) ([by Yaazarai](https://github.com/Yaazarai))
+
+

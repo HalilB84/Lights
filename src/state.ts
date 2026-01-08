@@ -76,8 +76,8 @@ export class State {
 
 	setTextScale(value: number) {
 		this.settings.textScale = value;
-		this.visualization.text.scale = this.settings.textScale;
-		this.visualization.text.scaleOverlay = this.settings.textScale * this.visualization.JFAscale;
+		this.visualization.text.textscale = this.settings.textScale;
+		this.visualization.text.scaleOverlay = this.settings.textScale * this.visualization.scaleDown;
 		this.visualization.text.update();
 	}
 
@@ -99,7 +99,7 @@ export class State {
 		//I probably shouldve read: https://threejs.org/manual/#en/how-to-dispose-of-objects
 		//lesson here is that whenever dealing with GPU data always think about dispose()
 		this.video.loading = false;
-		this.video.texture?.dispose(); 
+		this.video.texture?.dispose();
 
 		//console.log(this.visualization.renderer.info.memory.textures); //they were right!!!
 

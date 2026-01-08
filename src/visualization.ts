@@ -12,10 +12,7 @@ import { Playable1 } from "./playables/playable1.ts";
 import { Playable2 } from "./playables/playable2.ts";
 import type { State } from "./state.js";
 
-//realistically we dont even need three.js for a 2d scene but since it reduces boilerplate and provides a lot of useful functionality, we ball//we will use three.js for the sake of learning
-
 //https://www.typescriptlang.org/docs/handbook/2/classes.html
-//!'s because of strict mode
 export class Visualization {
 	state: State;
 	renderer: THREE.WebGLRenderer;
@@ -33,18 +30,16 @@ export class Visualization {
 	width: number;
 	height: number;
 	dpr: number;
-	JFAscale: number;
-	jfaWidth: number;
-	jfaHeight: number;
-	radiance_interval: number;
-	radiance_cascades: number;
-	render_width: number;
-	render_height: number;
-	radiance_linear: number;
-	radiance_width: number;
-	radiance_height: number;
-	fullJfaWidth: number;
-	fullJfaHeight: number;
+	scaleDown: number;
+
+	actualWidth: number;
+	actualHeight: number;
+
+	cascadeInterval: number;
+	probeSpacing: number;
+	cascadeCount: number;
+	cascadeWidth: number;
+	cascadeHeight: number;
 
 	modelRT: THREE.WebGLRenderTarget;
 	seedRT: THREE.WebGLRenderTarget;
@@ -75,7 +70,7 @@ export class Visualization {
 
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.autoClear = false;
-		this.renderer.info.autoReset = false; 
+		this.renderer.info.autoReset = false;
 		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // <- I dont know why this works needs research
 		this.renderer.setClearColor(0x848484, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color ( is 1.0)
 		//also since its clear the body background will be visible, since the color is just black it blends. This is bugging me though
@@ -110,18 +105,18 @@ export class Visualization {
 
 		//playground
 		this.lrcPlayer = new LRC();
-		this.text = new Text(this.jfaWidth, this.jfaHeight, this.state.settings.textScale, this.fullJfaWidth, this.fullJfaHeight, this.JFAscale * this.state.settings.textScale);
-		this.playable1 = new Playable1(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight, this.JFAscale);
-		this.playable2 = new Playable2(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight, this.JFAscale);
+		this.text = new Text(this.actualWidth, this.actualHeight, this.state.settings.textScale, this.scaleDown);
+		this.playable1 = new Playable1(this.actualWidth, this.actualHeight, this.scaleDown);
+		this.playable2 = new Playable2(this.actualWidth, this.actualHeight, this.scaleDown);
 
 		this.initialize();
 		this.shaders();
 
 		this.canvas.addEventListener("mousemove", (e) => {
-			//bottom left corner is 0,0 to match UV coords and is not fully matched up
+			//bottom left corner is 0,0 to match UV coords and is not fully matched up but its not fully because of error calc
 			const rect = this.canvas.getBoundingClientRect();
-			this.mouse.x = ((e.clientX - rect.left) * this.dpr) / this.JFAscale;
-			this.mouse.y = ((rect.height - (e.clientY - rect.top)) * this.dpr) / this.JFAscale;
+			this.mouse.x = ((e.clientX - rect.left) * this.dpr) / this.scaleDown;
+			this.mouse.y = ((rect.height - (e.clientY - rect.top)) * this.dpr) / this.scaleDown;
 		});
 
 		window.addEventListener("resize", () => {
@@ -134,38 +129,32 @@ export class Visualization {
 		this.width = Math.floor(this.canvas.clientWidth * this.dpr);
 		this.height = Math.floor(this.canvas.clientHeight * this.dpr);
 
-		this.JFAscale = this.state.settings.isMobile ? 2 : 2;
-		this.jfaWidth = Math.floor(this.width / this.JFAscale);
-		this.jfaHeight = Math.floor(this.height / this.JFAscale);
+		this.scaleDown = this.state.settings.isMobile ? 2 : 2;
+		const initialWidth = Math.floor(this.width / this.scaleDown);
+		const initialHeight = Math.floor(this.height / this.scaleDown);
 
 		//some differences from the original code atp idc.
-		this.radiance_interval = 1; //TODO: figure out why in the original code its set to 2?
+		this.cascadeInterval = 1; //TODO: figure out why in the original code its set to 2?
 
-		const diagonal = Math.sqrt(this.jfaWidth * this.jfaWidth + this.jfaHeight * this.jfaHeight);
+		const diagonal = Math.sqrt(initialWidth * initialWidth + initialHeight * initialHeight);
 
-		this.radiance_cascades = Math.ceil(Math.log((3 * diagonal) / this.radiance_interval + 1) / Math.log(4));
+		this.cascadeCount = Math.ceil(Math.log((3 * diagonal) / this.cascadeInterval + 1) / Math.log(4));
 		//console.log(diagonal);
 		//console.log(this.radiance_cascades);
 
-		const errorRate = Math.pow(2.0, this.radiance_cascades - 1);
-		const errorX = Math.ceil(this.jfaWidth / errorRate);
-		const errorY = Math.ceil(this.jfaHeight / errorRate);
-		this.render_width = errorX * errorRate;
-		this.render_height = errorY * errorRate;
+		const errorRate = Math.pow(2.0, this.cascadeCount - 1);
+		const errorX = Math.ceil(initialWidth / errorRate);
+		const errorY = Math.ceil(initialHeight / errorRate);
+		this.actualWidth = errorX * errorRate;
+		this.actualHeight = errorY * errorRate;
 
 		//console.log(this.render_width, this.render_height);
-		//console.log(this.jfaWidth, this.jfaHeight);
+		//console.log(this.actualWidth, this.actualHeight);
 		//console.log("end");
 
-		this.radiance_linear = 1.0; //spacing between probes/quality control however anything other than 1 either looks bad or tanks performance
-		this.radiance_width = Math.floor(this.render_width / this.radiance_linear);
-		this.radiance_height = Math.floor(this.render_height / this.radiance_linear);
-
-		this.jfaWidth = this.render_width;
-		this.jfaHeight = this.render_height;
-
-		this.fullJfaWidth = this.jfaWidth * this.JFAscale;
-		this.fullJfaHeight = this.jfaHeight * this.JFAscale;
+		this.probeSpacing = 1.0; //spacing between probes/quality control however anything other than 1 either looks bad or tanks performance
+		this.cascadeWidth = Math.floor(this.actualWidth / this.cascadeInterval);
+		this.cascadeHeight = Math.floor(this.actualHeight / this.cascadeInterval);
 	}
 
 	initialize() {
@@ -181,7 +170,7 @@ export class Visualization {
 			type: THREE.FloatType,
 		};
 
-		this.modelRT = new THREE.WebGLRenderTarget(this.jfaWidth, this.jfaHeight, rtConfig);
+		this.modelRT = new THREE.WebGLRenderTarget(this.actualWidth, this.actualHeight, rtConfig);
 		this.seedRT = this.modelRT.clone();
 
 		this.curJFA = this.modelRT.clone();
@@ -190,7 +179,7 @@ export class Visualization {
 		this.rayColorRT = this.modelRT.clone();
 		this.bilateralRT = this.modelRT.clone();
 
-		this.curCascade = new THREE.WebGLRenderTarget(this.radiance_width, this.radiance_height, cascadeRTConfig);
+		this.curCascade = new THREE.WebGLRenderTarget(this.cascadeWidth, this.cascadeHeight, cascadeRTConfig);
 		this.prevCascade = this.curCascade.clone();
 	}
 
@@ -207,7 +196,7 @@ export class Visualization {
 		blueNoiseTexture.magFilter = THREE.NearestFilter;
 
 		this.rayMaterial.uniforms.blueNoise.value = blueNoiseTexture;
-		this.rayMaterial.uniforms.rayCount.value = 64;
+		this.rayMaterial.uniforms.rayCount.value = 24;
 		this.rayMaterial.uniforms.frame.value = 0;
 
 		this.bilateralMaterial = bilateral();
@@ -230,20 +219,20 @@ export class Visualization {
 		//https://github.com/mrdoob/three.js/blob/dev/src/core/RenderTarget.js setSize disposes for us! love that
 		this.renderer.setSize(this.width, this.height, false);
 
-		this.modelRT.setSize(this.jfaWidth, this.jfaHeight);
-		this.seedRT.setSize(this.jfaWidth, this.jfaHeight);
-		this.curJFA.setSize(this.jfaWidth, this.jfaHeight);
-		this.prevJFA.setSize(this.jfaWidth, this.jfaHeight);
-		this.rayColorRT.setSize(this.jfaWidth, this.jfaHeight);
-		this.bilateralRT.setSize(this.jfaWidth, this.jfaHeight);
+		this.modelRT.setSize(this.actualWidth, this.actualHeight);
+		this.seedRT.setSize(this.actualWidth, this.actualHeight);
+		this.curJFA.setSize(this.actualWidth, this.actualHeight);
+		this.prevJFA.setSize(this.actualWidth, this.actualHeight);
+		this.rayColorRT.setSize(this.actualWidth, this.actualHeight);
+		this.bilateralRT.setSize(this.actualWidth, this.actualHeight);
 
 		//TODO: Resize radiance cascades although there is a very cool looking bug when you don't. Look into it
-		this.curCascade.setSize(this.radiance_width, this.radiance_height);
-		this.prevCascade.setSize(this.radiance_width, this.radiance_height);
+		this.curCascade.setSize(this.cascadeWidth, this.cascadeHeight);
+		this.prevCascade.setSize(this.cascadeWidth, this.cascadeHeight);
 
-		this.text.resize(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight);
-		this.playable1.resize(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight);
-		this.playable2.resize(this.jfaWidth, this.jfaHeight, this.fullJfaWidth, this.fullJfaHeight);
+		this.text.resize(this.actualWidth, this.actualHeight, this.scaleDown);
+		this.playable1.resize(this.actualWidth, this.actualHeight, this.scaleDown);
+		this.playable2.resize(this.actualWidth, this.actualHeight, this.scaleDown);
 	}
 
 	render() {
@@ -251,18 +240,19 @@ export class Visualization {
 		const delta = currentTime - this.lastTime;
 		this.lastTime = currentTime;
 
-		//ok so its messy here text calls update via the event listener, but these updates are called by frame - fix or make it better 
+		//ok so its messy here text calls update via the event listener, but these updates are called by frame - fix or make it better
 
 		if (this.state.settings.mode === "playable1") {
-			this.playable1.update(delta, { x: this.mouse.x - this.jfaWidth / 2, y: this.mouse.y - this.jfaHeight / 2 });
+			this.playable1.update(delta, { x: this.mouse.x - this.actualWidth / 2, y: this.mouse.y - this.actualHeight / 2 });
 		} else if (this.state.settings.mode === "playable2" && this.state.video.texture) {
 			this.playable2.update(this.state.video.texture);
 		}
 
 		if ((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
-			if (this.state.settings.mode === "video") { // && this.state.video.loading
+			if (this.state.settings.mode === "video") {
+				// && this.state.video.loading
 				this.mesh.material = this.resizerMaterial;
-				this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+				this.resizerMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
 				this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
 				this.resizerMaterial.uniforms.videoHeight.value = this.state.video.height;
 				this.resizerMaterial.uniforms.videoWidth.value = this.state.video.width;
@@ -290,7 +280,7 @@ export class Visualization {
 
 			//seed phase
 			this.mesh.material = this.seedMaterial;
-			this.seedMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+			this.seedMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
 			this.seedMaterial.uniforms.inputTexture.value = this.modelRT.texture;
 
 			this.renderer.setRenderTarget(this.seedRT);
@@ -298,9 +288,9 @@ export class Visualization {
 			this.renderer.render(this.scene, this.camera);
 
 			// jfa + distance phase
-			const passes = Math.ceil(Math.log2(Math.max(this.jfaWidth, this.jfaHeight)));
+			const passes = Math.ceil(Math.log2(Math.max(this.actualWidth, this.actualHeight)));
 			this.mesh.material = this.jfaMaterial;
-			this.jfaMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+			this.jfaMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
 
 			for (let i = 0; i < passes; i++) {
 				//ping pong so webgl doesnt yell at me for reading and writing to the same texture
@@ -322,18 +312,18 @@ export class Visualization {
 			this.radiancecascadesMaterial.uniforms.sceneTexture.value = this.modelRT.texture;
 			this.radiancecascadesMaterial.uniforms.distanceTexture.value = this.prevJFA.texture;
 			this.radiancecascadesMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
-			this.radiancecascadesMaterial.uniforms.distanceResolution.value = [this.render_width, this.render_height];
-			this.radiancecascadesMaterial.uniforms.cascadeResolution.value = [this.radiance_width, this.radiance_height];
-			this.radiancecascadesMaterial.uniforms.cascadeCount.value = this.radiance_cascades;
-			this.radiancecascadesMaterial.uniforms.probeSpacing.value = this.radiance_linear;
-			this.radiancecascadesMaterial.uniforms.interval.value = this.radiance_interval;
+			this.radiancecascadesMaterial.uniforms.distanceResolution.value = [this.actualWidth, this.actualHeight];
+			this.radiancecascadesMaterial.uniforms.cascadeResolution.value = [this.cascadeWidth, this.cascadeHeight];
+			this.radiancecascadesMaterial.uniforms.cascadeCount.value = this.cascadeCount;
+			this.radiancecascadesMaterial.uniforms.probeSpacing.value = this.probeSpacing;
+			this.radiancecascadesMaterial.uniforms.interval.value = this.cascadeInterval;
 			this.radiancecascadesMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
 
-			let start = this.frameCount % 2 === 0 ? this.radiance_cascades - 1 : Math.ceil((this.radiance_cascades - 1) / 2) - 1;
-			let end = this.frameCount % 2 === 0 ? Math.ceil((this.radiance_cascades - 1) / 2) : 0;
+			let start = this.frameCount % 2 === 0 ? this.cascadeCount - 1 : Math.ceil((this.cascadeCount - 1) / 2) - 1;
+			let end = this.frameCount % 2 === 0 ? Math.ceil((this.cascadeCount - 1) / 2) : 0;
 
 			if (!this.state.settings.twoPassOptimization) {
-				start = this.radiance_cascades - 1;
+				start = this.cascadeCount - 1;
 				end = 0;
 			}
 
@@ -351,7 +341,7 @@ export class Visualization {
 			this.mesh.material = this.rayMaterial;
 			this.rayMaterial.uniforms.sceneTexture.value = this.modelRT.texture;
 			this.rayMaterial.uniforms.distanceTexture.value = this.prevJFA.texture;
-			this.rayMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+			this.rayMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
 			this.rayMaterial.uniforms.frame.value += 1;
 			this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
 			this.rayMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
@@ -366,7 +356,7 @@ export class Visualization {
 		if (!this.state.settings.enableRC || !this.state.settings.twoPassOptimization || this.frameCount % 2 === 1) {
 			this.mesh.material = this.bilateralMaterial;
 			this.bilateralMaterial.uniforms.inputTexture.value = this.state.settings.enableRC ? this.prevCascade.texture : this.rayColorRT.texture;
-			this.bilateralMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+			this.bilateralMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
 
 			this.renderer.setRenderTarget(this.bilateralRT);
 			this.renderer.clear();
@@ -394,7 +384,7 @@ export class Visualization {
 			//
 		} else if (this.state.settings.mode === "video" && this.state.video.loading) {
 			this.mesh.material = this.resizerMaterial;
-			this.resizerMaterial.uniforms.resolution.value = [this.jfaWidth, this.jfaHeight];
+			this.resizerMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
 			this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
 			this.resizerMaterial.uniforms.videoHeight.value = this.state.video.height;
 			this.resizerMaterial.uniforms.videoWidth.value = this.state.video.width;
@@ -405,19 +395,19 @@ export class Visualization {
 			this.renderer.render(this.playable2.sceneOverlay, this.playable2.cameraOverlay);
 		}
 
-		this.frameCount = (this.frameCount + 1);// % 2;
+		this.frameCount = this.frameCount + 1; // % 2;
 
 		this.stats.update();
-		
-		//https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLInfo.js 
-		/*if(this.frameCount % 100 === 1) { 
+
+		//https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLInfo.js
+		if (this.frameCount % 100 === 1) {
 			console.clear();
 			console.log("geom", this.renderer.info.memory.geometries);
 			console.log("tex", this.renderer.info.memory.textures);
 			console.log("calls:", this.renderer.info.render.calls); //meshes in all scene renders
 			console.log("triangles", this.renderer.info.render.triangles); //total triangles in all scene renders
-		}*/
-		
+		}
+
 		this.renderer.info.reset();
 	}
 }

@@ -14,7 +14,7 @@
 /*css of doom and despair, I genuinely have no idea how to properly design anything*/
 
 :root {
-	--bgt: rgba(0, 0, 0, 0.5);
+	--bgt: rgba(0, 0, 0, 0.8);
 	--bgs: rgba(0, 0, 0, 1);
 	--border: 1px solid #fff;
 	--border-radius: 0px;

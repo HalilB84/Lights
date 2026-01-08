@@ -10,8 +10,8 @@ export class Playable2 extends Playable {
 	material: THREE.ShaderMaterial;
 	materialOverlay: THREE.ShaderMaterial;
 
-	constructor(width: number, height: number, widthOverlay: number, heightOverlay: number, scaleOverlay: number) {
-		super(width, height, widthOverlay, heightOverlay, scaleOverlay);
+	constructor(width: number, height: number, scaleOverlay: number) {
+		super(width, height, scaleOverlay);
 
 		this.circles = [];
 		this.videoTexture = null;
@@ -19,9 +19,8 @@ export class Playable2 extends Playable {
 	}
 
 	reset() {
-
 		this.dispose();
-		
+
 		this.circles = [];
 		this.createScene();
 	}
@@ -44,7 +43,6 @@ export class Playable2 extends Playable {
 
 		for (let i = 0; i < numCircles; i++) {
 			for (let j = 0; j < numCircles; j++) {
-
 				const mesh = new THREE.Mesh(geometry, this.material);
 
 				const centerX = (this.width / numCircles) * (j + 0.5) - this.width / 2;
