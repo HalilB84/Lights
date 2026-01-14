@@ -10,7 +10,7 @@ export class Text extends Playable {
 	atlas: THREE.Texture;
 	font: FontData;
 
-	mesh: THREE.Mesh<any, THREE.ShaderMaterial>;
+	mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
 	meshOverlay: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
 
 	constructor(width: number, height: number, textscale: number, scaleOverlay: number) {

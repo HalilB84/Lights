@@ -20,6 +20,7 @@ export class State {
 		textScale: number;
 		enableRC: boolean;
 		twoPassOptimization: boolean;
+		bilinearFix: boolean;
 	};
 
 	video: {
@@ -52,6 +53,7 @@ export class State {
 			textScale: 0,
 			enableRC: false,
 			twoPassOptimization: false,
+			bilinearFix: false,
 		};
 
 		this.video = {

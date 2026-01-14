@@ -61,17 +61,23 @@
 					<input id="fix-edges" type="checkbox" />
 				</div>
 
-				<div id="row-1" class="setting-row">
+				<div class="setting-row">
 					<label for="enable-rc">Enable Radiance Cascades</label>
 					<input id="enable-rc" type="checkbox" />
 					<img src="help.svg" />
-					<span class="tooltiptext">Radiance Cascades is a noise free algorithm to achieve global illumination created by Alexander Sannikov. This 2D implementation is based on Yaazarai's Vanilla RC code. More info on Github. It is better from naive ray marching in a sense that there is no noise (it looks better, subjectively of course) and runs even faster with the below '2 pass optimization' checkbox selected</span>
+					<span class="tooltiptext">Radiance Cascades is a noise free algorithm to achieve global illumination created by Alexander Sannikov. This 2D implementation is based on Yaazarai's RC code. More info on Github. It is better from naive ray marching in a sense that there is no noise (it looks better, subjectively of course) and runs even faster with the below '2 pass optimization' checkbox selected</span>
 				</div>
-				<div id="row-2" class="setting-row">
+				<div class="setting-row rc-collapse">
 					<label for="2-pass-optimization">2 pass optimization</label>
 					<input id="2-pass-optimization" type="checkbox" />
 					<img src="help.svg" />
 					<span class="tooltiptext">If performance is an issue, enable this. The cascade calculation happens in 2 passes, meaning if the overlay is 60 fps, the lighting is calculated at 30 fps. Because the overlay and the light are calculated at different speeds, there will be artifacts where the previous frame is visible for a split second.</span>
+				</div>
+				<div class="setting-row rc-collapse">
+					<label for="bilinear-fix">Bilinear Fix</label>
+					<input id="bilinear-fix" type="checkbox" />
+					<img src="help.svg" />
+					<span class="tooltiptext">Fixes the ringing artifacts in RC, but brings down performance as more rays are cast</span>
 				</div>
 			</div>
 		</div>

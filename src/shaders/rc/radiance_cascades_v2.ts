@@ -1,23 +1,21 @@
 import * as THREE from "three";
 
+//OLD tbp
+
 //appreciate the beauty of this algorithm for a minute
 
 //https://mini.gmshaders.com/p/radiance-cascades2
 //https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades/Shd_RadianceCascades.fsh
 //Vanilla RC code from Yaazarai's repo commented with my own understanding + some small changes
-//At least for me the easiest way to build intuition was to simulate the process on a 8x8 grid using 2 cascades -> SEE NOTES
+//At least for me the easiest way to build intuition was to simulate the process on a 8x8 grid using 2 cascades -> See notes
 
-//Whats up with performance?
-//Quite puzzled on performance, I expected RC to be faster than naive ray marching as every other tutorial says it is
-//With 6 cascade passes and a fixed 4 rays per pixel, thats 24 rays per pixel not counting the ray marching phase.
-//How does naive ray marching run faster than RC with 32 rays per pixel? Is it beacuse RC is done in several passes?
-//Also like why does this happen when the text on the screen is bigger? I get that its more ray steps but it shouldnt be slower than Naive RM????????
+//Whats up with performance? -> See yaazarai explanation
 
 //RC TODOS:
 //1. Implement and explain optional bilinear-fix. First of all why does the interpolation artifacts happen -> the probe in cascadeN might be blocked with an occluder but the probes in cascadeN+1 are not necessarily blocked.
 //So what is the fix? -> https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades_BilinearFix/Shd_RadianceCascades_BilinearFix.fsh
 //2. I should probably learn why sRGB is used
-//3. Explain why is clamping +- 1 units still failing on some resolutions? -> Still have no idea
+//3. Explain why is clamping +- 1 (or 0.5) units still failing on some resolutions? -> Still have no idea
 
 export function radiancecascades() {
 	return new THREE.ShaderMaterial({
@@ -60,51 +58,53 @@ export function radiancecascades() {
             out vec4 fragColor;
 
             #define TAU 6.283185
+            #define SRGB(c) pow(c.rgb, vec3(2.2)) //tbi
+            #define LINEAR(c) pow(c.rgb, vec3(1.0 / 2.2)) //tbi
 
             vec4 raymarch(vec2 rayOrigin, float theta, float offset, float range) {        //Same logic as ray.js but also accounting for the offset and range of the cascade level
-                vec2 texel = 1.0 / distanceResolution;
                 vec2 delta = vec2(cos(theta), sin(theta));
-                vec2 ray = (rayOrigin + (delta * offset)) * texel;
+                vec2 ray = (rayOrigin + (delta * offset));
+                float traveled = 0.0;
                                                                                            //there is also the issue where a ray can accidentally sample a pixel that is not the edge of a light source since it starts at info.offset. Doesn't seem to change much
                                                                                            //wait no, because of the extended range in the previous cascade, this shouldnt be a problem, we never start a ray at a seed/light location. 
-                for(float i = 0.0, df = 0.0, rd = 0.0; i < range; i++) {
-                    df = texture(distanceTexture, ray).r;
+                for(float i = 0.0; i < range; i++) {
+                    float dist = texelFetch(distanceTexture, ivec2(ray), 0).r;
                     
-                    if (df == 0.0 && i == 0.0 && fixEdges) {                               //Basically the idea here is that if we are at the very edge of the text we actually sample 1px inwards to smooth out the edges by treating them as part of the scene (receiving light) This looks good because of the overlay, needs fix tho.
-                        df = 1.0;
+                    if (dist == 0.0 && i == 0.0 && fixEdges) {                             //Basically the idea here is that if we are at the very edge of the text we actually sample 1px inwards to smooth out the edges by treating them as part of the scene (receiving light) This looks good because of the overlay, needs fix tho.
+                        dist = 1.0;
                     }
                     
-                    rd += df;
-                    ray += delta * df * texel;
-                    
-                    if (rd >= range || floor(ray) != vec2(0.0)) break;
-                    if (df == 0.0) return vec4(texture(sceneTexture, ray).rgb, 0.0);
+                    traveled += dist;
+                    ray += delta * dist;
+
+                    if (traveled >= range || ray.x < 0.0 || ray.y < 0.0 || ray.x >= distanceResolution.x || ray.y >= distanceResolution.y) break;
+                    if (dist == 0.0) return vec4(texelFetch(sceneTexture, ivec2(ray), 0).rgb, 1.0); //return vec4(SRGB(texture(sceneTexture, ray)).rgb, 1.0);
                 }
                 
-                return vec4(0.0, 0.0, 0.0, 1.0);
+                return vec4(0.0, 0.0, 0.0, 0.0);
             }
 
-            vec4 merge(vec4 rayColor, float upperRayIndex, vec2 directionSize, vec2 probe) {
-                if (rayColor.a == 0.0 || cascadeIndex >= cascadeCount - 1.0)               //If the ray hits something (meaning we dont need to check upper cascades) or this is the first (topmost) cascade (there is no upper cascade) just return the color.                         
-                    return rayColor;                                                       //The original code has 1.0 - rinfo.a, but at least here it doesn't matter. There is no alpha check in the merge step so alpha can be anything.
+            vec4 merge(vec4 rayColor, float upperRayIndex, vec2 lowerProbe) {
+                if (rayColor.a == 1.0 || cascadeIndex == cascadeCount - 1.0)               //If the ray hits something (meaning we dont need to check upper cascades) or this is the first (topmost) cascade (there is no upper cascade) just return the color.                         
+                    return rayColor;                                                       //The original code has 1.0 - rayColor.a, but at least here it doesn't matter because alpha is quite literally just a hit factor. It doesn't affect rgb in any way, not sure why its there. 
                 
                 float upperAngular = pow(2.0, cascadeIndex + 1.0);                         //The number of direction segments in each axis in the upper cascade
-                vec2 upperSize = directionSize * 0.5;                                      //The size of each direction block in the upper cascade
+                vec2 upperSize = cascadeResolution / upperAngular;                         //The size of each direction block in the upper cascade
 
                 vec2 upperPos = vec2(mod(upperRayIndex, upperAngular), 
-                                    floor(upperRayIndex / upperAngular)) * upperSize;      //This is the bottom left corner of the direction block in the upper cascade.
+                                    floor(upperRayIndex / upperAngular)) * upperSize;      //This is the bottom left corner of the direction block in the upper cascade. Think of it as the index of the block
                                                                                           
-                vec2 upperAdjust = (probe * 0.5) + 0.25;                                   //Relative probe position in that direction block. I think the 0.25 is to account for the centering of the pixel in this cascade level. 
+                vec2 upperAdjust = (lowerProbe + 0.5) * 0.5;                               //Relative probe position in that direction block. Simple as dividing by 2 to get where it is in the upper cascade.
                 vec2 upperClamped = max(vec2(2.0), min(upperAdjust, upperSize - 2.0));     //Ohh this is good one. If we dont clamp, we might accidentally interpolate stuff from other direction blocks. the max min stop that. 
                                                                                            //However for some magical reasons the light can still leak in some situations when using +-1.Fixed by making it +-2. I lowkey gave up on understanding why, I'm blaming it on the bilinear filter because it makes my life easier.
                                                                                         
-                vec2 upperProbe = upperPos + upperClamped;                                 //Variable name is misleading. This is the actual probe position in the upper cascade in pixel coordinates
+                vec2 upperProbe = upperPos + upperClamped;                                 //This is the actual probe position in the upper cascade in pixel coordinates
 
                 vec4 interpolated = texture(previousCascadeTexture, 
                                             upperProbe * (1.0 / cascadeResolution));       //Finally sample this position by getting the UV pos. Stuff will be automatically interpolated. The texture filter needs to be THREE.LinearFilter for this.
                                                                                            //Also the reason we interpolate is because the probe from the lower cascade does not have an exact match with the probe in the upper cascade. 
                                                                                            //Using nearest filter makes the light look blocky, whereas bilinear filtering blends the nearest 4 probes together making it look more smooth. 
-                return rayColor + interpolated;
+                return interpolated;
             }
 
             void main() {
@@ -116,7 +116,7 @@ export function radiancecascades() {
                                                                             
                 vec2 directionSize = cascadeResolution / angular;                          //The size of each direction block in the texture.
                 vec2 probe = mod(coord, directionSize);                                    //This pixel is in this probe group
-                vec2 direction2D = floor(vUv * angular);                                   //This pixel is in this direction block but in 2D
+                vec2 direction2D = floor(coord / directionSize);                           //This pixel is in this direction block but in 2D
                 float direction1D = direction2D.x + (angular * direction2D.y);             //This pixel is in this direction block but in 1D
 
                 float offset = (interval * (1.0 - pow(4.0, cascadeIndex))) / (1.0 - 4.0);  //In each cascade level we are responsible for different ray ranges, thus we need to calculate the starting offset as follows.
@@ -139,18 +139,19 @@ export function radiancecascades() {
                                                                   
                 float raySpacing = TAU / (angular * angular * 4.0);                        //Divide the circle angles into the amount of rays we are shooting in this cascade (we shoot this amount of rays from each probe, not per pixel)
 
+
                 vec4 color = vec4(0.0);                                                    //Total light stored in this pixel
                 for(float i = 0.0; i < 4.0; i++) {                                         //Shoot 4 rays per pixel. This has to be 4. If it was higher then some rays wouldn't have a direction block in the upper Cascade. It also can't be less.
                     float upperRayIndex = upperRayBase + i;                                //Which ray are we dealing with? This is important because the index tells us which direction block we are in the upper cascade. 
-                    float theta = (upperRayIndex + 0.5) * raySpacing;                      //Calculate the angle of the ray, I think the 0.5 is to offset the rays to they are not purely horizontal.vertical, idk doesnt make any difference 
+                    float theta = (upperRayIndex + 0.5) * raySpacing;                      //Calculate the angle of the ray, I think the 0.5 is to make it easier to visualize, doesn't change the end result.
                     
                     vec4 rayColor = raymarch(rayOrigin, theta, offset, range);             //Simple raymarch, the logic is the same as ray.js
-                    color += merge(rayColor, upperRayIndex, directionSize, probe) * 0.25;  //Merge with the upper cascade, we multiply by 0.25 as we are averaging 4 different ray directions
+                    color += merge(rayColor, upperRayIndex, probe) * 0.25;                 //Merge with the upper cascade, we multiply by 0.25 as we are averaging 4 different ray directions
                 }
                 
                 if (cascadeIndex == 0.0) {
                     if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier; //Last cascade, apply the radiance modifier, this is purely aesthetics
-                    //color = vec4(pow(color.rgb, vec3(1.0 / 2.2)), 1.0);                  //All my homies hate srgb, jokes aside I still dont know how or why this works but it looks better without it. 
+                    //color = vec4(LINEAR(color).rgb, 1.0);                                //All my homies hate srgb, jokes aside I still dont know how or why this works but it looks better without it. 
                 }
                     
                 fragColor = color;

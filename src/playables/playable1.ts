@@ -3,7 +3,7 @@ import Matter from "matter-js";
 import { Playable } from "./playable";
 
 //inspired by https://akari.lusion.co/#spheres (i promise I didnt look at their code so no copying)
-//i have no idea how they have achieve those color palletes but it looks crazy good. 
+//i have no idea how they have achieve those color palletes but it looks crazy good.
 //the colors are extracted from screenshoots using gemini. I hope this is not violating copyright
 
 //https://brm.io/matter-js/docs/classes/Engine.html
@@ -20,7 +20,8 @@ export class Playable1 extends Playable {
 		this.walls = [];
 		this.createScene();
 
-		document.querySelector("canvas")?.addEventListener("click", () => {//no
+		document.querySelector("canvas")?.addEventListener("click", () => {
+			//no
 			this.applyForce(1, 0.03);
 		});
 	}
@@ -48,10 +49,9 @@ export class Playable1 extends Playable {
 
 		//const materials = [new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.067, 1.0, 0.74) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.0, 1.0, 0.63) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.333, 0.15, 0.49) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.0, 0.0, 0.05) })];
 		//const materials = [new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.167, 0.35, 0.87) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.025, 0.70, 0.45) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.425, 0.28, 0.58) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.0, 0.0, 0.10) })];
-		//const materials = [new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.1, 1.0, 0.5) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.5, 0.70, 0.81) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.0, 1.0, 0.5) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.667, 0.60, 0.05) })];
+		//const materials = [new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.1, 1.0, 0.5) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.5, 0.7, 0.81) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.0, 1.0, 0.5) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.667, 0.6, 0.05) })];
 		//const materials = [new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.144, 0.75, 0.79) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.0, 1.0, 0.68) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.506, 0.25, 0.50) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.311, 0.60, 0.82) })];
-		const materials = [new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.022, 1.0, 0.5) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.5, 1.0, 0.25) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.544, 1.0, 0.33) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.625, 0.60, 0.02) })];
-
+		const materials = [new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.022, 1.0, 0.5) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.5, 1.0, 0.25) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.544, 1.0, 0.33) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.625, 0.6, 0.02) })];
 
 		for (let i = 0; i < 55; i++) {
 			const geom = geometries[Math.floor(Math.random() * geometries.length)];
@@ -110,7 +110,7 @@ export class Playable1 extends Playable {
 			//mesh.material.color.setHSL(1, 1, this.circles[i].color);
 		}
 
-		this.applyForce(70, 0.010, mouse);
+		this.applyForce(70, 0.01, mouse);
 	}
 
 	applyForce(threshold: number, force: number, mouse?: { x: number; y: number }) {

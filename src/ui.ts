@@ -22,6 +22,7 @@ export class UI {
 	textScale = document.getElementById("text-scale") as HTMLInputElement;
 	enableRC = document.getElementById("enable-rc") as HTMLInputElement;
 	twoPassOptimization = document.getElementById("2-pass-optimization") as HTMLInputElement;
+	bilinearFix = document.getElementById("bilinear-fix") as HTMLInputElement;
 
 	constructor(state: State) {
 		this.state = state;
@@ -34,12 +35,14 @@ export class UI {
 
 		((this.state.settings.textScale = 1), (this.textScale.value = "1"));
 		((this.state.settings.radiance = 1), (this.radianceModifier.value = "1"));
-		this.state.settings.fixEdges = this.fixEdges.checked = true;
 		this.state.settings.enableRC = this.enableRC.checked = this.state.settings.isMobile ? true : true;
-
+		this.state.settings.fixEdges = this.fixEdges.checked = true;
+		this.state.settings.bilinearFix = this.bilinearFix.checked = false;
 		//special case
 		this.state.settings.twoPassOptimization = this.twoPassOptimization.checked = true;
-		document.getElementById("row-2")!.style.display = this.enableRC.checked ? "flex" : "none";
+		document.querySelectorAll(".rc-collapse").forEach((div) => {
+			(div as HTMLElement).style.display = this.enableRC.checked ? "flex" : "none";
+		});
 
 		//complex state changes call a function in state to handle them
 		//otherwise state values are updated inline, maybe change this later
@@ -105,11 +108,17 @@ export class UI {
 
 		this.enableRC.addEventListener("change", () => {
 			this.state.settings.enableRC = this.enableRC.checked;
-			document.getElementById("row-2")!.style.display = this.enableRC.checked ? "flex" : "none";
+			document.querySelectorAll(".rc-collapse").forEach((div) => {
+				(div as HTMLElement).style.display = this.enableRC.checked ? "flex" : "none";
+			});
 		});
 
 		this.twoPassOptimization.addEventListener("change", () => {
 			this.state.settings.twoPassOptimization = this.twoPassOptimization.checked;
+		});
+
+		this.bilinearFix.addEventListener("change", () => {
+			this.state.settings.bilinearFix = this.bilinearFix.checked;
 		});
 	}
 
