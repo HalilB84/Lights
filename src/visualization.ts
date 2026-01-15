@@ -146,7 +146,11 @@ export class Visualization {
 
 		this.cascadeCount = count(this.actualWidth, this.actualHeight);
 
-		this.probeSpacing = 1.0;
+		// console.log(this.cascadeCount);
+		// console.log(this.actualWidth, this.actualHeight);
+		// console.log(this.width, this.height, (this.actualWidth * this.scaleDown == this.width && this.actualHeight * this.scaleDown == this.height));
+
+		this.probeSpacing = 1;
 		this.cascadeWidth = Math.floor(this.actualWidth / this.probeSpacing);
 		this.cascadeHeight = Math.floor(this.actualHeight / this.probeSpacing);
 	}

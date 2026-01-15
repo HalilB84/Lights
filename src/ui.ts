@@ -131,13 +131,17 @@ export class UI {
 		video.src = url;
 		this.videoName.textContent = file.name;
 
-		video.addEventListener("canplay", () => {
-			console.log("Video loaded");
-			this.state.loadVideo(video);
+		video.addEventListener(
+			"canplay",
+			() => {
+				console.log("Video loaded");
+				this.state.loadVideo(video);
 
-			this.mode.value = "video";
-			this.mode.dispatchEvent(new Event("change"));
-		});
+				this.mode.value = "video";
+				this.mode.dispatchEvent(new Event("change"));
+			},
+			{ once: true },
+		);
 	}
 
 	handleAudio() {
@@ -157,12 +161,16 @@ export class UI {
 		audio.src = url;
 		this.audioName.textContent = file.name;
 
-		audio.addEventListener("canplay", () => {
-			console.log("Audio loaded");
-			this.state.loadAudio(audio, trackName, artistName);
+		audio.addEventListener(
+			"canplay",
+			() => {
+				console.log("Audio loaded");
+				this.state.loadAudio(audio, trackName, artistName);
 
-			this.mode.value = "lyrics";
-			this.mode.dispatchEvent(new Event("change"));
-		});
+				this.mode.value = "lyrics";
+				this.mode.dispatchEvent(new Event("change"));
+			},
+			{ once: true },
+		);
 	}
 }

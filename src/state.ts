@@ -79,7 +79,6 @@ export class State {
 	setTextScale(value: number) {
 		this.settings.textScale = value;
 		this.visualization.text.textscale = this.settings.textScale;
-		this.visualization.text.scaleOverlay = this.settings.textScale * this.visualization.scaleDown;
 		this.visualization.text.update();
 	}
 

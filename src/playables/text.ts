@@ -189,8 +189,8 @@ export class Text extends Playable {
 		this.scene.add(this.mesh);
 
 		this.meshOverlay = new THREE.Mesh(geometry, material);
-		this.meshOverlay.scale.set(this.scaleOverlay, -this.scaleOverlay, 0);
-		this.meshOverlay.position.set(-centerX * this.scaleOverlay, centerY * this.scaleOverlay, 0);
+		this.meshOverlay.scale.set(this.scaleOverlay * this.textscale, -this.scaleOverlay * this.textscale, 0);
+		this.meshOverlay.position.set(-centerX * this.scaleOverlay * this.textscale, centerY * this.scaleOverlay * this.textscale, 0);
 
 		this.sceneOverlay.add(this.meshOverlay);
 

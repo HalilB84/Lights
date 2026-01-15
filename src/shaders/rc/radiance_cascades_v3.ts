@@ -88,7 +88,7 @@ export function radiancecascades_v2() {
 
                 vec2 upperPos = vec2(mod(upperRayIndex, upperAngular), floor(upperRayIndex / upperAngular)) * upperSize;
 
-                vec2 upperClamped = max(vec2(2.0), min(probeLocation, upperSize - 2.0)); //needs work or atleast make it adjustable
+                vec2 upperClamped = clamp(probeLocation, vec2(0.5), upperSize - 0.5); //needs work or atleast make it adjustable
 
                 vec2 upperProbe = upperPos + upperClamped;
 
@@ -103,8 +103,12 @@ export function radiancecascades_v2() {
                 vec2 linear = vec2(probeSpacing * pow(2.0, cascadeIndex));
                                                                             
                 vec2 directionSize = cascadeResolution / angular;
-                vec2 probe = mod(coord, directionSize);
-                vec2 direction2D = floor(coord / directionSize);
+
+                //vec2 probe = mod(coord, directionSize); RING THE BELLS
+                
+                vec2 probe = vec2(ivec2(coord) % ivec2(directionSize));
+
+                vec2 direction2D = vec2(ivec2(coord) / ivec2(directionSize));               
                 float direction1D = direction2D.x + (angular * direction2D.y);
 
                 float offset = (interval * (1.0 - pow(4.0, cascadeIndex))) / (1.0 - 4.0);
@@ -115,6 +119,7 @@ export function radiancecascades_v2() {
                 float raySpacing = TAU / (angular * angular * 4.0);
 
                 vec4 color = vec4(0.0);
+
                 for(float i = 0.0; i < 4.0; i++) {
                     float upperRayIndex = upperRayBase + i;
                     float theta = (upperRayIndex + 0.5) * raySpacing;
@@ -122,9 +127,13 @@ export function radiancecascades_v2() {
                     
                     vec2 start = rayOrigin + (dir * offset);
                     vec4 rayColor = raymarch(start, dir, range);
-                    color += merge(rayColor, upperRayIndex, (probe + 0.5) * 0.5) * 0.25;
+
+                    //DEBUG color = vec4(probe / directionSize, 0.0, 1.0);
+                    //DEBUG color = vec4(vec3(theta / TAU), 1.0);
+
+                    color += merge(rayColor, upperRayIndex, (probe + 0.5) / 2.0) * 0.25;
                 }
-                
+
                 if (cascadeIndex == 0.0) {
                     if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier; 
                     //color = vec4(LINEAR(color).rgb, 1.0);                                
@@ -211,7 +220,7 @@ export function radiancecascades_v3() {
 
                 vec2 upperPos = vec2(mod(upperRayIndex, upperAngular), floor(upperRayIndex / upperAngular)) * upperSize;
 
-                vec2 upperClamped = max(vec2(0.5), min(probeLocation, upperSize - 0.5)); ///needs work or atleast make it adjustable
+                vec2 upperClamped = clamp(probeLocation, vec2(0.5), upperSize - 0.5); ///needs work or atleast make it adjustable
 
                 vec2 upperProbe = upperPos + upperClamped;
 
@@ -227,8 +236,8 @@ export function radiancecascades_v3() {
                 vec2 linearUpper = linear * 2.0;
                                                                             
                 vec2 directionSize = cascadeResolution / angular;
-                vec2 probe = mod(coord, directionSize);
-                vec2 direction2D = floor(coord / directionSize);
+                vec2 probe = vec2(ivec2(coord) % ivec2(directionSize));
+                vec2 direction2D = vec2(ivec2(coord) / ivec2(directionSize));  
                 float direction1D = direction2D.x + (angular * direction2D.y);
 
                 float offset = (interval * (1.0 - pow(4.0, cascadeIndex))) / (1.0 - 4.0);
