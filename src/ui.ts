@@ -119,6 +119,7 @@ export class UI {
 
 		this.bilinearFix.addEventListener("change", () => {
 			this.state.settings.bilinearFix = this.bilinearFix.checked;
+			this.state.changeFilter();
 		});
 	}
 

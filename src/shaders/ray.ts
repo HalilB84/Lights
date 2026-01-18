@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+//superseded by radiance cascades
+
 export function ray() {
 	return new THREE.ShaderMaterial({
 		uniforms: {

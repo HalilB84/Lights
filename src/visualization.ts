@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { cover } from "three/src/extras/TextureUtils.js";
 import Stats from "stats-gl";
 import { seed } from "./shaders/seed.ts";
 import { jfa } from "./shaders/jfa.ts";
@@ -49,6 +50,7 @@ export class Visualization {
 	bilateralRT: THREE.WebGLRenderTarget;
 	curCascade: THREE.WebGLRenderTarget;
 	prevCascade: THREE.WebGLRenderTarget;
+	overlayRT: THREE.WebGLRenderTarget;
 
 	mouse = { x: 9999, y: 9999 };
 	frameCount = 0;
@@ -69,10 +71,10 @@ export class Visualization {
 	constructor(state: State) {
 		this.state = state;
 
-		this.renderer = new THREE.WebGLRenderer({ antialias: true }); //premultipliedAlpha: false
+		this.renderer = new THREE.WebGLRenderer({ antialias: true }); 
 		this.renderer.autoClear = false;
 		this.renderer.info.autoReset = false;
-		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // <- I dont know why this works needs research
+		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; //so three js doesnt apply the correction but kinda confused on for what 
 		this.renderer.setClearColor(0x848484, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color ( is 1.0)
 
 		document.body.appendChild(this.renderer.domElement);
@@ -133,7 +135,6 @@ export class Visualization {
 		const initialWidth = Math.floor(this.width / this.scaleDown);
 		const initialHeight = Math.floor(this.height / this.scaleDown);
 
-		//some differences from the original code atp idc.
 		this.cascadeInterval = 1;
 
 		const count = (w: number, h: number) => Math.ceil(Math.log((3 * Math.sqrt(w * w + h * h)) / this.cascadeInterval + 1) / Math.log(4));
@@ -162,6 +163,12 @@ export class Visualization {
 			type: THREE.FloatType,
 		};
 
+		const linearRT = {
+			minFilter: THREE.LinearFilter,
+			magFilter: THREE.LinearFilter,
+			type: THREE.FloatType,
+		}
+
 		this.modelRT = new THREE.WebGLRenderTarget(this.actualWidth, this.actualHeight, nearestRT);
 		this.seedRT = this.modelRT.clone();
 
@@ -171,8 +178,10 @@ export class Visualization {
 		this.rayColorRT = this.modelRT.clone();
 		this.bilateralRT = this.modelRT.clone();
 
-		this.curCascade = new THREE.WebGLRenderTarget(this.cascadeWidth, this.cascadeHeight, nearestRT);
+		this.curCascade = new THREE.WebGLRenderTarget(this.cascadeWidth, this.cascadeHeight, linearRT);
 		this.prevCascade = this.curCascade.clone();
+
+		this.overlayRT = new THREE.WebGLRenderTarget(this.actualWidth * this.scaleDown, this.actualHeight * this.scaleDown, linearRT);
 	}
 
 	shaders() {
@@ -217,14 +226,27 @@ export class Visualization {
 		this.prevJFA.setSize(this.actualWidth, this.actualHeight);
 		this.rayColorRT.setSize(this.actualWidth, this.actualHeight);
 		this.bilateralRT.setSize(this.actualWidth, this.actualHeight);
-
-		//TODO: Resize radiance cascades although there is a very cool looking bug when you don't. Look into it
 		this.curCascade.setSize(this.cascadeWidth, this.cascadeHeight);
 		this.prevCascade.setSize(this.cascadeWidth, this.cascadeHeight);
+		this.overlayRT.setSize(this.actualWidth * this.scaleDown, this.actualHeight * this.scaleDown);
 
 		this.text.resize(this.actualWidth, this.actualHeight, this.scaleDown);
 		this.playable1.resize(this.actualWidth, this.actualHeight, this.scaleDown);
 		this.playable2.resize(this.actualWidth, this.actualHeight, this.scaleDown);
+	}
+
+	changeFilter() { 
+		this.prevCascade.dispose();
+		this.curCascade.dispose();
+
+		const nlRT = {
+			minFilter: this.state.settings.bilinearFix ? THREE.NearestFilter : THREE.LinearFilter,
+			magFilter: this.state.settings.bilinearFix ? THREE.NearestFilter : THREE.LinearFilter,
+			type: THREE.FloatType,
+		}
+
+		this.curCascade = new THREE.WebGLRenderTarget(this.cascadeWidth, this.cascadeHeight, nlRT);
+		this.prevCascade = this.curCascade.clone();
 	}
 
 	render() {
@@ -242,7 +264,6 @@ export class Visualization {
 
 		if ((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
 			if (this.state.settings.mode === "video") {
-				// && this.state.video.loading
 				this.mesh.material = this.resizerMaterial;
 				this.resizerMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
 				this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
@@ -285,7 +306,6 @@ export class Visualization {
 			this.jfaMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
 
 			for (let i = 0; i < passes; i++) {
-				//ping pong so webgl doesnt yell at me for reading and writing to the same texture
 				this.jfaMaterial.uniforms.inputTexture.value = i === 0 ? this.seedRT.texture : this.prevJFA.texture;
 				this.jfaMaterial.uniforms.offset.value = Math.pow(2, passes - i - 1);
 				this.jfaMaterial.uniforms.isLast.value = i === passes - 1;
@@ -298,14 +318,8 @@ export class Visualization {
 			}
 		}
 
-		//Naive Ray Marching / RC phase
+		//RC phase
 		if (this.state.settings.enableRC) {
-			//broken resizing breaks it sometimes.
-			this.curCascade.texture.minFilter = this.state.settings.bilinearFix ? THREE.NearestFilter : THREE.LinearFilter;
-			this.curCascade.texture.magFilter = this.state.settings.bilinearFix ? THREE.NearestFilter : THREE.LinearFilter;
-			this.prevCascade.texture.minFilter = this.state.settings.bilinearFix ? THREE.NearestFilter : THREE.LinearFilter;
-			this.prevCascade.texture.magFilter = this.state.settings.bilinearFix ? THREE.NearestFilter : THREE.LinearFilter;
-
 			this.mesh.material = this.state.settings.bilinearFix ? this.radiancecascadesMaterialV3 : this.radiancecascadesMaterialV2;
 			const radiancecascadesMaterial = this.state.settings.bilinearFix ? this.radiancecascadesMaterialV3 : this.radiancecascadesMaterialV2;
 			radiancecascadesMaterial.uniforms.sceneTexture.value = this.modelRT.texture;
@@ -350,9 +364,7 @@ export class Visualization {
 			this.renderer.render(this.scene, this.camera);
 		}
 
-		//bilateral filter phase (to smooth out noise/artifacts)
-
-		//ohhhhhhhhhh nooooooooooooooo i forgor that prevcascade was linear
+		//bilateral filter phase (to smooth out noise/artifacts) - forgor that prevcascade could be linear so like there is that but im lazy
 		if (!this.state.settings.enableRC || !this.state.settings.twoPassOptimization || this.frameCount % 2 === 1) {
 			this.mesh.material = this.bilateralMaterial;
 			this.bilateralMaterial.uniforms.inputTexture.value = this.state.settings.enableRC ? this.prevCascade.texture : this.rayColorRT.texture;
@@ -363,14 +375,13 @@ export class Visualization {
 			this.renderer.render(this.scene, this.camera);
 		}
 
+		//because of the error calculation there will be a mismatch between the main rendering and the other resolutions. 
+		//to solve this everything renders into overlayRT (which is the same res as RC) and fit to cover
+
 		this.mesh.material = this.displayMaterial;
 		this.displayMaterial.map = this.bilateralRT.texture;
-		//why write more if three does it for you
-		//https://github.com/mrdoob/three.js/blob/dev/src/renderers/shaders/ShaderChunk/map_fragment.glsl.js
 
-		//because of the error calculation there will be a mismatch main rendering and the RC and JFA resolutions. since the streching is little its not really visible
-
-		this.renderer.setRenderTarget(null);
+		this.renderer.setRenderTarget(this.overlayRT);
 		this.renderer.clear();
 		this.renderer.render(this.scene, this.camera);
 
@@ -394,6 +405,14 @@ export class Visualization {
 		} else if (this.state.settings.mode === "playable2" && this.playable2.isReady) {
 			this.renderer.render(this.playable2.sceneOverlay, this.playable2.cameraOverlay);
 		}
+
+		cover(this.overlayRT.texture, this.width / this.height);
+		this.mesh.material = this.displayMaterial;
+		this.displayMaterial.map = this.overlayRT.texture; 
+
+		this.renderer.setRenderTarget(null);
+		this.renderer.clear();
+		this.renderer.render(this.scene, this.camera);
 
 		this.frameCount = this.frameCount + 1; // % 2;
 

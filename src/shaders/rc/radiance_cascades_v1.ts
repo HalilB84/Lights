@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 //same thing as radiancecascades but probe major with no pre averaging. Made it to make sure I understand it all the way through
-//works, it looks exactly the same as the other one except small differences in the edges because of the differet clamping in v2
+//works, it looks exactly the same as the other one 
 
 export function radiancecascades() {
 	return new THREE.ShaderMaterial({

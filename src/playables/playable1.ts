@@ -66,14 +66,14 @@ export class Playable1 extends Playable {
 			const centerX = 0; //-this.width / 2 + (this.width / 20) * i;
 			const centerY = 0; //-this.height / 2 + (this.height / 20) * i;
 
-			const body = Matter.Bodies.circle(centerX, centerY, geom.parameters.radius, { restitution: 0.8, frictionAir: 0.015 });
+			const body = Matter.Bodies.circle(centerX, centerY, geom.parameters.radius, { restitution: 0.7, frictionAir: 0.0015 });
 			Matter.Composite.add(this.engine.world, body);
 
 			this.circles.push({ body, mesh, meshOverlay });
 		}
 
 		const thickness = 10;
-		const options = { isStatic: true, restitution: 0.9 };
+		const options = { isStatic: true, restitution: 0.8 };
 
 		this.walls.push(Matter.Bodies.rectangle(0, this.height / 2 + thickness / 2, this.width + thickness, thickness, options));
 		this.walls.push(Matter.Bodies.rectangle(0, -this.height / 2 - thickness / 2, this.width + thickness, thickness, options));

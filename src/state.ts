@@ -102,8 +102,6 @@ export class State {
 		this.video.loading = false;
 		this.video.texture?.dispose();
 
-		//console.log(this.visualization.renderer.info.memory.textures); //they were right!!!
-
 		this.video.element = video;
 		this.video.element.volume = this.video.volume;
 		this.video.texture = new THREE.VideoTexture(video);
@@ -160,6 +158,10 @@ export class State {
 		if (forcePause) audio.pause();
 		else if (audio.paused) audio.play();
 		else audio.pause();
+	}
+
+	changeFilter() {
+		this.visualization.changeFilter();
 	}
 }
 

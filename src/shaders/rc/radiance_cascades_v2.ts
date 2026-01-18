@@ -2,21 +2,6 @@ import * as THREE from "three";
 
 //OLD tbp
 
-//appreciate the beauty of this algorithm for a minute
-
-//https://mini.gmshaders.com/p/radiance-cascades2
-//https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades/Shd_RadianceCascades.fsh
-//Vanilla RC code from Yaazarai's repo commented with my own understanding + some small changes
-//At least for me the easiest way to build intuition was to simulate the process on a 8x8 grid using 2 cascades -> See notes
-
-//Whats up with performance? -> See yaazarai explanation
-
-//RC TODOS:
-//1. Implement and explain optional bilinear-fix. First of all why does the interpolation artifacts happen -> the probe in cascadeN might be blocked with an occluder but the probes in cascadeN+1 are not necessarily blocked.
-//So what is the fix? -> https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades_BilinearFix/Shd_RadianceCascades_BilinearFix.fsh
-//2. I should probably learn why sRGB is used
-//3. Explain why is clamping +- 1 (or 0.5) units still failing on some resolutions? -> Still have no idea
-
 export function radiancecascades() {
 	return new THREE.ShaderMaterial({
 		uniforms: {

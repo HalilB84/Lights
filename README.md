@@ -31,7 +31,7 @@ https://github.com/user-attachments/assets/9b813066-decc-499d-bb85-567a3b426d8f
 - ~~Figure out dpr shenanigans and proper scaling based on which platform the user is on~~
 - Look into holographic radiance cascades
 - ~~Switch to TypeScript as a learning experience because it looks way better~~ -> Convert to tailwind css as a learning experience
-- Hall of tiny problems that don't really matter but I can't live not knowing why: 1. Text edges blending with body color? -> because of premultiplied alpha related 2. Mysterious way three msdf-text-utils handles wrapping and positioning 3. css select text not center positioning 4. how exactly ray marching resolves when it lands and gets pulled -> also what this means for extra range on rc 5. colorspace
+- Hall of tiny problems that don't really matter but I can't live not knowing why: 1. Text edges blending with body color? -> because of premultiplied alpha related 2. Mysterious way three msdf-text-utils handles wrapping and positioning 3. css select text not center positioning 4. how exactly ray marching resolves when it lands and gets pulled 5. colorspace
 
 Planned Features:
 
