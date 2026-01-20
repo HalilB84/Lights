@@ -4,7 +4,7 @@ export class LRC {
 	prevIndex: number;
 	abortController: AbortController;
 
-	//https://stackoverflow.com/questions/31061838/how-do-i-cancel-an-http-fetch-request
+	//https://stackoverflow.com/questions/31061838/how-do-i-cancel-an-http-fetch-request / for wallpaper engine
 	async getLRCLIB(trackName: string, artistName: string) {
 		if (this.abortController) this.abortController.abort();
 

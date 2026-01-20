@@ -5,22 +5,22 @@ This project is meant to be a light experiment running in your browser!
 
 ## Technical
 
-The basic idea is that from each pixel you shoot rays and if it hits something you accumulate color. Of course this is sped up with clever algorithms (Jump Flooding Algorithm, Radiance Cascades). The current state of the code is a mix of the [Radiance Cascades](https://jason.today/rc) article, Yaazarai's RC implementation, and the [Fundamentals of Radiance Cascades](https://m4xc.dev/articles/fundamental-rc/) article. On top of that there are multiple modes where you can play with light.  
+2D global illumination via Radiance Cascades. The current state of the code is a mix of [Jason's RC](https://jason.today/rc) article, [Yaazarai's RC](https://mini.gmshaders.com/p/radiance-cascades2) raticle, and the [Fundamentals of Radiance Cascades](https://m4xc.dev/articles/fundamental-rc/) article. On top of that there are multiple modes where you can play with light.
 
+RC related rendering happens at half the size of the base canvas using 2x/2x scaling/pre averaged with 4 rays per pixel. When Bilinear fix is on, 16 rays per pixel are cast that fixes the ringing artifact. To reduce pixelation objects are rendered in full res on top of their half res ones. To smooth out noise and artificats there is a bilateral filter pass at the end. Raymarching is accelerated with a DF produced with JFA. 
+
+The wallpaper engine counterpart is of the program is on the lights-WE branch
 
 ## Showcase
 
-Using Radiance Cascades (pre averaged, 2x/4x scaling) (credits: [ Imagine Dragons x J.I.D - Enemy (from the series Arcane League of Legends) ](https://www.youtube.com/watch?v=D9G1VOjN_84)):
+Using Radiance Cascades:
 
 (rework yt)
 
-Using naive ray marching + blue noise + bilateral filter (credits: [@animeclips_edits](https://www.instagram.com/animeclips__edits/)):
+Using naive ray marching + blue noise + bilateral filter:
 
 (rework yt)
 
-Lyrics (same as above + lrclib.net + three-msdf-text-utils) (credits: Planet - The Neighbourhood):
-
-(rework yt)
 ## Todos:
 
 - ~~Switch to webgl2 glsl~~
@@ -31,7 +31,7 @@ Lyrics (same as above + lrclib.net + three-msdf-text-utils) (credits: Planet - T
 - ~~Figure out dpr shenanigans and proper scaling based on which platform the user is on~~
 - Look into holographic radiance cascades
 - ~~Switch to TypeScript as a learning experience because it looks way better~~ -> Convert to tailwind css as a learning experience
-- Hall of tiny problems that don't really matter but I can't live not knowing why: 1. Text edges blending with body color? -> because of premultiplied alpha related 2. Mysterious way three msdf-text-utils handles wrapping and positioning 3. css select text not center positioning 4. how exactly ray marching resolves when it lands and gets pulled 5. colorspace
+- Hall of tiny problems that don't really matter but I can't live not knowing why: 1. Text edge problems troika 2.css select text not center positioning 3. how exactly ray marching resolves when it lands and gets pulled 4. colorspace
 
 Planned Features:
 

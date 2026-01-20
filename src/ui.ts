@@ -40,7 +40,7 @@ export class UI {
 
 		((this.state.video.scale = 0.5), (this.videoScale.value = "0.5"));
 		((this.state.video.volume = this.state.audio.volume = 0.5), (this.videoVolume.value = "0.5"));
-		
+
 		((this.state.settings.textScale = 1), (this.textScale.value = "1"));
 		((this.state.settings.radiance = 1), (this.radianceModifier.value = "1"));
 
@@ -124,7 +124,7 @@ export class UI {
 
 		this.textScale.addEventListener("input", () => {
 			this.state.setTextScale(+this.textScale.value);
-			this.updateValue(this.textScale, this.textScaleValue);
+			this.updateValue(this.textScale, this.textScaleValue, 300);
 		});
 
 		this.enableRC.addEventListener("change", () => {
