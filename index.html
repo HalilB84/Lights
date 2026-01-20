@@ -4,8 +4,8 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Lights!</title>
-		<script type="module" crossorigin src="/assets/index-CI567PB1.js"></script>
-		<link rel="stylesheet" crossorigin href="/assets/index-CnKFGtcm.css">
+		<script type="module" crossorigin src="/assets/index-Cx6H1PbK.js"></script>
+		<link rel="stylesheet" crossorigin href="/assets/index-DOe2DpQl.css">
 	</head>
 
 	<body>
@@ -21,7 +21,7 @@
 						<option value="playable2">Playable 2</option>
 					</select>
 					<img src="help.svg" />
-					<span class="tooltiptext">Here you can switch between different modes, these are in development with more to be added. You might need to upload video or audio files to see the experience. Video needed for: Video and Playable2 modes Audio needed for: Lyrics mode None needed for: Playable1 </span>
+					<span class="tooltiptext">Here you can switch between different modes, these are in development with more to be added.</span>
 				</div>
 
 				<div class="setting-row">
@@ -29,44 +29,52 @@
 					<label id="video-name" for="video-upload">No file</label>
 					<input id="video-upload" type="file" accept="video/*" hidden />
 					<img src="help.svg" />
-					<span class="tooltiptext">Upload a video to start the light show. The video data is only used locally so you don't have to worry about privacy.</span>
+					<span class="tooltiptext">Upload a video to start the light show. Video data is only used locally.</span>
 				</div>
+
 				<div class="setting-row">
 					<label id="audio-button" for="audio-upload">Upload Audio File</label>
 					<label id="audio-name" for="audio-upload">No file</label>
 					<input id="audio-upload" type="file" accept="audio/*" hidden />
 					<img src="help.svg" />
-					<span class="tooltiptext">For the lyrics mode upload an audio file with this naming convention for it to correctly work: songname-artist.mp3</span>
+					<span class="tooltiptext">For the lyrics mode upload an audio file with this naming convention for it to correctly work: songname-artist.mp3. Audio data is only used locally</span>
 				</div>
 
 				<button id="play-pause">Play / Pause</button>
 
 				<div class="setting-row">
 					<label>Volume</label>
-					<input id="video-volume" type="range" min="0" max="1" step="0.01" value="0.5" />
+					<input id="video-volume" type="range" min="0" max="1" step="0.01" />
+					<span class="range-value" id="vv-value">50</span>
 				</div>
 				<div class="setting-row">
 					<label>Video scale</label>
-					<input id="video-scale" type="range" min="0" max="1" step="0.05" value="0.5" />
+					<input id="video-scale" type="range" min="0" max="1" step="0.01" />
+					<span class="range-value" id="vs-value">50</span>
 				</div>
 				<div class="setting-row">
 					<label>Text scale</label>
-					<input id="text-scale" type="range" min="0" max="2" step="0.05" value="0.5" />
+					<input id="text-scale" type="range" min="0" max="2" step="0.01" />
+					<span class="range-value" id="ts-value">50</span>
 				</div>
 				<div class="setting-row">
 					<label>Radiance modifier</label>
-					<input id="radiance-modifier" type="range" min="0" max="2" step="0.1" value="1" />
+					<input id="radiance-modifier" type="range" min="0" max="2" step="0.01" />
+					<span class="range-value" id="rm-value">100</span>
+				</div>
+				<div class="setting-row">
+					<label for="show-fps">Show FPS</label>
+					<input id="show-fps" type="checkbox" />
 				</div>
 				<div class="setting-row">
 					<label for="fix-edges">Fix blocky edges</label>
 					<input id="fix-edges" type="checkbox" />
 				</div>
-
 				<div class="setting-row">
 					<label for="enable-rc">Enable Radiance Cascades</label>
 					<input id="enable-rc" type="checkbox" />
 					<img src="help.svg" />
-					<span class="tooltiptext">Radiance Cascades is a noise free algorithm to achieve global illumination created by Alexander Sannikov. This 2D implementation is based on Yaazarai's RC code. More info on Github. It is better from naive ray marching in a sense that there is no noise (it looks better, subjectively of course) and runs even faster with the below '2 pass optimization' checkbox selected</span>
+					<span class="tooltiptext">Radiance Cascades is a global illumination technique that runs faster and doesn't have noise. Checking off this checkbox will default to shooting N random rays per pixel, however keeping it on for lighting is recommended for better performance and looks. Technical details on this can be found on Github. </span>
 				</div>
 				<div class="setting-row rc-collapse">
 					<label for="2-pass-optimization">2 pass optimization</label>
@@ -79,6 +87,12 @@
 					<input id="bilinear-fix" type="checkbox" />
 					<img src="help.svg" />
 					<span class="tooltiptext">Fixes the ringing artifacts in RC, but brings down performance as more rays are cast</span>
+				</div>
+				<div class="setting-row rc-collapse">
+					<label for="srgb-fix">SRGB Fix</label>
+					<input id="srgb-fix" type="checkbox" />
+					<img src="help.svg" />
+					<span class="tooltiptext">Lighting calculations needs to happen in linear space but textures are in srgb space, this makes that conversion. The reason its off by default is because it makes the ringing artifacts way more visible. There is a good chance that this is not working as intended.</span>
 				</div>
 			</div>
 		</div>
