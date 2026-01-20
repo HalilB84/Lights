@@ -18,7 +18,6 @@ export class State {
 		isMobile: boolean;
 		textScale: number;
 		radiance: number;
-		beatMultiplier: number;
 		fixEdges: boolean;
 		showFps: boolean;
 		enableRC: boolean;
@@ -37,6 +36,12 @@ export class State {
 		loading: boolean;
 	};
 
+	audio: {
+		element: HTMLAudioElement | null;
+		volume: number;
+		loading: boolean;
+	};
+
 	ui: UI;
 	visualization: Visualization;
 	stats: Stats;
@@ -49,7 +54,6 @@ export class State {
 			isMobile: false,
 			textScale: 0,
 			radiance: 0,
-			beatMultiplier: 0,
 			fixEdges: false,
 			showFps: false,
 			enableRC: false,
@@ -64,6 +68,12 @@ export class State {
 			height: 0,
 			width: 0,
 			scale: 0,
+			volume: 0,
+			loading: false,
+		};
+
+		this.audio = {
+			element: null,
 			volume: 0,
 			loading: false,
 		};
@@ -96,11 +106,9 @@ export class State {
 
 	setMediaVolume(vol: number) {
 		this.video.volume = vol;
+		this.audio.volume = vol;
 		if (this.video.element) this.video.element.volume = vol;
-	}
-
-	toggleAudio() {
-		this.visualization.wallpaperMediaPropertiesListener(this.visualization.lastMedia);
+		if (this.audio.element) this.audio.element.volume = vol;
 	}
 
 	//https://developer.mozilla.org/en-US/docs/Web/API/File_API/Using_files_from_web_applications#example_using_object_urls_to_display_images
@@ -133,6 +141,45 @@ export class State {
 		if (forcePause) video.pause();
 		else if (video.paused) video.play();
 		else video.pause();
+	}
+
+	//from what I understand not removing event liseners to an element that is not used anymore is not a problem im modern browsers
+	//however in this case not removing does cause a problem with the playback
+	loadAudio(audio: HTMLAudioElement, trackName: string, artistName: string) {
+		if (this.audio.element) {
+			this.audio.element.pause();
+			URL.revokeObjectURL(this.audio.element.src);
+			this.audio.element.removeEventListener("timeupdate", this.audioUpdateFunction);
+		}
+
+		this.audio.element = audio;
+		this.audio.element.volume = this.audio.volume;
+
+		this.visualization.text.update("Loading lyrics...");
+		this.audio.loading = true;
+
+		this.visualization.lrcPlayer.getLRCLIB(trackName, artistName).then(() => {
+			this.toggleAudio(false);
+
+			this.audioUpdateFunction = () => {
+				const [lyric, changed] = this.visualization.lrcPlayer.update(audio.currentTime);
+
+				if (changed == "init" || changed == "changed") {
+					this.visualization.text.update(lyric);
+				}
+			};
+
+			audio.addEventListener("timeupdate", this.audioUpdateFunction);
+			this.audio.loading = false;
+		});
+	}
+
+	toggleAudio(forcePause: boolean) {
+		const audio = this.audio.element;
+		if (!audio || !this.visualization.lrcPlayer.isReady) return;
+		if (forcePause) audio.pause();
+		else if (audio.paused) audio.play();
+		else audio.pause();
 	}
 
 	changeFilter() {

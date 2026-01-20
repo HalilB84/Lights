@@ -114,7 +114,7 @@ export class Playable1 extends Playable {
 		this.isReady = true;
 	}
 
-	update(delta: number, mouse: { x: number; y: number }, beat: number) {
+	update(delta: number, mouse: { x: number; y: number }) {
 		if (!this.isReady) return;
 		Matter.Engine.update(this.engine, Math.min(delta, (1 / 60) * 1000));
 
@@ -141,7 +141,6 @@ export class Playable1 extends Playable {
 		}
 
 		this.changeSpeed(70, 1, mouse);
-		this.changeSpeed(1, beat);
 	}
 
 	changeColors() {

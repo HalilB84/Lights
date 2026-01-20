@@ -9,6 +9,8 @@ export class UI {
 
 	videoInput = document.getElementById("video-upload") as HTMLInputElement;
 	videoName = document.getElementById("video-name") as HTMLElement;
+	audioInput = document.getElementById("audio-upload") as HTMLInputElement;
+	audioName = document.getElementById("audio-name") as HTMLElement;
 	mode = document.getElementById("mode") as HTMLInputElement;
 
 	playPause = document.getElementById("play-pause") as HTMLInputElement;
@@ -21,8 +23,6 @@ export class UI {
 	textScaleValue = document.getElementById("ts-value") as HTMLElement;
 	radianceModifier = document.getElementById("radiance-modifier") as HTMLInputElement;
 	radianceModifierValue = document.getElementById("rm-value") as HTMLElement;
-	beatMultiplier = document.getElementById("beat-multiplier") as HTMLInputElement;
-	beatMultiplierValue = document.getElementById("bm-value") as HTMLElement;
 
 	fixEdges = document.getElementById("fix-edges") as HTMLInputElement;
 	showFps = document.getElementById("show-fps") as HTMLInputElement;
@@ -39,11 +39,10 @@ export class UI {
 		this.state.settings.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 		((this.state.video.scale = 0.5), (this.videoScale.value = "0.5"));
-		((this.state.video.volume = 0.5), (this.videoVolume.value = "0.5"));
-
+		((this.state.video.volume = this.state.audio.volume = 0.5), (this.videoVolume.value = "0.5"));
+		
 		((this.state.settings.textScale = 1), (this.textScale.value = "1"));
 		((this.state.settings.radiance = 1), (this.radianceModifier.value = "1"));
-		((this.state.settings.beatMultiplier = 12), (this.beatMultiplier.value = "12"));
 
 		this.state.settings.showFps = this.showFps.checked = true;
 		this.state.settings.fixEdges = this.fixEdges.checked = true;
@@ -67,18 +66,21 @@ export class UI {
 		});
 
 		this.videoInput.addEventListener("change", () => this.handleVideo());
+		this.audioInput.addEventListener("change", () => this.handleAudio());
 
 		this.playPause.addEventListener("click", () => {
 			if (this.mode.value === "playable2" || this.mode.value === "video") {
 				this.state.toggleVideo(false);
+			} else if (this.mode.value === "lyrics") {
+				this.state.toggleAudio(false);
 			}
 		});
 
 		this.mode.addEventListener("change", () => {
 			this.state.settings.mode = this.mode.value;
 
-			if (this.mode.value === "lyrics") {
-				this.state.toggleAudio()
+			if (this.mode.value !== "lyrics") {
+				this.state.toggleAudio(true);
 			}
 
 			if (this.mode.value !== "video") {
@@ -109,11 +111,6 @@ export class UI {
 		this.radianceModifier.addEventListener("input", () => {
 			this.state.settings.radiance = +this.radianceModifier.value;
 			this.updateValue(this.radianceModifier, this.radianceModifierValue, 200);
-		});
-
-		this.beatMultiplier.addEventListener("input", () => {
-			this.state.settings.beatMultiplier = +this.beatMultiplier.value;
-			this.updateValue(this.beatMultiplier, this.beatMultiplierValue);
 		});
 
 		this.fixEdges.addEventListener("change", () => {
@@ -152,7 +149,7 @@ export class UI {
 	}
 
 	updateValue(range: HTMLInputElement, display: HTMLElement, total: number = 100) {
-		const val = Math.round(((+range.value 	- +range.min) / (+range.max - +range.min)) * total);
+		const val = Math.round(((+range.value - +range.min) / (+range.max - +range.min)) * total);
 		display.textContent = val.toString();
 	}
 
@@ -172,6 +169,36 @@ export class UI {
 				this.state.loadVideo(video);
 
 				this.mode.value = "video";
+				this.mode.dispatchEvent(new Event("change"));
+			},
+			{ once: true },
+		);
+	}
+
+	handleAudio() {
+		if (this.state.audio.loading) {
+			console.log("cant upload while waiting response!");
+			return;
+		}
+
+		const file = this.audioInput.files![0];
+		const audio = document.createElement("audio");
+		const url = URL.createObjectURL(file);
+
+		const name = file.name.split("-");
+		const trackName = name[0].trim();
+		const artistName = name[1].trim().replace(/\.[^/.]+$/, "");
+
+		audio.src = url;
+		this.audioName.textContent = file.name;
+
+		audio.addEventListener(
+			"canplay",
+			() => {
+				console.log("Audio loaded");
+				this.state.loadAudio(audio, trackName, artistName);
+
+				this.mode.value = "lyrics";
 				this.mode.dispatchEvent(new Event("change"));
 			},
 			{ once: true },

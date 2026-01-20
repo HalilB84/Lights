@@ -9,7 +9,7 @@ export class Text extends Playable {
 
 	atlas: THREE.Texture;
 	font: any;
-    allowed: string;
+	allowed: string;
 
 	mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
 	meshOverlay: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
@@ -27,11 +27,11 @@ export class Text extends Playable {
 		const loader = new THREE.TextureLoader();
 		const fontLoader = new FontLoader();
 
-		this.atlas = await loader.loadAsync("./fonts/roboto-regular.png");
-		this.font = (await fontLoader.loadAsync("./fonts/roboto-regular.fnt")).data;
-        this.allowed = this.font.chars.map((c: any) => c.char).join('');
-        //console.log(this.font);
-        //console.log(this.allowed);
+		this.atlas = await loader.loadAsync("/fonts/roboto-regular.png");
+		this.font = (await fontLoader.loadAsync("/fonts/roboto-regular.fnt")).data;
+		this.allowed = this.font.chars.map((c: any) => c.char).join("");
+		//console.log(this.font);
+		//console.log(this.allowed);
 
 		this.createScene();
 	}
@@ -42,16 +42,19 @@ export class Text extends Playable {
 	}
 
 	createScene() {
-        if(!this.font || !this.atlas) return;
-        
+		if (!this.font || !this.atlas) return;
+
 		this.isReady = false;
 
 		this.scene.clear();
 		this.sceneOverlay.clear();
 
-		//uses px size from the bitmap so thats what determines size 
+		//uses px size from the bitmap so thats what determines size
 		const geometry = new MSDFTextGeometry({
-			text: this.currentText.split('').map(c => this.allowed.includes(c) ? c : '?').join(''),
+			text: this.currentText
+				.split("")
+				.map((c) => (this.allowed.includes(c) ? c : "?"))
+				.join(""),
 			font: this.font,
 			align: "center",
 			width: this.width / this.textscale,

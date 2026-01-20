@@ -30,7 +30,7 @@ export function radiancecascades_v2() {
 			interval: { value: null },
 			radianceModifier: { value: null },
 			fixEdges: { value: null },
-            srgbFix: { value: null },
+			srgbFix: { value: null },
 		},
 		glslVersion: THREE.GLSL3,
 		vertexShader: ` 
@@ -162,7 +162,7 @@ export function radiancecascades_v3() {
 			interval: { value: null },
 			radianceModifier: { value: null },
 			fixEdges: { value: null },
-            srgbFix: { value: null },
+			srgbFix: { value: null },
 		},
 		glslVersion: THREE.GLSL3,
 		vertexShader: ` 

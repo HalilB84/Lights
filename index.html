@@ -31,6 +31,14 @@
 					<span class="tooltiptext">Upload a video to start the light show. Important note: Wallpaper Engine only supports .webm and .ogv files but only .webm works properly.</span>
 				</div>
 
+				<div class="setting-row">
+					<label id="audio-button" for="audio-upload">Upload Audio File</label>
+					<label id="audio-name" for="audio-upload">No file</label>
+					<input id="audio-upload" type="file" accept="audio/*" hidden />
+					<img src="help.svg" />
+					<span class="tooltiptext">For the lyrics mode upload an audio file with this naming convention for it to correctly work: songname-artist.mp3</span>
+				</div>
+
 				<button id="play-pause">Play / Pause</button>
 
 				<div class="setting-row">
@@ -52,11 +60,6 @@
 					<label>Radiance modifier</label>
 					<input id="radiance-modifier" type="range" min="0" max="2" step="0.01" />
 					<span class="range-value" id="rm-value">100</span>
-				</div>
-				<div class="setting-row">
-					<label>Beat Multiplier</label>
-					<input id="beat-multiplier" type="range" min="0" max="100" step="1"/>
-					<span class="range-value" id="bm-value">12</span>
 				</div>
 				<div class="setting-row">
 					<label for="show-fps">Show FPS</label>

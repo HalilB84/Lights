@@ -7,7 +7,7 @@ export class LRC {
 	//https://stackoverflow.com/questions/31061838/how-do-i-cancel-an-http-fetch-request
 	async getLRCLIB(trackName: string, artistName: string) {
 		if (this.abortController) this.abortController.abort();
-		
+
 		this.abortController = new AbortController();
 
 		this.isReady = false;
@@ -24,7 +24,7 @@ export class LRC {
 			},
 
 			signal: this.abortController.signal,
-		}).catch(e => {
+		}).catch((e) => {
 			if (e.name === "AbortError") console.log("aborted");
 		});
 
@@ -39,7 +39,7 @@ export class LRC {
 			return;
 		}
 
-		const results = await response.json(); 
+		const results = await response.json();
 
 		if (results.length === 0) {
 			console.log("No lyrics found");
