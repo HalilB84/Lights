@@ -9,20 +9,28 @@ export class UI {
 
 	videoInput = document.getElementById("video-upload") as HTMLInputElement;
 	videoName = document.getElementById("video-name") as HTMLElement;
-	audioInput = document.getElementById("audio-upload") as HTMLInputElement;
-	audioName = document.getElementById("audio-name") as HTMLElement;
 	mode = document.getElementById("mode") as HTMLInputElement;
 
 	playPause = document.getElementById("play-pause") as HTMLInputElement;
-	volume = document.getElementById("video-volume") as HTMLInputElement;
-	scale = document.getElementById("video-scale") as HTMLInputElement;
+	videoVolume = document.getElementById("video-volume") as HTMLInputElement;
+	videoVolumeValue = document.getElementById("vv-value") as HTMLElement;
+	videoScale = document.getElementById("video-scale") as HTMLInputElement;
+	videoScaleValue = document.getElementById("vs-value") as HTMLElement;
+
+	textScale = document.getElementById("text-scale") as HTMLInputElement;
+	textScaleValue = document.getElementById("ts-value") as HTMLElement;
+	radianceModifier = document.getElementById("radiance-modifier") as HTMLInputElement;
+	radianceModifierValue = document.getElementById("rm-value") as HTMLElement;
+	beatMultiplier = document.getElementById("beat-multiplier") as HTMLInputElement;
+	beatMultiplierValue = document.getElementById("bm-value") as HTMLElement;
 
 	fixEdges = document.getElementById("fix-edges") as HTMLInputElement;
-	radianceModifier = document.getElementById("radiance-modifier") as HTMLInputElement;
-	textScale = document.getElementById("text-scale") as HTMLInputElement;
+	showFps = document.getElementById("show-fps") as HTMLInputElement;
+
 	enableRC = document.getElementById("enable-rc") as HTMLInputElement;
 	twoPassOptimization = document.getElementById("2-pass-optimization") as HTMLInputElement;
 	bilinearFix = document.getElementById("bilinear-fix") as HTMLInputElement;
+	srgbFix = document.getElementById("srgb-fix") as HTMLInputElement;
 
 	constructor(state: State) {
 		this.state = state;
@@ -30,14 +38,19 @@ export class UI {
 		this.state.settings.mode = this.mode.value = "lyrics";
 		this.state.settings.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-		((this.state.video.scale = 0.55), (this.scale.value = "0.55"));
-		((this.state.video.volume = this.state.audio.volume = 0.5), (this.volume.value = "0.5"));
+		((this.state.video.scale = 0.5), (this.videoScale.value = "0.5"));
+		((this.state.video.volume = 0.5), (this.videoVolume.value = "0.5"));
 
 		((this.state.settings.textScale = 1), (this.textScale.value = "1"));
 		((this.state.settings.radiance = 1), (this.radianceModifier.value = "1"));
-		this.state.settings.enableRC = this.enableRC.checked = this.state.settings.isMobile ? true : true;
+		((this.state.settings.beatMultiplier = 12), (this.beatMultiplier.value = "12"));
+
+		this.state.settings.showFps = this.showFps.checked = true;
 		this.state.settings.fixEdges = this.fixEdges.checked = true;
+		this.state.settings.enableRC = this.enableRC.checked = this.state.settings.isMobile ? true : true;
 		this.state.settings.bilinearFix = this.bilinearFix.checked = false;
+		this.state.settings.srgbFix = this.srgbFix.checked = false;
+
 		//special case
 		this.state.settings.twoPassOptimization = this.twoPassOptimization.checked = true;
 		document.querySelectorAll(".rc-collapse").forEach((div) => {
@@ -54,26 +67,23 @@ export class UI {
 		});
 
 		this.videoInput.addEventListener("change", () => this.handleVideo());
-		this.audioInput.addEventListener("change", () => this.handleAudio());
 
 		this.playPause.addEventListener("click", () => {
 			if (this.mode.value === "playable2" || this.mode.value === "video") {
 				this.state.toggleVideo(false);
-			} else if (this.mode.value === "lyrics") {
-				this.state.toggleAudio(false);
 			}
 		});
 
 		this.mode.addEventListener("change", () => {
-			if (this.mode.value !== "lyrics") {
-				this.state.toggleAudio(true);
+			this.state.settings.mode = this.mode.value;
+
+			if (this.mode.value === "lyrics") {
+				this.state.toggleAudio()
 			}
 
 			if (this.mode.value !== "video") {
 				this.state.toggleVideo(true);
 			}
-
-			this.state.settings.mode = this.mode.value;
 
 			if (this.mode.value === "video") {
 				this.radianceModifier.value = "2";
@@ -86,24 +96,38 @@ export class UI {
 			this.radianceModifier.dispatchEvent(new Event("input"));
 		});
 
-		this.volume.addEventListener("input", () => {
-			this.state.setMediaVolume(+this.volume.value);
+		this.videoVolume.addEventListener("input", () => {
+			this.state.setMediaVolume(+this.videoVolume.value);
+			this.updateValue(this.videoVolume, this.videoVolumeValue);
 		});
 
-		this.scale.addEventListener("input", () => {
-			this.state.video.scale = +this.scale.value;
+		this.videoScale.addEventListener("input", () => {
+			this.state.video.scale = +this.videoScale.value;
+			this.updateValue(this.videoScale, this.videoScaleValue);
 		});
 
 		this.radianceModifier.addEventListener("input", () => {
 			this.state.settings.radiance = +this.radianceModifier.value;
+			this.updateValue(this.radianceModifier, this.radianceModifierValue, 200);
+		});
+
+		this.beatMultiplier.addEventListener("input", () => {
+			this.state.settings.beatMultiplier = +this.beatMultiplier.value;
+			this.updateValue(this.beatMultiplier, this.beatMultiplierValue);
 		});
 
 		this.fixEdges.addEventListener("change", () => {
 			this.state.settings.fixEdges = this.fixEdges.checked;
 		});
 
+		this.showFps.addEventListener("change", () => {
+			this.state.settings.showFps = this.showFps.checked;
+			this.state.stats.dom.style.display = this.showFps.checked ? "flex" : "none";
+		});
+
 		this.textScale.addEventListener("input", () => {
 			this.state.setTextScale(+this.textScale.value);
+			this.updateValue(this.textScale, this.textScaleValue);
 		});
 
 		this.enableRC.addEventListener("change", () => {
@@ -121,6 +145,15 @@ export class UI {
 			this.state.settings.bilinearFix = this.bilinearFix.checked;
 			this.state.changeFilter();
 		});
+
+		this.srgbFix.addEventListener("change", () => {
+			this.state.settings.srgbFix = this.srgbFix.checked;
+		});
+	}
+
+	updateValue(range: HTMLInputElement, display: HTMLElement, total: number = 100) {
+		const val = Math.round(((+range.value 	- +range.min) / (+range.max - +range.min)) * total);
+		display.textContent = val.toString();
 	}
 
 	//create element does NOT put the element in the Dom it only exists in memory
@@ -139,36 +172,6 @@ export class UI {
 				this.state.loadVideo(video);
 
 				this.mode.value = "video";
-				this.mode.dispatchEvent(new Event("change"));
-			},
-			{ once: true },
-		);
-	}
-
-	handleAudio() {
-		if (this.state.audio.loading) {
-			console.log("cant upload while waiting response!");
-			return;
-		}
-
-		const file = this.audioInput.files![0];
-		const audio = document.createElement("audio");
-		const url = URL.createObjectURL(file);
-
-		const name = file.name.split("-");
-		const trackName = name[0].trim();
-		const artistName = name[1].trim().replace(/\.[^/.]+$/, "");
-
-		audio.src = url;
-		this.audioName.textContent = file.name;
-
-		audio.addEventListener(
-			"canplay",
-			() => {
-				console.log("Audio loaded");
-				this.state.loadAudio(audio, trackName, artistName);
-
-				this.mode.value = "lyrics";
 				this.mode.dispatchEvent(new Event("change"));
 			},
 			{ once: true },

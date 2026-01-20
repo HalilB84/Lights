@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 //appreciate the beauty of this algorithm for a minute
 
-//https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades/Shd_RadianceCascades.fsh 
+//https://github.com/Yaazarai/GMShaders-Radiance-Cascades/blob/main/RadianceCascades-Optimized/shaders/Shd_RadianceCascades/Shd_RadianceCascades.fsh
 //AND https://m4xc.dev/articles/fundamental-rc/
 
 //RC code from Yaazarai's repo and MAX's article. Plus comments (coming) with my own understanding
@@ -30,6 +30,7 @@ export function radiancecascades_v2() {
 			interval: { value: null },
 			radianceModifier: { value: null },
 			fixEdges: { value: null },
+            srgbFix: { value: null },
 		},
 		glslVersion: THREE.GLSL3,
 		vertexShader: ` 
@@ -53,12 +54,14 @@ export function radiancecascades_v2() {
             uniform float interval;
             uniform float radianceModifier;
             uniform bool fixEdges;
+            uniform bool srgbFix;
             
             out vec4 fragColor;
 
             #define TAU 6.283185
-            #define SRGB(c) pow(c.rgb, vec3(2.2))
-            #define LINEAR(c) pow(c.rgb, vec3(1.0 / 2.2))
+            
+            #define SRGB(c) pow(c.rgb, srgbFix ? vec3(2.2) : vec3(1.0))
+            #define LINEAR(c) pow(c.rgb, srgbFix ? vec3(1.0 / 2.2) : vec3(1.0))
 
             vec4 raymarch(vec2 rayOrigin, vec2 dir, float interval) {
                 vec2 ray = rayOrigin;
@@ -75,7 +78,7 @@ export function radiancecascades_v2() {
                     ray += dir * dist;
 
                     if (traveled >= interval || ray.x < 0.0 || ray.y < 0.0 || ray.x >= distanceResolution.x || ray.y >= distanceResolution.y) break;
-                    if (dist == 0.0) return vec4(texelFetch(sceneTexture, ivec2(ray), 0).rgb, 1.0); // return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0).rgb), 1.0); 
+                    if (dist == 0.0) return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0).rgb), 1.0); 
                 }
                 
                 return vec4(0.0, 0.0, 0.0, 0.0);
@@ -135,8 +138,7 @@ export function radiancecascades_v2() {
 
                 if (cascadeIndex == 0.0) {
                     if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier; 
-                    //vec4 actualColor = color * radianceModifier;
-                    //color = vec4(LINEAR(actualColor).rgb, 1.0);    
+                    color = vec4(LINEAR(color).rgb, 1.0);    
                 }
 
                 fragColor = color;
@@ -160,6 +162,7 @@ export function radiancecascades_v3() {
 			interval: { value: null },
 			radianceModifier: { value: null },
 			fixEdges: { value: null },
+            srgbFix: { value: null },
 		},
 		glslVersion: THREE.GLSL3,
 		vertexShader: ` 
@@ -183,12 +186,13 @@ export function radiancecascades_v3() {
             uniform float interval;
             uniform float radianceModifier;
             uniform bool fixEdges;
+            uniform bool srgbFix;
             
             out vec4 fragColor;
 
             #define TAU 6.283185
-            #define SRGB(c) pow(c.rgb, vec3(2.2))
-            #define LINEAR(c) pow(c.rgb, vec3(1.0 / 2.2))
+            #define SRGB(c) pow(c.rgb, srgbFix ? vec3(2.2) : vec3(1.0))
+            #define LINEAR(c) pow(c.rgb, srgbFix ? vec3(1.0 / 2.2) : vec3(1.0))
 
             vec4 raymarch(vec2 rayOrigin, vec2 dir, float interval) {
                 vec2 ray = rayOrigin;
@@ -205,7 +209,7 @@ export function radiancecascades_v3() {
                     ray += dir * dist;
 
                     if (traveled >= interval || ray.x < 0.0 || ray.y < 0.0 || ray.x >= distanceResolution.x || ray.y >= distanceResolution.y) break;
-                    if (dist == 0.0) return vec4(texelFetch(sceneTexture, ivec2(ray), 0).rgb, 1.0); //return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0)).rgb, 1.0);
+                    if (dist == 0.0) return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0)).rgb, 1.0);
                 }
                 
                 return vec4(0.0, 0.0, 0.0, 0.0);
@@ -284,8 +288,7 @@ export function radiancecascades_v3() {
                 
                 if (cascadeIndex == 0.0) {
                     if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier; 
-                    //vec4 actualColor = color * radianceModifier;
-                    //color = vec4(LINEAR(actualColor).rgb, 1.0);                                
+                    color = vec4(LINEAR(color).rgb, 1.0);                                
                 }
 
                 fragColor = color;

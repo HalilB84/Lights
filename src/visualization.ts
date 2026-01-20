@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { cover } from "three/src/extras/TextureUtils.js";
-import Stats from "stats-gl";
 import { seed } from "./shaders/seed.ts";
 import { jfa } from "./shaders/jfa.ts";
 import { ray } from "./shaders/ray.ts";
@@ -18,7 +17,6 @@ export class Visualization {
 	state: State;
 	renderer: THREE.WebGLRenderer;
 	canvas: HTMLCanvasElement;
-	stats: Stats;
 
 	scene: THREE.Scene;
 	camera: THREE.OrthographicCamera;
@@ -68,13 +66,28 @@ export class Visualization {
 	geometry: THREE.PlaneGeometry;
 	mesh: THREE.Mesh;
 
+	beat = 0;
+	level = 0;
+	lastLevel = 0;
+	loaded = false;
+	timelinePos = 0;
+	timelineUpdate = 0;
+	actualPosition = 0;
+	needsUpdate = false;
+	playing = false;
+	id = 0;
+	isValid = false;
+	lastPlayback = 0;
+	lastValid: any;
+	lastMedia: any;
+
 	constructor(state: State) {
 		this.state = state;
 
-		this.renderer = new THREE.WebGLRenderer({ antialias: true }); 
+		this.renderer = new THREE.WebGLRenderer({antialias: true});
 		this.renderer.autoClear = false;
 		this.renderer.info.autoReset = false;
-		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; //so three js doesnt apply the correction but kinda confused on for what 
+		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; //so three js doesnt apply the correction but kinda confused on for what
 		this.renderer.setClearColor(0x848484, 0); //The clear color is completely transparent because light moves through alpha values that are exactly 0.0, to gurantee this we set the clear color ( is 1.0)
 
 		document.body.appendChild(this.renderer.domElement);
@@ -88,22 +101,6 @@ export class Visualization {
 
 		this.scene = new THREE.Scene();
 		this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); //this why understanding the rendering pipeling is important, even though the camera doesnt respect the aspect raitio we use the quad as a fullscreen quad fragment shader so it streching doesn't matter
-
-		this.stats = new Stats({
-			trackGPU: true,
-			trackHz: false,
-			trackCPT: false,
-			logsPerSecond: 4,
-			graphsPerSecond: 30,
-			samplesLog: 40,
-			samplesGraph: 10,
-			precision: 2,
-			horizontal: true,
-			minimal: true,
-			mode: 0,
-		});
-
-		document.body.appendChild(this.stats.dom);
 
 		//playground
 		this.lrcPlayer = new LRC();
@@ -124,6 +121,94 @@ export class Visualization {
 		window.addEventListener("resize", () => {
 			this.resize();
 		});
+
+		(window as any).wallpaperRegisterAudioListener(this.wallpaperAudioListener.bind(this));
+		(window as any).wallpaperRegisterMediaPropertiesListener(this.wallpaperMediaPropertiesListener.bind(this));
+		(window as any).wallpaperRegisterMediaPlaybackListener(this.wallpaperMediaPlaybackListener.bind(this));
+		(window as any).wallpaperRegisterMediaTimelineListener(this.wallpaperMediaTimelineListener.bind(this));
+	}
+
+	wallpaperAudioListener(audioArray: any) {
+		let sum = 0;
+		const freq = 8;
+		for (let i = 0; i < freq; i++) {
+			sum += audioArray[i] + audioArray[64 + i];
+		}
+		const avg = sum / (freq * 2);
+
+		this.beat = Math.max(avg - this.lastLevel, 0) * this.state.settings.beatMultiplier;
+		if (avg - this.lastLevel < 0.01) this.beat = 0;
+		this.lastLevel = avg;
+	}
+
+	/*Observations:
+	youtube videos and youtube music do not provide album artist so to prevent unnecessary requests they disabled 
+	why is yt (non music) content called music? youtube music sometimes provide it so sometimes work? idk only spotify reliably works here
+	because other types of media can toggle playback we have is valid (also there is the case where playback is called before media event, but its quickly stopped with the media event update that comes after)
+
+	the original order goes like playback -> timeline -> media | because of this a event needs to fire the last playbackstate after media update
+
+	this logic is so baaaaaaaaaaaaaaaaaaaaaaaaaad
+	only if windowows gave proper information
+	*/
+
+	wallpaperMediaPropertiesListener(event: any) {
+		//console.log("media:", event);
+		this.lastMedia = event;
+		if(this.state.settings.mode != "lyrics") return;
+
+		if (this.lastValid && this.lastValid.title === event.title && this.lastValid.artist === event.artist && this.lastValid.albumArtist === event.albumArtist) {
+			this.isValid = true;
+			this.wallpaperMediaPlaybackListener({ state: this.lastPlayback });
+			return;
+		}
+
+		if (event && event.contentType == "music" && event.albumArtist != "") {
+			this.loaded = false;
+			this.lastValid = event;
+			this.id++;
+			this.isValid = true;
+			this.wallpaperMediaPlaybackListener({ state: this.lastPlayback });
+			const copyId = this.id;
+			this.lrcPlayer.getLRCLIB(event.title, event.artist).then(() => {
+				if (this.id === copyId) {
+					this.loaded = true;
+					const [lyric] = this.lrcPlayer.update(this.actualPosition);
+					this.text.update(lyric);
+				}
+			});
+			this.text.update("Loading lyrics...");
+		} else {
+			this.isValid = false;
+		}
+	}
+
+	wallpaperMediaPlaybackListener(event: any) {
+		//console.log("playback:", event, this.isValid);
+		if (event.state === 0) this.text.update("The show is starting!");
+
+		this.lastPlayback = event.state;
+		if (this.isValid === false) return;
+
+		if (event.state === 2 || event.state === 0) {
+			this.playing = false;
+			this.timelinePos = this.actualPosition;
+		}
+
+		if (event.state === 1) {
+			this.playing = true;
+			this.timelineUpdate = performance.now();
+			this.needsUpdate = true;
+		}
+	}
+
+	wallpaperMediaTimelineListener(event: any) {
+		//console.log("timeline:", event);
+		if((this.isValid && Math.abs(event.position - this.actualPosition) > 2.0) || this.needsUpdate) {
+			this.actualPosition = this.timelinePos = event.position + 0.6;
+			this.timelineUpdate = performance.now();
+			if(this.needsUpdate) this.needsUpdate = false;
+		}
 	}
 
 	calculateBounds() {
@@ -167,7 +252,7 @@ export class Visualization {
 			minFilter: THREE.LinearFilter,
 			magFilter: THREE.LinearFilter,
 			type: THREE.FloatType,
-		}
+		};
 
 		this.modelRT = new THREE.WebGLRenderTarget(this.actualWidth, this.actualHeight, nearestRT);
 		this.seedRT = this.modelRT.clone();
@@ -235,7 +320,7 @@ export class Visualization {
 		this.playable2.resize(this.actualWidth, this.actualHeight, this.scaleDown);
 	}
 
-	changeFilter() { 
+	changeFilter() {
 		this.prevCascade.dispose();
 		this.curCascade.dispose();
 
@@ -243,7 +328,7 @@ export class Visualization {
 			minFilter: this.state.settings.bilinearFix ? THREE.NearestFilter : THREE.LinearFilter,
 			magFilter: this.state.settings.bilinearFix ? THREE.NearestFilter : THREE.LinearFilter,
 			type: THREE.FloatType,
-		}
+		};
 
 		this.curCascade = new THREE.WebGLRenderTarget(this.cascadeWidth, this.cascadeHeight, nlRT);
 		this.prevCascade = this.curCascade.clone();
@@ -254,10 +339,20 @@ export class Visualization {
 		const delta = currentTime - this.lastTime;
 		this.lastTime = currentTime;
 
-		//ok so its messy here text calls update via the event listener, but these updates are called by frame - fix or make it better
+		//needs organizing
+
+		////
+		if (this.loaded && this.playing && this.isValid) {
+			this.actualPosition = this.timelinePos + (performance.now() - this.timelineUpdate) / 1000;
+			const [lyric, changed] = this.lrcPlayer.update(this.actualPosition);
+			if (changed === "init" || changed === "changed") {
+				this.text.update(lyric);
+			}
+		}
+		/////
 
 		if (this.state.settings.mode === "playable1") {
-			this.playable1.update(delta, { x: this.mouse.x - this.actualWidth / 2, y: this.mouse.y - this.actualHeight / 2 });
+			this.playable1.update(delta, { x: this.mouse.x - this.actualWidth / 2, y: this.mouse.y - this.actualHeight / 2 }, this.beat);
 		} else if (this.state.settings.mode === "playable2" && this.state.video.texture) {
 			this.playable2.update(this.state.video.texture);
 		}
@@ -331,6 +426,7 @@ export class Visualization {
 			radiancecascadesMaterial.uniforms.probeSpacing.value = this.probeSpacing;
 			radiancecascadesMaterial.uniforms.interval.value = this.cascadeInterval;
 			radiancecascadesMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
+			radiancecascadesMaterial.uniforms.srgbFix.value = this.state.settings.srgbFix;
 
 			let start = this.frameCount % 2 === 0 ? this.cascadeCount - 1 : Math.ceil((this.cascadeCount - 1) / 2) - 1;
 			let end = this.frameCount % 2 === 0 ? Math.ceil((this.cascadeCount - 1) / 2) : 0;
@@ -375,7 +471,7 @@ export class Visualization {
 			this.renderer.render(this.scene, this.camera);
 		}
 
-		//because of the error calculation there will be a mismatch between the main rendering and the other resolutions. 
+		//because of the error calculation there will be a mismatch between the main rendering and the other resolutions.
 		//to solve this everything renders into overlayRT (which is the same res as RC) and fit to cover
 
 		this.mesh.material = this.displayMaterial;
@@ -408,7 +504,7 @@ export class Visualization {
 
 		cover(this.overlayRT.texture, this.width / this.height);
 		this.mesh.material = this.displayMaterial;
-		this.displayMaterial.map = this.overlayRT.texture; 
+		this.displayMaterial.map = this.overlayRT.texture;
 
 		this.renderer.setRenderTarget(null);
 		this.renderer.clear();
@@ -416,7 +512,7 @@ export class Visualization {
 
 		this.frameCount = this.frameCount + 1; // % 2;
 
-		this.stats.update();
+		this.state.stats.update();
 
 		//https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLInfo.js
 		/*if (this.frameCount % 100 === 1) {

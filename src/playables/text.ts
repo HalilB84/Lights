@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { MSDFTextGeometry, uniforms } from "three-msdf-text-utils";
-import { FontLoader, type FontData } from "three/examples/jsm/loaders/FontLoader.js";
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { Playable } from "./playable";
 
 export class Text extends Playable {
@@ -8,7 +8,8 @@ export class Text extends Playable {
 	currentText: string;
 
 	atlas: THREE.Texture;
-	font: FontData;
+	font: any;
+    allowed: string;
 
 	mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
 	meshOverlay: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
@@ -26,8 +27,11 @@ export class Text extends Playable {
 		const loader = new THREE.TextureLoader();
 		const fontLoader = new FontLoader();
 
-		this.atlas = await loader.loadAsync("/fonts/roboto-regular.png");
-		this.font = (await fontLoader.loadAsync("/fonts/roboto-regular.fnt")).data;
+		this.atlas = await loader.loadAsync("./fonts/roboto-regular.png");
+		this.font = (await fontLoader.loadAsync("./fonts/roboto-regular.fnt")).data;
+        this.allowed = this.font.chars.map((c: any) => c.char).join('');
+        //console.log(this.font);
+        //console.log(this.allowed);
 
 		this.createScene();
 	}
@@ -38,14 +42,16 @@ export class Text extends Playable {
 	}
 
 	createScene() {
+        if(!this.font || !this.atlas) return;
+        
 		this.isReady = false;
 
 		this.scene.clear();
 		this.sceneOverlay.clear();
 
-		//uses px size from the bitmap so thats what determines size
+		//uses px size from the bitmap so thats what determines size 
 		const geometry = new MSDFTextGeometry({
-			text: this.currentText,
+			text: this.currentText.split('').map(c => this.allowed.includes(c) ? c : '?').join(''),
 			font: this.font,
 			align: "center",
 			width: this.width / this.textscale,
@@ -134,8 +140,6 @@ export class Text extends Playable {
                 }
 
                 void main() { 
-                    // https://codesandbox.io/p/sandbox/cosmos-slll9?file=%2Fsrc%2Fcomponents%2FWebGLFont%2Ffragment%2Fdemo-05.glsl%3A24%2C1-25%2C1&from-embed
-                    // the exact same code is in map of reddit under MIT so like am i breaking rules here? potential problem!!!
                     vec3 sample1 = texture2D(uMap, vUv).rgb;
                     float sigDist = median(sample1.r, sample1.g, sample1.b) - 0.5;
                     float alpha = clamp(sigDist/fwidth(sigDist) + 0.5, 0.0, 1.0);
