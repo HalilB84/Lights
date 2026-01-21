@@ -8,9 +8,33 @@
 	</head>
 
 	<body>
+		<div id="intro">
+			<div id="buttons">
+				<button id="up">▲</button>
+				<button id="down">▼</button>
+				<button id="intro-close">X</button>
+			</div>
+			<h3>What is this?</h3>
+			<p>Basically a demo for an interactive wallpaper with 2D lights. Please do note that the lighting effect is expensive and it will consume a considerable amount of GPU load (You will need a good GPU for this). I recommend looking at how much GPU is used in Task Manager before you decide to keep this wallpaper running. For reference, I get 200 FPS (capped) with 35% GPU load with a 4060TI with default settings. This will be much worse without a dedicated graphics card.</p>
+			<h3>What can I do?</h3>
+			<p>In the Wallpaper Engine version there is lyrics and audio support! Only Spotify works with lyrics mode, more info about this below. Right now you are in lyrics mode, play a song on Spotify to start the light show! or switch to Playable 1 for circles that jump with the beat. More modes will come.</p>
+			<h3>Why is my lyrics out of sync / broken?</h3>
+			<p>(IMPORTANT: because of how media information is provided the code for lyrics logic is messy and probably has bugs)</p>
+			<p>This is due to how media timelines are provided. Unfortunately the information about songs comes with an unpredictable delay that make precise tracking impossible. The delay is acceptable on my machine, but if its way off for you let me know. If you are seeing wrong lyrics / no lyrics found that is because the LRCLIB database doesn't have the right information.</p>
+			<h3>Why only Spotify?</h3>
+			<p>Technically it can also work with Youtube Music but there is no way to differentiate normal YT videos from music ones. That being said I don't want to bombard the LRCLIB API with unnecessary requests, so Spotify only for now.</p>
+			<h3>I want more customization / X feature</h3>
+			<p>I am aware! There are many cool things that can be done with light and more will come, if you really want something feel free to lmk.</p>
+			<h3>Technical Details / Links</h3>
+			<p>See the Github repo (https://github.com/HalilB84/Lights). Please leave a star if you like this!</p>
+			<p>Visit the website version (https://lights.halilb.dev/ | not much there currently).</p>
+		</div>
 		<div id="settings-flex">
 			<button id="hide-settings">Hide Settings</button>
 			<div id="settings">
+				<div class="setting-row">
+					<button id="intro-open">Toggle Intro</button>
+				</div>
 				<div class="setting-row">
 					<label>Choose mode</label>
 					<select id="mode">
@@ -35,28 +59,37 @@
 
 				<div class="setting-row">
 					<label>Volume</label>
-					<input id="video-volume" type="range" min="0" max="1" step="0.01" />
+					<input id="video-volume" type="range" min="0" max="1" step="0.001" />
 					<span class="range-value" id="vv-value">50</span>
 				</div>
 				<div class="setting-row">
 					<label>Video scale</label>
-					<input id="video-scale" type="range" min="0" max="1" step="0.01" />
+					<input id="video-scale" type="range" min="0" max="1" step="0.001" />
 					<span class="range-value" id="vs-value">50</span>
 				</div>
 				<div class="setting-row">
 					<label>Text scale</label>
-					<input id="text-scale" type="range" min="0" max="2" step="0.01" />
-					<span class="range-value" id="ts-value">50</span>
+					<input id="text-scale" type="range" min="0" max="3" step="0.001" />
+					<span class="range-value" id="ts-value">100</span>
 				</div>
 				<div class="setting-row">
-					<label>Radiance modifier</label>
-					<input id="radiance-modifier" type="range" min="0" max="2" step="0.01" />
+					<label>Radiance</label>
+					<input id="radiance-modifier" type="range" min="0" max="2" step="0.001" />
 					<span class="range-value" id="rm-value">100</span>
 				</div>
 				<div class="setting-row">
 					<label>Beat Multiplier</label>
-					<input id="beat-multiplier" type="range" min="0" max="100" step="1"/>
+					<input id="beat-multiplier" type="range" min="0" max="100" step="1" />
 					<span class="range-value" id="bm-value">12</span>
+					<img src="help.svg" />
+					<span class="tooltiptext">For Playable 1 make sure to turn the music volume up or crank up the beat multiplier to see the beat.</span>
+				</div>
+				<div class="setting-row">
+					<label>Lyrics Offset</label>
+					<input id="lyrics-offset" type="range" min="0" max="1.0" step="0.01" />
+					<span class="range-value" id="lo-value">0.6</span>
+					<img src="help.svg" />
+					<span class="tooltiptext">Offsets the lyrics by a value between 0 and 1 seconds. This is to account for the delay between the actual song time and when the program gets that information.</span>
 				</div>
 				<div class="setting-row">
 					<label for="show-fps">Show FPS</label>

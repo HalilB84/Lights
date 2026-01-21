@@ -30,7 +30,7 @@ export function seed() {
 
                 vec4 color = texture(inputTexture, vUv);
         
-                if(color.a != 0.) {
+                if(color.a == 1.0) { //troika problem
                     fragColor = vec4(gl_FragCoord.xy, 0.0, 1.0);
                 } else {
                     fragColor = vec4(0.0);

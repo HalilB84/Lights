@@ -19,6 +19,7 @@ export class State {
 		textScale: number;
 		radiance: number;
 		beatMultiplier: number;
+		lyricsOffset: number;
 		fixEdges: boolean;
 		showFps: boolean;
 		enableRC: boolean;
@@ -50,6 +51,7 @@ export class State {
 			textScale: 0,
 			radiance: 0,
 			beatMultiplier: 0,
+			lyricsOffset: 0,
 			fixEdges: false,
 			showFps: false,
 			enableRC: false,
@@ -100,7 +102,7 @@ export class State {
 	}
 
 	toggleAudio() {
-		this.visualization.wallpaperMediaPropertiesListener(this.visualization.lastMedia);
+		this.visualization.wallpaperMediaPropertiesListener(this.visualization.lastMedia, true);
 	}
 
 	//https://developer.mozilla.org/en-US/docs/Web/API/File_API/Using_files_from_web_applications#example_using_object_urls_to_display_images

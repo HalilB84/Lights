@@ -7,6 +7,12 @@ export class UI {
 	hideSettings = document.getElementById("hide-settings") as HTMLInputElement;
 	settings = document.getElementById("settings") as HTMLInputElement;
 
+	intro = document.getElementById("intro") as HTMLElement;
+	up = document.getElementById("up") as HTMLButtonElement;
+	down = document.getElementById("down") as HTMLButtonElement;
+	introClose = document.getElementById("intro-close") as HTMLButtonElement;
+	introOpen = document.getElementById("intro-open") as HTMLButtonElement;
+
 	videoInput = document.getElementById("video-upload") as HTMLInputElement;
 	videoName = document.getElementById("video-name") as HTMLElement;
 	mode = document.getElementById("mode") as HTMLInputElement;
@@ -23,6 +29,8 @@ export class UI {
 	radianceModifierValue = document.getElementById("rm-value") as HTMLElement;
 	beatMultiplier = document.getElementById("beat-multiplier") as HTMLInputElement;
 	beatMultiplierValue = document.getElementById("bm-value") as HTMLElement;
+	lyricsOffset = document.getElementById("lyrics-offset") as HTMLInputElement;
+	lyricsOffsetValue = document.getElementById("lo-value") as HTMLElement;
 
 	fixEdges = document.getElementById("fix-edges") as HTMLInputElement;
 	showFps = document.getElementById("show-fps") as HTMLInputElement;
@@ -44,6 +52,7 @@ export class UI {
 		((this.state.settings.textScale = 1), (this.textScale.value = "1"));
 		((this.state.settings.radiance = 1), (this.radianceModifier.value = "1"));
 		((this.state.settings.beatMultiplier = 12), (this.beatMultiplier.value = "12"));
+		((this.state.settings.lyricsOffset = 0.6), (this.lyricsOffset.value = "0.6"));
 
 		this.state.settings.showFps = this.showFps.checked = true;
 		this.state.settings.fixEdges = this.fixEdges.checked = true;
@@ -60,7 +69,22 @@ export class UI {
 		//complex state changes call a function in state to handle them
 		//otherwise state values are updated inline, maybe change this later
 
-		//pure ui should be somewhere else
+		this.up.addEventListener("click", () => {
+			this.intro.scrollBy({ top: -80, behavior: "smooth" });
+		});
+
+		this.down.addEventListener("click", () => {
+			this.intro.scrollBy({ top: 80, behavior: "smooth" });
+		});
+
+		this.introClose.addEventListener("click", () => {
+			this.intro.style.display = "none";
+		});
+
+		this.introOpen.addEventListener("click", () => {
+			this.intro.style.display = this.intro.style.display === "flex" ? "none" : "flex";
+		});
+
 		this.hideSettings.addEventListener("click", () => {
 			const hidden = this.settings.classList.toggle("hidden");
 			this.hideSettings.textContent = hidden ? "Show Settings" : "Hide Settings";
@@ -78,7 +102,7 @@ export class UI {
 			this.state.settings.mode = this.mode.value;
 
 			if (this.mode.value === "lyrics") {
-				this.state.toggleAudio()
+				this.state.toggleAudio();
 			}
 
 			if (this.mode.value !== "video") {
@@ -116,6 +140,11 @@ export class UI {
 			this.updateValue(this.beatMultiplier, this.beatMultiplierValue);
 		});
 
+		this.lyricsOffset.addEventListener("input", () => {
+			this.state.settings.lyricsOffset = +this.lyricsOffset.value;
+			this.lyricsOffsetValue.textContent = this.lyricsOffset.value;
+		});
+
 		this.fixEdges.addEventListener("change", () => {
 			this.state.settings.fixEdges = this.fixEdges.checked;
 		});
@@ -127,7 +156,7 @@ export class UI {
 
 		this.textScale.addEventListener("input", () => {
 			this.state.setTextScale(+this.textScale.value);
-			this.updateValue(this.textScale, this.textScaleValue);
+			this.updateValue(this.textScale, this.textScaleValue, 300);
 		});
 
 		this.enableRC.addEventListener("change", () => {
@@ -152,7 +181,7 @@ export class UI {
 	}
 
 	updateValue(range: HTMLInputElement, display: HTMLElement, total: number = 100) {
-		const val = Math.round(((+range.value 	- +range.min) / (+range.max - +range.min)) * total);
+		const val = Math.round(((+range.value - +range.min) / (+range.max - +range.min)) * total);
 		display.textContent = val.toString();
 	}
 

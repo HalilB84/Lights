@@ -6,8 +6,8 @@ import { ray } from "./shaders/ray.ts";
 import { resizer } from "./shaders/resizer.ts";
 import { bilateral } from "./shaders/bilateral.ts";
 import { radiancecascades_v2, radiancecascades_v3 } from "./shaders/rc/radiance_cascades_v3.ts";
-import { Text } from "./playables/text.ts";
-import { LRC } from "./playables/lrcplayer.ts";
+import { TextTroika } from "./playables/text.ts";
+import { LRC } from "./utils/lrcplayer.ts";
 import { Playable1 } from "./playables/playable1.ts";
 import { Playable2 } from "./playables/playable2.ts";
 import type { State } from "./state.js";
@@ -22,7 +22,7 @@ export class Visualization {
 	camera: THREE.OrthographicCamera;
 
 	lrcPlayer: LRC;
-	text: Text;
+	text: TextTroika;
 	playable1: Playable1;
 	playable2: Playable2;
 
@@ -84,7 +84,7 @@ export class Visualization {
 	constructor(state: State) {
 		this.state = state;
 
-		this.renderer = new THREE.WebGLRenderer({antialias: true});
+		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.autoClear = false;
 		this.renderer.info.autoReset = false;
 		this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; //so three js doesnt apply the correction but kinda confused on for what
@@ -104,7 +104,7 @@ export class Visualization {
 
 		//playground
 		this.lrcPlayer = new LRC();
-		this.text = new Text(this.actualWidth, this.actualHeight, this.state.settings.textScale, this.scaleDown);
+		this.text = new TextTroika(this.actualWidth, this.actualHeight, this.state.settings.textScale, this.scaleDown);
 		this.playable1 = new Playable1(this.actualWidth, this.actualHeight, this.scaleDown);
 		this.playable2 = new Playable2(this.actualWidth, this.actualHeight, this.scaleDown);
 
@@ -146,20 +146,21 @@ export class Visualization {
 	why is yt (non music) content called music? youtube music sometimes provide it so sometimes work? idk only spotify reliably works here
 	because other types of media can toggle playback we have is valid (also there is the case where playback is called before media event, but its quickly stopped with the media event update that comes after)
 
-	the original order goes like playback -> timeline -> media | because of this a event needs to fire the last playbackstate after media update
+	the original order goes like playback -> media -> timeline | because of this an event needs to fire the last playbackstate after media update
 
 	this logic is so baaaaaaaaaaaaaaaaaaaaaaaaaad
 	only if windowows gave proper information
 	*/
 
-	wallpaperMediaPropertiesListener(event: any) {
+	wallpaperMediaPropertiesListener(event: any, induced? : boolean) {
 		//console.log("media:", event);
 		this.lastMedia = event;
-		if(this.state.settings.mode != "lyrics") return;
+		if (this.state.settings.mode != "lyrics") return;
 
 		if (this.lastValid && this.lastValid.title === event.title && this.lastValid.artist === event.artist && this.lastValid.albumArtist === event.albumArtist) {
 			this.isValid = true;
-			this.wallpaperMediaPlaybackListener({ state: this.lastPlayback });
+			if (!induced) this.wallpaperMediaPlaybackListener({ state: this.lastPlayback });
+			//console.log(induced);
 			return;
 		}
 
@@ -204,10 +205,10 @@ export class Visualization {
 
 	wallpaperMediaTimelineListener(event: any) {
 		//console.log("timeline:", event);
-		if((this.isValid && Math.abs(event.position - this.actualPosition) > 2.0) || this.needsUpdate) {
-			this.actualPosition = this.timelinePos = event.position + 0.6;
+		if ((this.isValid && Math.abs(event.position - this.actualPosition) > 2.0) || this.needsUpdate) {
+			this.actualPosition = this.timelinePos = event.position + this.state.settings.lyricsOffset;
 			this.timelineUpdate = performance.now();
-			if(this.needsUpdate) this.needsUpdate = false;
+			if (this.needsUpdate) this.needsUpdate = false;
 		}
 	}
 
@@ -355,6 +356,9 @@ export class Visualization {
 			this.playable1.update(delta, { x: this.mouse.x - this.actualWidth / 2, y: this.mouse.y - this.actualHeight / 2 }, this.beat);
 		} else if (this.state.settings.mode === "playable2" && this.state.video.texture) {
 			this.playable2.update(this.state.video.texture);
+		} else if (this.state.settings.mode === "lyrics") {
+			this.text.mesh.material.uniforms.time.value = performance.now() * 0.001;
+			this.text.meshOverlay.material.uniforms.time.value = performance.now() * 0.001;
 		}
 
 		if ((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
@@ -371,7 +375,6 @@ export class Visualization {
 				this.renderer.render(this.scene, this.camera);
 				//
 			} else if (this.state.settings.mode === "lyrics" && this.text.isReady) {
-				this.text.mesh.material.uniforms.time.value = performance.now() * 0.001;
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
 				this.renderer.render(this.text.scene, this.text.camera);
@@ -486,7 +489,6 @@ export class Visualization {
 			this.renderer.render(this.playable1.sceneOverlay, this.playable1.cameraOverlay);
 			//
 		} else if (this.state.settings.mode === "lyrics" && this.text.isReady) {
-			this.text.mesh.material.uniforms.time.value = performance.now() / 1000;
 			this.renderer.render(this.text.sceneOverlay, this.text.cameraOverlay);
 			//
 		} else if (this.state.settings.mode === "video" && this.state.video.loading) {
