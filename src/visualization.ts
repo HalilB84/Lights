@@ -3,7 +3,6 @@ import { cover } from "three/src/extras/TextureUtils.js";
 import { seed } from "./shaders/seed.ts";
 import { jfa } from "./shaders/jfa.ts";
 import { ray } from "./shaders/ray.ts";
-import { resizer } from "./shaders/resizer.ts";
 import { bilateral } from "./shaders/bilateral.ts";
 import { radiancecascades_v2, radiancecascades_v3 } from "./shaders/rc/radiance_cascades_v3.ts";
 import { TextTroika } from "./playables/text.ts";
@@ -11,6 +10,7 @@ import { LRC } from "./utils/lrcplayer.ts";
 import { Playable1 } from "./playables/playable1.ts";
 import { Playable2 } from "./playables/playable2.ts";
 import type { State } from "./state.js";
+import { Video } from "./playables/video.ts";
 
 //https://www.typescriptlang.org/docs/handbook/2/classes.html
 export class Visualization {
@@ -25,6 +25,7 @@ export class Visualization {
 	text: TextTroika;
 	playable1: Playable1;
 	playable2: Playable2;
+	video: Video;
 
 	width: number;
 	height: number;
@@ -54,7 +55,6 @@ export class Visualization {
 	frameCount = 0;
 	lastTime = 0;
 
-	resizerMaterial: THREE.ShaderMaterial;
 	seedMaterial: THREE.ShaderMaterial;
 	jfaMaterial: THREE.ShaderMaterial;
 	rayMaterial: THREE.ShaderMaterial;
@@ -92,15 +92,15 @@ export class Visualization {
 		this.text = new TextTroika(this.actualWidth, this.actualHeight, this.state.settings.textScale, this.scaleDown);
 		this.playable1 = new Playable1(this.actualWidth, this.actualHeight, this.scaleDown);
 		this.playable2 = new Playable2(this.actualWidth, this.actualHeight, this.scaleDown);
+		this.video = new Video(this.actualWidth, this.actualHeight, this.scaleDown);
 
 		this.initialize();
 		this.shaders();
 
 		this.canvas.addEventListener("mousemove", (e) => {
 			//bottom left corner is 0,0 to match UV coords and is not fully matched up but its not fully because of error calc
-			const rect = this.canvas.getBoundingClientRect();
-			this.mouse.x = ((e.clientX - rect.left) * this.dpr) / this.scaleDown;
-			this.mouse.y = ((rect.height - (e.clientY - rect.top)) * this.dpr) / this.scaleDown;
+			this.mouse.x = (e.clientX  * this.dpr) / this.scaleDown;
+			this.mouse.y = ((this.canvas.clientHeight - e.clientY) * this.dpr) / this.scaleDown;
 		});
 
 		window.addEventListener("resize", () => {
@@ -119,7 +119,7 @@ export class Visualization {
 
 		this.cascadeInterval = 1;
 
-		const count = (w: number, h: number) => Math.ceil(Math.log((3 * Math.sqrt(w * w + h * h)) / this.cascadeInterval + 1) / Math.log(4));
+		const count = (w: number, h: number) => Math.ceil(Math.log((3 * Math.hypot(w, h)) / this.cascadeInterval + 1) / Math.log(4));
 
 		const errorRate = Math.pow(2.0, count(initialWidth, initialHeight) - 1);
 		const errorX = Math.ceil(initialWidth / errorRate);
@@ -133,7 +133,7 @@ export class Visualization {
 		// console.log(this.actualWidth, this.actualHeight);
 		// console.log(this.width, this.height, (this.actualWidth * this.scaleDown == this.width && this.actualHeight * this.scaleDown == this.height));
 
-		this.probeSpacing = 1;
+		this.probeSpacing = 1; 
 		this.cascadeWidth = Math.floor(this.actualWidth / this.probeSpacing);
 		this.cascadeHeight = Math.floor(this.actualHeight / this.probeSpacing);
 	}
@@ -167,7 +167,6 @@ export class Visualization {
 	}
 
 	shaders() {
-		this.resizerMaterial = resizer();
 		this.seedMaterial = seed();
 		this.jfaMaterial = jfa();
 		this.rayMaterial = ray();
@@ -180,7 +179,6 @@ export class Visualization {
 
 		this.rayMaterial.uniforms.blueNoise.value = blueNoiseTexture;
 		this.rayMaterial.uniforms.rayCount.value = 24;
-		this.rayMaterial.uniforms.frame.value = 0;
 
 		this.bilateralMaterial = bilateral();
 		this.bilateralMaterial.uniforms.sigma_d.value = 2.0;
@@ -192,7 +190,6 @@ export class Visualization {
 		this.displayMaterial = new THREE.MeshBasicMaterial();
 		this.geometry = new THREE.PlaneGeometry(2, 2);
 		this.mesh = new THREE.Mesh(this.geometry, this.seedMaterial);
-		this.mesh.position.z = -1;
 		this.scene.add(this.mesh);
 	}
 
@@ -215,6 +212,7 @@ export class Visualization {
 		this.text.resize(this.actualWidth, this.actualHeight, this.scaleDown);
 		this.playable1.resize(this.actualWidth, this.actualHeight, this.scaleDown);
 		this.playable2.resize(this.actualWidth, this.actualHeight, this.scaleDown);
+		this.video.resize(this.actualWidth, this.actualHeight, this.scaleDown);
 	}
 
 	changeFilter() {
@@ -243,33 +241,27 @@ export class Visualization {
 		} else if (this.state.settings.mode === "playable2" && this.state.video.texture) {
 			this.playable2.update(this.state.video.texture);
 		} else if (this.state.settings.mode === "lyrics") {
-			this.text.mesh.material.uniforms.time.value = performance.now() * 0.001;
-			this.text.meshOverlay.material.uniforms.time.value = performance.now() * 0.001;
+			this.text.update(null);
+		} else if (this.state.settings.mode === "video") {
+			this.video.update(this.state.video.scale, this.state.video.texture, this.state.video.width, this.state.video.height);
 		}
 
 		if ((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
 			if (this.state.settings.mode === "video") {
-				this.mesh.material = this.resizerMaterial;
-				this.resizerMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
-				this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
-				this.resizerMaterial.uniforms.videoHeight.value = this.state.video.height;
-				this.resizerMaterial.uniforms.videoWidth.value = this.state.video.width;
-				this.resizerMaterial.uniforms.videoScale.value = this.state.video.scale;
-
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
-				this.renderer.render(this.scene, this.camera);
+				this.renderer.render(this.video.scene, this.video.camera);
 				//
-			} else if (this.state.settings.mode === "lyrics" && this.text.isReady) {
+			} else if (this.state.settings.mode === "lyrics") {
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
 				this.renderer.render(this.text.scene, this.text.camera);
 				//
-			} else if (this.state.settings.mode === "playable1" && this.playable1.isReady) {
+			} else if (this.state.settings.mode === "playable1") {
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
 				this.renderer.render(this.playable1.scene, this.playable1.camera);
-			} else if (this.state.settings.mode === "playable2" && this.playable2.isReady) {
+			} else if (this.state.settings.mode === "playable2") {
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
 				this.renderer.render(this.playable2.scene, this.playable2.camera);
@@ -340,9 +332,10 @@ export class Visualization {
 			this.rayMaterial.uniforms.sceneTexture.value = this.modelRT.texture;
 			this.rayMaterial.uniforms.distanceTexture.value = this.prevJFA.texture;
 			this.rayMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
-			this.rayMaterial.uniforms.frame.value += 1;
+			this.rayMaterial.uniforms.time.value = performance.now() ;
 			this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
 			this.rayMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
+			this.rayMaterial.uniforms.srgbFix.value = this.state.settings.srgbFix;
 
 			this.renderer.setRenderTarget(this.rayColorRT);
 			this.renderer.clear();
@@ -371,22 +364,16 @@ export class Visualization {
 		this.renderer.render(this.scene, this.camera);
 
 		//overlay phase (to display text/video on full res)
-		if (this.state.settings.mode === "playable1" && this.playable1.isReady) {
+		if (this.state.settings.mode === "playable1") {
 			this.renderer.render(this.playable1.sceneOverlay, this.playable1.cameraOverlay);
 			//
-		} else if (this.state.settings.mode === "lyrics" && this.text.isReady) {
+		} else if (this.state.settings.mode === "lyrics") {
 			this.renderer.render(this.text.sceneOverlay, this.text.cameraOverlay);
 			//
-		} else if (this.state.settings.mode === "video" && this.state.video.loading) {
-			this.mesh.material = this.resizerMaterial;
-			this.resizerMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
-			this.resizerMaterial.uniforms.videoTexture.value = this.state.video.texture;
-			this.resizerMaterial.uniforms.videoHeight.value = this.state.video.height;
-			this.resizerMaterial.uniforms.videoWidth.value = this.state.video.width;
-			this.resizerMaterial.uniforms.videoScale.value = this.state.video.scale;
-			this.renderer.render(this.scene, this.camera);
+		} else if (this.state.settings.mode === "video") {
+			this.renderer.render(this.video.sceneOverlay, this.video.cameraOverlay);
 			//
-		} else if (this.state.settings.mode === "playable2" && this.playable2.isReady) {
+		} else if (this.state.settings.mode === "playable2") {
 			this.renderer.render(this.playable2.sceneOverlay, this.playable2.cameraOverlay);
 		}
 

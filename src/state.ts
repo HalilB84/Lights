@@ -33,7 +33,6 @@ export class State {
 		width: number;
 		scale: number;
 		volume: number;
-		loading: boolean;
 	};
 
 	audio: {
@@ -69,7 +68,6 @@ export class State {
 			width: 0,
 			scale: 0,
 			volume: 0,
-			loading: false,
 		};
 
 		this.audio = {
@@ -101,7 +99,6 @@ export class State {
 	setTextScale(value: number) {
 		this.settings.textScale = value;
 		this.visualization.text.textscale = this.settings.textScale;
-		this.visualization.text.update();
 	}
 
 	setMediaVolume(vol: number) {
@@ -119,20 +116,19 @@ export class State {
 			URL.revokeObjectURL(this.video.element.src);
 		}
 
-		//I probably shouldve read: https://threejs.org/manual/#en/how-to-dispose-of-objects
-		//lesson here is that whenever dealing with GPU data always think about dispose()
-		this.video.loading = false;
+		//I probably shouldve read: https://threejs.org/manual/#en/how-to-dispose-of-objects lesson here is that whenever dealing with GPU data always think about dispose()
 		this.video.texture?.dispose();
 
 		this.video.element = video;
 		this.video.element.volume = this.video.volume;
-		this.video.texture = new THREE.VideoTexture(video);
+
 		this.video.height = video.videoHeight;
 		this.video.width = video.videoWidth;
-
-		this.video.loading = true;
+		this.video.texture = new THREE.VideoTexture(video);
 
 		this.toggleVideo(false);
+		this.ui.mode.value = "video";
+	    this.ui.mode.dispatchEvent(new Event("change"));
 	}
 
 	toggleVideo(forcePause: boolean) {
@@ -159,18 +155,21 @@ export class State {
 		this.audio.loading = true;
 
 		this.visualization.lrcPlayer.getLRCLIB(trackName, artistName).then(() => {
-			this.toggleAudio(false);
-
 			this.audioUpdateFunction = () => {
 				const [lyric, changed] = this.visualization.lrcPlayer.update(audio.currentTime);
 
-				if (changed == "init" || changed == "changed") {
+				if (changed === "init" || changed === "changed") {
 					this.visualization.text.update(lyric);
 				}
 			};
 
 			audio.addEventListener("timeupdate", this.audioUpdateFunction);
+			
 			this.audio.loading = false;
+			this.toggleAudio(false);
+
+			this.ui.mode.value = "lyrics";
+			this.ui.mode.dispatchEvent(new Event("change"));
 		});
 	}
 

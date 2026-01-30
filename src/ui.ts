@@ -167,9 +167,6 @@ export class UI {
 			() => {
 				console.log("Video loaded");
 				this.state.loadVideo(video);
-
-				this.mode.value = "video";
-				this.mode.dispatchEvent(new Event("change"));
 			},
 			{ once: true },
 		);

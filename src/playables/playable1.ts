@@ -68,8 +68,6 @@ export class Playable1 extends Playable {
 	}
 
 	createScene() {
-		this.isReady = false;
-
 		this.engine = Matter.Engine.create({
 			gravity: { x: 0, y: 0, scale: 0 },
 		});
@@ -110,12 +108,9 @@ export class Playable1 extends Playable {
 		this.walls.push(Matter.Bodies.rectangle(this.width / 2 + thickness / 2, 0, thickness, this.height + thickness, options));
 
 		Matter.Composite.add(this.engine.world, this.walls);
-
-		this.isReady = true;
 	}
 
 	update(delta: number, mouse: { x: number; y: number }) {
-		if (!this.isReady) return;
 		Matter.Engine.update(this.engine, Math.min(delta, (1 / 60) * 1000));
 
 		for (let i = 0; i < this.circles.length; i++) {
@@ -176,7 +171,7 @@ export class Playable1 extends Playable {
 		}
 	}
 
-	dispose(): void {
+	dispose() {
 		for (const cir of this.circles) {
 			cir.mesh.geometry.dispose();
 			cir.mesh.material.dispose();

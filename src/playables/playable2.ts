@@ -26,8 +26,6 @@ export class Playable2 extends Playable {
 	}
 
 	createScene() {
-		this.isReady = false;
-
 		this.scene.clear();
 		this.sceneOverlay.clear();
 
@@ -59,8 +57,6 @@ export class Playable2 extends Playable {
 				this.circles.push({ mesh, meshOverlay });
 			}
 		}
-
-		this.isReady = true;
 	}
 
 	createShaderMaterial() {
@@ -98,13 +94,11 @@ export class Playable2 extends Playable {
 	}
 
 	update(videoTexture: THREE.VideoTexture) {
-		if (!this.isReady) return;
-
 		this.material.uniforms.videoTexture.value = videoTexture;
 		this.materialOverlay.uniforms.videoTexture.value = videoTexture;
 	}
 
-	dispose(): void {
+	dispose() {
 		this.circles[0]?.mesh.geometry.dispose();
 		this.material?.dispose();
 		this.materialOverlay?.dispose();

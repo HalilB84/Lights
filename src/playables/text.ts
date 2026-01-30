@@ -13,9 +13,17 @@ export class TextTroika extends Playable {
 		super(width, height, scaleOverlay);
 
 		this.textscale = textscale;
-		//this.currentText = "àéîõüçñ ¿¡€ßæœΩ πφψД ЖЙלוֹ界 こんにちは안녕하세";
-		this.currentText = "The show is starting!"
 
+		this.currentText = "The show is starting!";	//this.currentText = "àéîõüçñ ¿¡€ßæœΩ πφψД ЖЙלוֹ界 こんにちは안녕하세";
+
+		this.createScene();
+	}
+
+	reset() {
+		this.update(this.currentText);
+	}
+
+	createScene() {
 		this.mesh = new Text();
 		this.meshOverlay = new Text();
 
@@ -31,28 +39,8 @@ export class TextTroika extends Playable {
 		this.scene.add(this.mesh);
 		this.sceneOverlay.add(this.meshOverlay);
 
-		this.createScene();
-	}
-
-	reset() {
-		this.createScene();
-	}
-
-	createScene() {
-		this.isReady = false;
-
-		this.mesh.text = this.meshOverlay.text = this.currentText;		
-		this.mesh.maxWidth = this.meshOverlay.maxWidth = this.width / this.textscale;
-
-		this.mesh.scale.setScalar(this.textscale);
-		this.meshOverlay.scale.setScalar(this.textscale * this.scaleOverlay);
-
-		this.mesh.sync();
-		this.meshOverlay.sync();
-
-		this.isReady = true; //sync is async so not right
-
-		//console.log(this.meshOverlay.geometry);
+		this.update(this.currentText);
+		
 	}
 
 	createMaterial() {
@@ -121,11 +109,20 @@ export class TextTroika extends Playable {
 		});
 	}
 
-	update(text?: string) {
-		if(!this.isReady) return;
-		if (text) this.currentText = text;
+	update(text: string | null) {
+		if(text) {
+			this.currentText = text;
+			this.mesh.text = this.meshOverlay.text = this.currentText;	
+			this.mesh.maxWidth = this.meshOverlay.maxWidth = this.width / this.textscale;	
+			this.mesh.sync();
+			this.meshOverlay.sync();
+		}
+		
+		this.mesh.scale.set(this.textscale, this.textscale, 1);
+		this.meshOverlay.scale.set(this.textscale * this.scaleOverlay, this.textscale * this.scaleOverlay, 1);
 
-		this.createScene()
+		this.mesh.material.uniforms.time.value = performance.now() * 0.001;
+		this.meshOverlay.material.uniforms.time.value = performance.now() * 0.001;
 	}
 
 	dispose(): void {

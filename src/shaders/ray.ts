@@ -10,9 +10,10 @@ export function ray() {
 			blueNoise: { value: null },
 			rayCount: { value: null },
 			resolution: { value: null },
-			frame: { value: null },
+			time: { value: null },
 			radianceModifier: { value: null },
 			fixEdges: { value: null },
+            srgbFix: { value: null },
 		},
 		glslVersion: THREE.GLSL3,
 		vertexShader: ` 
@@ -31,13 +32,17 @@ export function ray() {
             uniform sampler2D blueNoise;
             uniform int rayCount;
             uniform vec2 resolution;
-            uniform float frame;
+            uniform float time;
             uniform float radianceModifier;
             uniform bool fixEdges;
+            uniform bool srgbFix;
             
             out vec4 fragColor;
 
             #define TAU 6.283185
+            #define PHI 1.618033988749
+            #define SRGB(c) pow(c.rgb, srgbFix ? vec3(2.2) : vec3(1.0))
+            #define LINEAR(c) pow(c.rgb, srgbFix ? vec3(1.0 / 2.2) : vec3(1.0))
 
             bool outOfBounds(vec2 uv) {
                 return uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0;
@@ -47,14 +52,13 @@ export function ray() {
                 return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
             }
 
-            float blueNoiseSample(vec2 coord) { //blue noise with frame based offset to it looks more blended
-                vec2 blueNoiseResolution = vec2(128.0);
-                vec2 offset = vec2(mod(frame, blueNoiseResolution.x), 
-                                   mod(frame * 37.0, blueNoiseResolution.y)); //apparently we use 37 because its prime numbers create pesudo random patterns
-                vec2 noiseUV = mod(coord + offset, blueNoiseResolution) / blueNoiseResolution;
-                return texture(blueNoise, noiseUV).r;
-            }
+            float blueNoiseSample(vec2 coord) { //blue noise I have no idea how to use this properly
+                float noise = texelFetch(blueNoise, ivec2(coord) % 128, 0).r;
 
+                noise = fract(noise + time * PHI);
+
+                return noise; 
+            }
 
             vec4 raymarch(){
                 vec4 light = texture(sceneTexture, vUv);
@@ -74,7 +78,7 @@ export function ray() {
                 //calculate and shoot rayCount rays that are equidstant from each other, expensive
                 
                 bool useBruteForce = light.a != 0.0 && fixEdges; //if we are at a seed location use fixed stop size so when the full res element is overlaid the blocky edges smooth out
-                int maxSteps = useBruteForce ? 30 : 50;
+                int maxSteps = useBruteForce ? 40 : 50;
                 float fixedStepSize = 1.0;
 
                 for(int i = 0; i < rayCount; i++) {
@@ -96,7 +100,7 @@ export function ray() {
                         
                         if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) { 
                             // at this point we now we hit a seed, so get its color and add it to the radiance
-                            vec4 sampleColor = texture(sceneTexture, sampleUv);
+                            vec4 sampleColor = vec4(SRGB(texture(sceneTexture, sampleUv)).rgb, 1.0);
                             radDelta += sampleColor;
                             break;
                         }
@@ -105,7 +109,7 @@ export function ray() {
                     radiance += radDelta;
                 }
                 
-                return vec4((radiance * oneOverRayCount * radianceModifier).rgb, 0.0); //finally we return the color of the pixel by averaging the light 
+                return vec4(LINEAR((radiance * oneOverRayCount * radianceModifier)).rgb, 0.0); //finally we return the color of the pixel by averaging the light 
             }
 
             void main() {
