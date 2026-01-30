@@ -76,9 +76,6 @@ export class State {
 			loading: false,
 		};
 
-		this.ui = new UI(this);
-		this.visualization = new Visualization(this);
-
 		this.stats = new Stats({
 			trackGPU: true,
 			trackHz: false,
@@ -94,6 +91,9 @@ export class State {
 		});
 
 		document.body.appendChild(this.stats.dom);
+
+		this.ui = new UI(this);
+		this.visualization = new Visualization(this);
 	}
 
 	setTextScale(value: number) {

@@ -52,8 +52,8 @@ export class Visualization {
 	overlayRT: THREE.WebGLRenderTarget;
 
 	mouse = { x: 9999, y: 9999 };
-	frameCount = 0;
-	lastTime = 0;
+	frameCount: number = 0;
+	lastTime: number;
 
 	seedMaterial: THREE.ShaderMaterial;
 	jfaMaterial: THREE.ShaderMaterial;
@@ -80,9 +80,7 @@ export class Visualization {
 		this.canvas = this.renderer.domElement;
 
 		this.calculateBounds();
-
 		this.renderer.setSize(this.width, this.height, false);
-		this.renderer.setAnimationLoop(this.render.bind(this));
 
 		this.scene = new THREE.Scene();
 		this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); //this why understanding the rendering pipeling is important, even though the camera doesnt respect the aspect raitio we use the quad as a fullscreen quad fragment shader so it streching doesn't matter
@@ -103,9 +101,7 @@ export class Visualization {
 			this.mouse.y = ((this.canvas.clientHeight - e.clientY) * this.dpr) / this.scaleDown;
 		});
 
-		window.addEventListener("resize", () => {
-			this.resize();
-		});
+		this.renderer.setAnimationLoop(this.render.bind(this));
 	}
 
 	calculateBounds() {
@@ -230,8 +226,12 @@ export class Visualization {
 	}
 
 	render() {
+		if (Math.floor(this.canvas.clientWidth * this.dpr) !== this.width || Math.floor(this.canvas.clientHeight * this.dpr) !== this.height) {
+			this.resize();
+		}
+
 		const currentTime = performance.now();
-		const delta = currentTime - this.lastTime;
+		const delta = this.lastTime ? currentTime - this.lastTime : 0;
 		this.lastTime = currentTime;
 
 		//needs organizing <- Priority
