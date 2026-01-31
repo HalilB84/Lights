@@ -14,7 +14,7 @@ export class TextTroika extends Playable {
 
 		this.textscale = textscale;
 
-		this.currentText = "The show is starting!";	//this.currentText = "àéîõüçñ ¿¡€ßæœΩ πφψД ЖЙלוֹ界 こんにちは안녕하세";
+		this.currentText = "The show is starting!"; //this.currentText = "àéîõüçñ ¿¡€ßæœΩ πφψД ЖЙלוֹ界 こんにちは안녕하세";
 
 		this.createScene();
 	}
@@ -40,7 +40,6 @@ export class TextTroika extends Playable {
 		this.sceneOverlay.add(this.meshOverlay);
 
 		this.update(this.currentText);
-		
 	}
 
 	createMaterial() {
@@ -110,14 +109,14 @@ export class TextTroika extends Playable {
 	}
 
 	update(text: string | null) {
-		if(text) {
+		if (text) {
 			this.currentText = text;
-			this.mesh.text = this.meshOverlay.text = this.currentText;	
-			this.mesh.maxWidth = this.meshOverlay.maxWidth = this.width / this.textscale;	
+			this.mesh.text = this.meshOverlay.text = this.currentText;
+			this.mesh.maxWidth = this.meshOverlay.maxWidth = this.width / this.textscale;
 			this.mesh.sync();
 			this.meshOverlay.sync();
 		}
-		
+
 		this.mesh.scale.set(this.textscale, this.textscale, 1);
 		this.meshOverlay.scale.set(this.textscale * this.scaleOverlay, this.textscale * this.scaleOverlay, 1);
 

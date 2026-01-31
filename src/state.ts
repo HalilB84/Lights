@@ -128,7 +128,7 @@ export class State {
 
 		this.toggleVideo(false);
 		this.ui.mode.value = "video";
-	    this.ui.mode.dispatchEvent(new Event("change"));
+		this.ui.mode.dispatchEvent(new Event("change"));
 	}
 
 	toggleVideo(forcePause: boolean) {
@@ -164,7 +164,7 @@ export class State {
 			};
 
 			audio.addEventListener("timeupdate", this.audioUpdateFunction);
-			
+
 			this.audio.loading = false;
 			this.toggleAudio(false);
 

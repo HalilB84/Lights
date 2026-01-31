@@ -97,7 +97,7 @@ export class Visualization {
 
 		this.canvas.addEventListener("mousemove", (e) => {
 			//bottom left corner is 0,0 to match UV coords and is not fully matched up but its not fully because of error calc
-			this.mouse.x = (e.clientX  * this.dpr) / this.scaleDown;
+			this.mouse.x = (e.clientX * this.dpr) / this.scaleDown;
 			this.mouse.y = ((this.canvas.clientHeight - e.clientY) * this.dpr) / this.scaleDown;
 		});
 
@@ -129,7 +129,7 @@ export class Visualization {
 		// console.log(this.actualWidth, this.actualHeight);
 		// console.log(this.width, this.height, (this.actualWidth * this.scaleDown == this.width && this.actualHeight * this.scaleDown == this.height));
 
-		this.probeSpacing = 1; 
+		this.probeSpacing = 1;
 		this.cascadeWidth = Math.floor(this.actualWidth / this.probeSpacing);
 		this.cascadeHeight = Math.floor(this.actualHeight / this.probeSpacing);
 	}
@@ -234,6 +234,13 @@ export class Visualization {
 		const delta = this.lastTime ? currentTime - this.lastTime : 0;
 		this.lastTime = currentTime;
 
+		let optimizationMode;
+		if (this.state.settings.enableRC && this.state.settings.twoPassOptimization) {
+			optimizationMode = this.frameCount % 2 === 0 ? 1 : 2;
+		} else {
+			optimizationMode = 3;
+		}
+
 		//needs organizing <- Priority
 
 		if (this.state.settings.mode === "playable1") {
@@ -246,7 +253,7 @@ export class Visualization {
 			this.video.update(this.state.video.scale, this.state.video.texture, this.state.video.width, this.state.video.height);
 		}
 
-		if ((this.state.settings.twoPassOptimization && this.frameCount % 2 === 0) || !this.state.settings.twoPassOptimization) {
+		if (optimizationMode !== 2) {
 			if (this.state.settings.mode === "video") {
 				this.renderer.setRenderTarget(this.modelRT);
 				this.renderer.clear();
@@ -332,7 +339,7 @@ export class Visualization {
 			this.rayMaterial.uniforms.sceneTexture.value = this.modelRT.texture;
 			this.rayMaterial.uniforms.distanceTexture.value = this.prevJFA.texture;
 			this.rayMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];
-			this.rayMaterial.uniforms.time.value = performance.now() ;
+			this.rayMaterial.uniforms.time.value = performance.now();
 			this.rayMaterial.uniforms.radianceModifier.value = this.state.settings.radiance;
 			this.rayMaterial.uniforms.fixEdges.value = this.state.settings.fixEdges;
 			this.rayMaterial.uniforms.srgbFix.value = this.state.settings.srgbFix;
@@ -343,7 +350,7 @@ export class Visualization {
 		}
 
 		//bilateral filter phase (to smooth out noise/artifacts) - forgor that prevcascade could be linear so like there is that but im lazy
-		if (!this.state.settings.enableRC || !this.state.settings.twoPassOptimization || this.frameCount % 2 === 1) {
+		if (optimizationMode !== 1) {
 			this.mesh.material = this.bilateralMaterial;
 			this.bilateralMaterial.uniforms.inputTexture.value = this.state.settings.enableRC ? this.prevCascade.texture : this.rayColorRT.texture;
 			this.bilateralMaterial.uniforms.resolution.value = [this.actualWidth, this.actualHeight];

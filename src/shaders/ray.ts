@@ -13,7 +13,7 @@ export function ray() {
 			time: { value: null },
 			radianceModifier: { value: null },
 			fixEdges: { value: null },
-            srgbFix: { value: null },
+			srgbFix: { value: null },
 		},
 		glslVersion: THREE.GLSL3,
 		vertexShader: ` 

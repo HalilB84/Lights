@@ -46,10 +46,10 @@ export function radiancecascades_v2() {
             uniform sampler2D sceneTexture;
             uniform sampler2D distanceTexture;
             uniform sampler2D previousCascadeTexture;
-            uniform vec2 distanceResolution;
-            uniform vec2 cascadeResolution;
-            uniform float cascadeCount;
-            uniform float cascadeIndex;
+            uniform ivec2 distanceResolution;
+            uniform ivec2 cascadeResolution;
+            uniform int cascadeCount;
+            uniform int cascadeIndex;
             uniform float probeSpacing;
             uniform float interval;
             uniform float radianceModifier;
@@ -59,12 +59,10 @@ export function radiancecascades_v2() {
             out vec4 fragColor;
 
             #define TAU 6.283185
-            
             #define SRGB(c) pow(c.rgb, srgbFix ? vec3(2.2) : vec3(1.0))
             #define LINEAR(c) pow(c.rgb, srgbFix ? vec3(1.0 / 2.2) : vec3(1.0))
 
-            vec4 raymarch(vec2 rayOrigin, vec2 dir, float interval) {
-                vec2 ray = rayOrigin;
+            vec4 raymarch(vec2 ray, vec2 dir, float interval) {
                 float traveled = 0.0;
 
                 for(float i = 0.0; i < interval; i++) {
@@ -77,66 +75,71 @@ export function radiancecascades_v2() {
                     traveled += dist;
                     ray += dir * dist;
 
-                    if (traveled >= interval || ray.x < 0.0 || ray.y < 0.0 || ray.x >= distanceResolution.x || ray.y >= distanceResolution.y) break;
-                    if (dist == 0.0) return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0).rgb), 1.0); 
+                    if (traveled >= interval || ray.x < 0.0 || ray.y < 0.0 || ray.x >= float(distanceResolution.x) || ray.y >= float(distanceResolution.y)) break;
+                    if (dist == 0.0) return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0)), 1.0); 
                 }
                 
                 return vec4(0.0, 0.0, 0.0, 0.0);
             }
 
-            vec4 merge(vec4 rayColor, float upperRayIndex, vec2 probeLocation) {
-                if (rayColor.a == 1.0 || cascadeIndex == cascadeCount - 1.0)
-                    return rayColor;
+            vec4 merge(int upperRayIndex, vec2 probeLocation) {
+                int upperAAxis = 1 << (cascadeIndex + 1);
+                ivec2 upperSize = cascadeResolution / upperAAxis;
+
+                ivec2 upperDirection = ivec2(upperRayIndex % upperAAxis, upperRayIndex / upperAAxis) * upperSize;
+
+                vec2 upperClamped = clamp(probeLocation, vec2(0.5), vec2(upperSize) - 0.5); 
+
+                vec2 upperProbe = vec2(upperDirection) + upperClamped;
                 
-                float upperAngular = pow(2.0, cascadeIndex + 1.0);
-                vec2 upperSize = cascadeResolution / upperAngular;
-
-                vec2 upperPos = vec2(mod(upperRayIndex, upperAngular), floor(upperRayIndex / upperAngular)) * upperSize;
-
-                vec2 upperClamped = clamp(probeLocation, vec2(0.5), upperSize - 0.5); 
-
-                vec2 upperProbe = upperPos + upperClamped;
-
-                vec4 interpolated = texture(previousCascadeTexture, upperProbe * (1.0 / cascadeResolution));
+                vec4 interpolated = texture(previousCascadeTexture, upperProbe / vec2(cascadeResolution)); 
                 return interpolated;
             }
 
-            void main() {
-            
+            void main() {        
                 ivec2 coord = ivec2(gl_FragCoord.xy);
-                float angular = pow(2.0, cascadeIndex);
-                vec2 linear = vec2(probeSpacing * pow(2.0, cascadeIndex));
+
+                int twoPowI = 1 << cascadeIndex; 
+                int fourPowI = 1 << (cascadeIndex * 2); 
+
+                int angularAxis = twoPowI;
+                int angular = angularAxis * angularAxis;
+                int upperAngular = angular * 4;
+
+                vec2 linear = vec2(probeSpacing * float(twoPowI));
+                vec2 upperLinear = linear * 2.0;
                                                                             
-                ivec2 directionSize = ivec2(cascadeResolution / angular);
+                ivec2 directionSize = cascadeResolution / angularAxis;
                 vec2 probe = vec2(coord % directionSize);
 
-                vec2 direction2D = vec2(coord / directionSize);               
-                float direction1D = direction2D.x + (angular * direction2D.y);
+                ivec2 direction2D = coord / directionSize;               
+                int direction1D = direction2D.x + (angularAxis * direction2D.y);
 
-                float offset = (interval * (1.0 - pow(4.0, cascadeIndex))) / (1.0 - 4.0);
-                float range = interval * pow(4.0, cascadeIndex) + length(vec2(probeSpacing * pow(2.0, cascadeIndex + 1.0)));
+                //s_n = a_1 * (1 - r ^ n) / (1 - r) a_1 = interval, r = 4
+                float offset = (interval * (1.0 - float(fourPowI)) / -3.0);
+                float range = interval * float(fourPowI) + length(upperLinear);
         
                 vec2 rayOrigin = (probe + 0.5) * linear;
-                float upperRayBase = direction1D * 4.0;
-                float raySpacing = TAU / (angular * angular * 4.0);
+                int upperRayBase = direction1D * 4;
+                float raySpacing = TAU / float(upperAngular);
 
                 vec4 color = vec4(0.0);
 
-                for(float i = 0.0; i < 4.0; i++) {
-                    float upperRayIndex = upperRayBase + i;
-                    float theta = (upperRayIndex + 0.5) * raySpacing;
+                for(int i = 0; i < 4; i++) {
+                    int upperRayIndex = upperRayBase + i;
+                    float theta = float(upperRayIndex) * raySpacing;
                     vec2 dir = vec2(cos(theta), sin(theta));
                     
                     vec2 start = rayOrigin + (dir * offset);
-                    vec4 rayColor = raymarch(start, dir, range);
+                    vec4 hit = raymarch(start, dir, range);
 
-                    //DEBUG color = vec4(probe / directionSize, 0.0, 1.0); //floats can go kill themselves
                     //DEBUG color = vec4(vec3(theta / TAU), 1.0);
 
-                    color += merge(rayColor, upperRayIndex, (probe + 0.5) / 2.0) * 0.25;
+                    if (hit.a == 0.0 && cascadeIndex != cascadeCount - 1) color += merge(upperRayIndex, (probe + 0.5) / 2.0) * 0.25;
+                    else color += hit * 0.25;
                 }
 
-                if (cascadeIndex == 0.0) {
+                if (cascadeIndex == 0) {
                     if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier; 
                     color = vec4(LINEAR(color).rgb, 1.0);    
                 }
@@ -178,10 +181,10 @@ export function radiancecascades_v3() {
             uniform sampler2D sceneTexture;
             uniform sampler2D distanceTexture;
             uniform sampler2D previousCascadeTexture;
-            uniform vec2 distanceResolution;
-            uniform vec2 cascadeResolution;
-            uniform float cascadeCount;
-            uniform float cascadeIndex;
+            uniform ivec2 distanceResolution;
+            uniform ivec2 cascadeResolution;
+            uniform int cascadeCount;
+            uniform int cascadeIndex;
             uniform float probeSpacing;
             uniform float interval;
             uniform float radianceModifier;
@@ -194,8 +197,7 @@ export function radiancecascades_v3() {
             #define SRGB(c) pow(c.rgb, srgbFix ? vec3(2.2) : vec3(1.0))
             #define LINEAR(c) pow(c.rgb, srgbFix ? vec3(1.0 / 2.2) : vec3(1.0))
 
-            vec4 raymarch(vec2 rayOrigin, vec2 dir, float interval) {
-                vec2 ray = rayOrigin;
+            vec4 raymarch(vec2 ray, vec2 dir, float interval) {
                 float traveled = 0.0;
 
                 for(float i = 0.0; i < interval; i++) {
@@ -208,48 +210,53 @@ export function radiancecascades_v3() {
                     traveled += dist;
                     ray += dir * dist;
 
-                    if (traveled >= interval || ray.x < 0.0 || ray.y < 0.0 || ray.x >= distanceResolution.x || ray.y >= distanceResolution.y) break;
-                    if (dist == 0.0) return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0)).rgb, 1.0);
+                    if (traveled >= interval || ray.x < 0.0 || ray.y < 0.0 || ray.x >= float(distanceResolution.x) || ray.y >= float(distanceResolution.y)) break;
+                    if (dist == 0.0) return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0)), 1.0);
                 }
                 
                 return vec4(0.0, 0.0, 0.0, 0.0);
             }
 
-            vec4 merge(vec4 rayColor, float upperRayIndex, vec2 probeLocation) {
-                if (rayColor.a == 1.0 || cascadeIndex == cascadeCount - 1.0)
-                    return rayColor;
-                
-                float upperAngular = pow(2.0, cascadeIndex + 1.0);
-                vec2 upperSize = cascadeResolution / upperAngular;
+            vec4 merge(int upperRayIndex, vec2 probeLocation) {
+                int upperAAxis = 1 << (cascadeIndex + 1);
+                ivec2 upperSize = cascadeResolution / upperAAxis;
 
-                vec2 upperPos = vec2(mod(upperRayIndex, upperAngular), floor(upperRayIndex / upperAngular)) * upperSize;
+                ivec2 upperDirection = ivec2(upperRayIndex % upperAAxis, upperRayIndex / upperAAxis) * upperSize;
 
-                vec2 upperClamped = clamp(probeLocation, vec2(0.5), upperSize - 0.5);
+                vec2 upperClamped = clamp(probeLocation, vec2(0.5), vec2(upperSize) - 0.5);
 
-                vec2 upperProbe = upperPos + upperClamped;
+                vec2 upperProbe = vec2(upperDirection) + upperClamped;
 
-                vec4 interpolated = texelFetch(previousCascadeTexture, ivec2(upperProbe), 0); //nearest filter
+                vec4 interpolated = texelFetch(previousCascadeTexture, ivec2(upperProbe), 0); 
                 return interpolated;
             }
 
             void main() {
-            
                 ivec2 coord = ivec2(gl_FragCoord.xy);
-                float angular = pow(2.0, cascadeIndex);
-                vec2 linear = vec2(probeSpacing * pow(2.0, cascadeIndex));
-                vec2 linearUpper = linear * 2.0;
-                                                                            
-                ivec2 directionSize = ivec2(cascadeResolution / angular);
-                vec2 probe = vec2(coord % directionSize);
-                vec2 direction2D = vec2(coord / directionSize);  
-                float direction1D = direction2D.x + (angular * direction2D.y);
+                
+                int twoPowI = 1 << cascadeIndex; 
+                int fourPowI = 1 << (cascadeIndex * 2); 
 
-                float offset = (interval * (1.0 - pow(4.0, cascadeIndex))) / (1.0 - 4.0);
-                float range = interval * pow(4.0, cascadeIndex);
+                int angularAxis = twoPowI;
+                int angular = angularAxis * angularAxis;
+                int upperAngular = angular * 4;
+
+                vec2 linear = vec2(probeSpacing * float(twoPowI));
+                vec2 upperLinear = linear * 2.0;
+                                                                            
+                ivec2 directionSize = cascadeResolution / angularAxis;
+                vec2 probe = vec2(coord % directionSize);
+                
+                ivec2 direction2D = coord / directionSize;  
+                int direction1D = direction2D.x + (angularAxis * direction2D.y);
+
+                //s_n = a_1 * (1 - r ^ n) / (1 - r) a_1 = interval, r = 4
+                float offset = (interval * (1.0 - float(fourPowI)) / -3.0);
+                float range = interval * float(fourPowI);
         
                 vec2 rayOrigin = (probe + 0.5) * linear;
-                float upperRayBase = direction1D * 4.0;
-                float raySpacing = TAU / (angular * angular * 4.0);
+                int upperRayBase = direction1D * 4;
+                float raySpacing = TAU / float(upperAngular);
 
                 vec2 probeC = probe + 0.5;
                 vec2 bilinearC = (probeC - 1.0) / 2.0;
@@ -262,21 +269,24 @@ export function radiancecascades_v3() {
                 probes[3] = probes[0] + vec2(1.0, 1.0);
 
                 vec4 color = vec4(0.0);
-                for(float i = 0.0; i < 4.0; i++) {
-                    float upperRayIndex = upperRayBase + i;
-                    float theta = (upperRayIndex + 0.5) * raySpacing;
+                
+                for(int i = 0; i < 4; i++) {
+                    int upperRayIndex = upperRayBase + i;
+                    float theta = float(upperRayIndex) * raySpacing;
                     vec2 dir = vec2(cos(theta), sin(theta));
 
-                    float thetaLower = (floor(upperRayIndex / 4.0) + 0.5) * (raySpacing * 4.0);
+                    float thetaLower = floor(float(upperRayIndex) / 4.0) * (raySpacing * 4.0);
                     vec2 lowerDir = vec2(cos(thetaLower), sin(thetaLower));
                     vec2 start = rayOrigin + (lowerDir * offset);
 
                     vec4 rayColors[4];
                     for(int j = 0; j < 4; j++) {
-                        vec2 originUpper = (probes[j] + 0.5) * linearUpper;
+                        vec2 originUpper = (probes[j] + 0.5) * upperLinear;
                         vec2 end = originUpper + dir * (offset + range);
                         rayColors[j] = raymarch(start, normalize(end - start), length(end - start));
-                        rayColors[j] = merge(rayColors[j], upperRayIndex, probes[j] + 0.5);
+                        if (rayColors[j].a == 0.0 && cascadeIndex != cascadeCount - 1) {
+                            rayColors[j] = merge(upperRayIndex, probes[j] + 0.5);
+                        }
                     }
                     
                     color += ((1.0 - ratio.x) * (1.0 - ratio.y) * rayColors[0] +
@@ -286,7 +296,7 @@ export function radiancecascades_v3() {
                 }
 
                 
-                if (cascadeIndex == 0.0) {
+                if (cascadeIndex == 0) {
                     if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier; 
                     color = vec4(LINEAR(color).rgb, 1.0);                                
                 }
