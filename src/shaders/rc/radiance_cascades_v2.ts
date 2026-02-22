@@ -3,29 +3,29 @@ import * as THREE from "three";
 //OLD tbp
 
 export function radiancecascades() {
-	return new THREE.ShaderMaterial({
-		uniforms: {
-			sceneTexture: { value: null },
-			distanceTexture: { value: null },
-			previousCascadeTexture: { value: null },
-			distanceResolution: { value: null },
-			cascadeResolution: { value: null },
-			cascadeCount: { value: null },
-			cascadeIndex: { value: null },
-			probeSpacing: { value: null },
-			interval: { value: null },
-			radianceModifier: { value: null },
-			fixEdges: { value: null },
-		},
-		glslVersion: THREE.GLSL3,
-		vertexShader: ` 
+    return new THREE.ShaderMaterial({
+        uniforms: {
+            sceneTexture: { value: null },
+            distanceTexture: { value: null },
+            previousCascadeTexture: { value: null },
+            distanceResolution: { value: null },
+            cascadeResolution: { value: null },
+            cascadeCount: { value: null },
+            cascadeIndex: { value: null },
+            probeSpacing: { value: null },
+            interval: { value: null },
+            radianceModifier: { value: null },
+            fixEdges: { value: null },
+        },
+        glslVersion: THREE.GLSL3,
+        vertexShader: ` 
             out vec2 vUv;
             void main() { 
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `,
-		fragmentShader: `
+        fragmentShader: `
             precision highp float;
             in vec2 vUv;
             uniform sampler2D sceneTexture;
@@ -143,5 +143,5 @@ export function radiancecascades() {
             }
 
         `,
-	});
+    });
 }

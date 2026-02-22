@@ -3,16 +3,16 @@ import * as THREE from "three";
 //Direct implementation of the equations given in:
 //https://en.wikipedia.org/wiki/Bilateral_filter
 export function bilateral() {
-	return new THREE.ShaderMaterial({
-		uniforms: {
-			inputTexture: { value: null },
-			resolution: { value: null },
-			sigma_d: { value: null },
-			sigma_r: { value: null },
-			radius: { value: null },
-		},
-		glslVersion: THREE.GLSL3,
-		vertexShader: `
+    return new THREE.ShaderMaterial({
+        uniforms: {
+            inputTexture: { value: null },
+            resolution: { value: null },
+            sigma_d: { value: null },
+            sigma_r: { value: null },
+            radius: { value: null },
+        },
+        glslVersion: THREE.GLSL3,
+        vertexShader: `
             out vec2 vUv;
             void main() {
                 vUv = uv;
@@ -20,7 +20,7 @@ export function bilateral() {
             }
         `,
 
-		fragmentShader: `
+        fragmentShader: `
             precision highp float;
             in vec2 vUv;
 
@@ -59,5 +59,5 @@ export function bilateral() {
                 fragColor = vec4(I_DT / I_DB, 1.0);
             }
         `,
-	});
+    });
 }

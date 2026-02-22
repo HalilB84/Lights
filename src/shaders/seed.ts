@@ -1,13 +1,13 @@
 import * as THREE from "three";
 
 export function seed() {
-	return new THREE.ShaderMaterial({
-		uniforms: {
-			inputTexture: { value: null },
-			resolution: { value: null },
-		},
-		glslVersion: THREE.GLSL3,
-		vertexShader: ` 
+    return new THREE.ShaderMaterial({
+        uniforms: {
+            inputTexture: { value: null },
+            resolution: { value: null },
+        },
+        glslVersion: THREE.GLSL3,
+        vertexShader: ` 
             out vec2 vUv;
             void main() { 
                 vUv = uv;
@@ -15,11 +15,10 @@ export function seed() {
             }
         `,
 
-		fragmentShader: `
+        fragmentShader: `
             precision highp float;
             in vec2 vUv;
             uniform sampler2D inputTexture;
-            uniform vec2 resolution;
             
             out vec4 fragColor;
 
@@ -28,7 +27,7 @@ export function seed() {
                 //to calculate the nearest seed in the jfa phase, we need to know the location of the seed in the input texture
                 //so we are storing the coordinates in a texture, this creates a nice looking gradient 
 
-                vec4 color = texture(inputTexture, vUv);
+                vec4 color = texelFetch(inputTexture, ivec2(gl_FragCoord.xy), 0);
         
                 if(color.a == 1.0) { //problem for troika
                     fragColor = vec4(gl_FragCoord.xy, 0.0, 1.0);
@@ -37,5 +36,5 @@ export function seed() {
                 }
             }
         `,
-	});
+    });
 }

@@ -1,26 +1,32 @@
 {
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "dev-host": "vite --host",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "deploy": "gh-pages -d dist",
-    "format": "prettier --write \"**/*.{ts,js,css,html}\""
-  },
-  "dependencies": {
-    "matter-js": "^0.20.0",
-    "stats-gl": "^3.6.0",
-    "three": "^0.181.0",
-    "troika-three-text": "^0.52.4"
-  },
-  "devDependencies": {
-    "@types/matter-js": "^0.20.2",
-    "@types/three": "^0.182.0",
-    "gh-pages": "^6.3.0",
-    "globals": "^17.0.0",
-    "prettier": "^3.6.2",
-    "typescript": "^5.9.3",
-    "vite": "^7.2.4"
-  }
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "dev-host": "vite --host",
+        "build": "tsc && vite build",
+        "preview": "vite preview",
+        "deploy": "gh-pages -d dist",
+        "format": "prettier --write ."
+    },
+    "prettier": {
+        "useTabs": false,
+        "tabWidth": 4,
+        "printWidth": 1000000,
+        "bracketSameLine": true
+    },
+    "dependencies": {
+        "matter-js": "^0.20.0",
+        "stats-gl": "^3.6.0",
+        "three": "^0.181.0",
+        "troika-three-text": "^0.52.4"
+    },
+    "devDependencies": {
+        "@types/matter-js": "^0.20.2",
+        "@types/three": "^0.182.0",
+        "gh-pages": "^6.3.0",
+        "globals": "^17.0.0",
+        "prettier": "^3.6.2",
+        "typescript": "^5.9.3",
+        "vite": "^7.2.4"
+    }
 }

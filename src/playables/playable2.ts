@@ -4,70 +4,70 @@ import * as THREE from "three";
 import { Playable } from "./playable";
 
 export class Playable2 extends Playable {
-	circles: { mesh: THREE.Mesh; meshOverlay: THREE.Mesh }[];
-	videoTexture: THREE.Texture | null;
+    circles: { mesh: THREE.Mesh; meshOverlay: THREE.Mesh }[];
+    videoTexture: THREE.Texture | null;
 
-	material: THREE.ShaderMaterial;
-	materialOverlay: THREE.ShaderMaterial;
+    material: THREE.ShaderMaterial;
+    materialOverlay: THREE.ShaderMaterial;
 
-	constructor(width: number, height: number, scaleOverlay: number) {
-		super(width, height, scaleOverlay);
+    constructor(width: number, height: number, scaleOverlay: number) {
+        super(width, height, scaleOverlay);
 
-		this.circles = [];
-		this.videoTexture = null;
-		this.createScene();
-	}
+        this.circles = [];
+        this.videoTexture = null;
+        this.createScene();
+    }
 
-	reset() {
-		this.dispose();
+    reset() {
+        this.dispose();
 
-		this.circles = [];
-		this.createScene();
-	}
+        this.circles = [];
+        this.createScene();
+    }
 
-	createScene() {
-		this.scene.clear();
-		this.sceneOverlay.clear();
+    createScene() {
+        this.scene.clear();
+        this.sceneOverlay.clear();
 
-		const numCircles = 10;
+        const numCircles = 10;
 
-		this.material = this.createShaderMaterial();
-		this.material.uniforms.resolution.value = [this.width, this.height];
+        this.material = this.createShaderMaterial();
+        this.material.uniforms.resolution.value = [this.width, this.height];
 
-		this.materialOverlay = this.createShaderMaterial();
-		this.materialOverlay.uniforms.resolution.value = [this.widthOverlay, this.heightOverlay];
+        this.materialOverlay = this.createShaderMaterial();
+        this.materialOverlay.uniforms.resolution.value = [this.widthOverlay, this.heightOverlay];
 
-		const geometry = new THREE.CircleGeometry(10, 16);
+        const geometry = new THREE.CircleGeometry(10, 16);
 
-		for (let i = 0; i < numCircles; i++) {
-			for (let j = 0; j < numCircles; j++) {
-				const mesh = new THREE.Mesh(geometry, this.material);
+        for (let i = 0; i < numCircles; i++) {
+            for (let j = 0; j < numCircles; j++) {
+                const mesh = new THREE.Mesh(geometry, this.material);
 
-				const centerX = (this.width / numCircles) * (j + 0.5) - this.width / 2;
-				const centerY = (this.height / numCircles) * (i + 0.5) - this.height / 2;
+                const centerX = (this.width / numCircles) * (j + 0.5) - this.width / 2;
+                const centerY = (this.height / numCircles) * (i + 0.5) - this.height / 2;
 
-				mesh.position.set(centerX, centerY, 0);
-				this.scene.add(mesh);
+                mesh.position.set(centerX, centerY, 0);
+                this.scene.add(mesh);
 
-				const meshOverlay = new THREE.Mesh(geometry, this.materialOverlay);
-				meshOverlay.position.set(centerX * this.scaleOverlay, centerY * this.scaleOverlay, 0);
-				meshOverlay.scale.set(this.scaleOverlay, this.scaleOverlay, 1);
-				this.sceneOverlay.add(meshOverlay);
+                const meshOverlay = new THREE.Mesh(geometry, this.materialOverlay);
+                meshOverlay.position.set(centerX * this.scaleOverlay, centerY * this.scaleOverlay, 0);
+                meshOverlay.scale.set(this.scaleOverlay, this.scaleOverlay, 1);
+                this.sceneOverlay.add(meshOverlay);
 
-				this.circles.push({ mesh, meshOverlay });
-			}
-		}
-	}
+                this.circles.push({ mesh, meshOverlay });
+            }
+        }
+    }
 
-	createShaderMaterial() {
-		return new THREE.ShaderMaterial({
-			uniforms: {
-				resolution: { value: null },
-				videoTexture: { value: null },
-				time: { value: 0.0 },
-			},
-			glslVersion: THREE.GLSL3,
-			vertexShader: `
+    createShaderMaterial() {
+        return new THREE.ShaderMaterial({
+            uniforms: {
+                resolution: { value: null },
+                videoTexture: { value: null },
+                time: { value: null },
+            },
+            glslVersion: THREE.GLSL3,
+            vertexShader: `
 				out vec3 vWorldPosition;
 							
 				void main() { 
@@ -75,7 +75,7 @@ export class Playable2 extends Playable {
 					gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 				}
 			`,
-			fragmentShader: `
+            fragmentShader: `
 				precision highp float;
 				in vec3 vWorldPosition;
 				uniform vec2 resolution;
@@ -90,17 +90,17 @@ export class Playable2 extends Playable {
 					fragColor = texture(videoTexture, uv);
 				}
 			`,
-		});
-	}
+        });
+    }
 
-	update(videoTexture: THREE.VideoTexture) {
-		this.material.uniforms.videoTexture.value = videoTexture;
-		this.materialOverlay.uniforms.videoTexture.value = videoTexture;
-	}
+    update(videoTexture: THREE.VideoTexture) {
+        this.material.uniforms.videoTexture.value = videoTexture;
+        this.materialOverlay.uniforms.videoTexture.value = videoTexture;
+    }
 
-	dispose() {
-		this.circles[0]?.mesh.geometry.dispose();
-		this.material?.dispose();
-		this.materialOverlay?.dispose();
-	}
+    dispose() {
+        this.circles[0]?.mesh.geometry.dispose();
+        this.material?.dispose();
+        this.materialOverlay?.dispose();
+    }
 }

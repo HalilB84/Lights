@@ -3,20 +3,20 @@ import * as THREE from "three";
 //superseded by radiance cascades
 
 export function ray() {
-	return new THREE.ShaderMaterial({
-		uniforms: {
-			sceneTexture: { value: null },
-			distanceTexture: { value: null },
-			blueNoise: { value: null },
-			rayCount: { value: null },
-			resolution: { value: null },
-			time: { value: null },
-			radianceModifier: { value: null },
-			fixEdges: { value: null },
-			srgbFix: { value: null },
-		},
-		glslVersion: THREE.GLSL3,
-		vertexShader: ` 
+    return new THREE.ShaderMaterial({
+        uniforms: {
+            sceneTexture: { value: null },
+            distanceTexture: { value: null },
+            blueNoise: { value: null },
+            rayCount: { value: null },
+            resolution: { value: null },
+            time: { value: null },
+            radianceModifier: { value: null },
+            fixEdges: { value: null },
+            srgbFix: { value: null },
+        },
+        glslVersion: THREE.GLSL3,
+        vertexShader: ` 
             out vec2 vUv;
             void main() { 
                 vUv = uv;
@@ -24,7 +24,7 @@ export function ray() {
             }
         `,
 
-		fragmentShader: `
+        fragmentShader: `
             precision highp float;
             in vec2 vUv;
             uniform sampler2D sceneTexture;
@@ -116,5 +116,5 @@ export function ray() {
                 fragColor = raymarch();
             }
         `,
-	});
+    });
 }

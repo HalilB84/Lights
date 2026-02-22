@@ -3,51 +3,51 @@ import { Text } from "troika-three-text";
 import { Playable } from "./playable";
 
 export class TextTroika extends Playable {
-	textscale: number;
-	currentText: string;
+    textscale: number;
+    currentText: string;
 
-	mesh: any;
-	meshOverlay: any;
+    mesh: any;
+    meshOverlay: any;
 
-	constructor(width: number, height: number, textscale: number, scaleOverlay: number) {
-		super(width, height, scaleOverlay);
+    constructor(width: number, height: number, textscale: number, scaleOverlay: number) {
+        super(width, height, scaleOverlay);
 
-		this.textscale = textscale;
+        this.textscale = textscale;
 
-		this.currentText = "The show is starting!"; //this.currentText = "àéîõüçñ ¿¡€ßæœΩ πφψД ЖЙלוֹ界 こんにちは안녕하세";
+        this.currentText = "The show is starting!"; //this.currentText = "àéîõüçñ ¿¡€ßæœΩ πφψД ЖЙלוֹ界 こんにちは안녕하세";
 
-		this.createScene();
-	}
+        this.createScene();
+    }
 
-	reset() {
-		this.update(this.currentText);
-	}
+    reset() {
+        this.update(this.currentText);
+    }
 
-	createScene() {
-		this.mesh = new Text();
-		this.meshOverlay = new Text();
+    createScene() {
+        this.mesh = new Text();
+        this.meshOverlay = new Text();
 
-		this.mesh.material = this.createMaterial();
-		this.meshOverlay.material = this.createMaterial();
+        this.mesh.material = this.createMaterial();
+        this.meshOverlay.material = this.createMaterial();
 
-		this.meshOverlay.fontSize = this.mesh.fontSize = 70;
-		this.meshOverlay.textAlign = this.mesh.textAlign = "center";
-		this.meshOverlay.anchorX = this.mesh.anchorX = "center";
-		this.meshOverlay.anchorY = this.mesh.anchorY = "middle";
-		this.meshOverlay.overflowWrap = this.mesh.overflowWrap = "break-word";
+        this.meshOverlay.fontSize = this.mesh.fontSize = 70;
+        this.meshOverlay.textAlign = this.mesh.textAlign = "center";
+        this.meshOverlay.anchorX = this.mesh.anchorX = "center";
+        this.meshOverlay.anchorY = this.mesh.anchorY = "middle";
+        this.meshOverlay.overflowWrap = this.mesh.overflowWrap = "break-word";
 
-		this.scene.add(this.mesh);
-		this.sceneOverlay.add(this.meshOverlay);
+        this.scene.add(this.mesh);
+        this.sceneOverlay.add(this.meshOverlay);
 
-		this.update(this.currentText);
-	}
+        this.update(this.currentText);
+    }
 
-	createMaterial() {
-		return new THREE.ShaderMaterial({
-			uniforms: {
-				time: { value: null },
-			},
-			vertexShader: ` 
+    createMaterial() {
+        return new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: null },
+            },
+            vertexShader: ` 
 			varying vec2 vUv;
 			varying float vIndex;
 			uniform float time;
@@ -71,7 +71,7 @@ export class TextTroika extends Playable {
 				//gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 			}
 		`,
-			fragmentShader: `
+            fragmentShader: `
 			precision highp float;
 			varying vec2 vUv;
 			varying float vIndex;
@@ -102,29 +102,29 @@ export class TextTroika extends Playable {
 				vec3 c2 = vec3(2.0, 1.0, 1.0);
 				vec3 c3 = vec3(0.00, 0.25, 0.25);
 
-				vec3 paletteColor = palette(r, c0, c1, c2, c3);
+				vec3 paletteColor = vec3(1.0, 0.5, 0.0);
 				gl_FragColor = vec4(paletteColor, 1.0);
 			}`,
-		});
-	}
+        });
+    }
 
-	update(text: string | null) {
-		if (text) {
-			this.currentText = text;
-			this.mesh.text = this.meshOverlay.text = this.currentText;
-			this.mesh.maxWidth = this.meshOverlay.maxWidth = this.width / this.textscale;
-			this.mesh.sync();
-			this.meshOverlay.sync();
-		}
+    update(text: string | null) {
+        if (text) {
+            this.currentText = text;
+            this.mesh.text = this.meshOverlay.text = this.currentText;
+            this.mesh.maxWidth = this.meshOverlay.maxWidth = this.width / this.textscale;
+            this.mesh.sync();
+            this.meshOverlay.sync();
+        }
 
-		this.mesh.scale.set(this.textscale, this.textscale, 1);
-		this.meshOverlay.scale.set(this.textscale * this.scaleOverlay, this.textscale * this.scaleOverlay, 1);
+        this.mesh.scale.set(this.textscale, this.textscale, 1);
+        this.meshOverlay.scale.set(this.textscale * this.scaleOverlay, this.textscale * this.scaleOverlay, 1);
 
-		this.mesh.material.uniforms.time.value = performance.now() * 0.001;
-		this.meshOverlay.material.uniforms.time.value = performance.now() * 0.001;
-	}
+        this.mesh.material.uniforms.time.value = performance.now() * 0.001;
+        this.meshOverlay.material.uniforms.time.value = performance.now() * 0.001;
+    }
 
-	dispose(): void {
-		//not needed?
-	}
+    dispose(): void {
+        //not needed?
+    }
 }

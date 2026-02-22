@@ -2,15 +2,15 @@ import * as THREE from "three";
 
 //https://en.wikipedia.org/wiki/Jump_flooding_algorithm
 export function jfa() {
-	return new THREE.ShaderMaterial({
-		uniforms: {
-			inputTexture: { value: null },
-			offset: { value: null },
-			resolution: { value: null },
-			isLast: { value: null },
-		},
-		glslVersion: THREE.GLSL3,
-		vertexShader: `
+    return new THREE.ShaderMaterial({
+        uniforms: {
+            inputTexture: { value: null },
+            offset: { value: null },
+            resolution: { value: null },
+            isLast: { value: null },
+        },
+        glslVersion: THREE.GLSL3,
+        vertexShader: `
             out vec2 vUv;
             
             void main() { 
@@ -19,7 +19,7 @@ export function jfa() {
             }
         `,
 
-		fragmentShader: `
+        fragmentShader: `
             precision highp float;
             in vec2 vUv;
             uniform sampler2D inputTexture;
@@ -70,5 +70,5 @@ export function jfa() {
 
             }
         `,
-	});
+    });
 }

@@ -4,27 +4,27 @@ import * as THREE from "three";
 //works, it looks exactly the same as the other one
 
 export function radiancecascades() {
-	return new THREE.ShaderMaterial({
-		uniforms: {
-			sceneTexture: { value: null },
-			distanceTexture: { value: null },
-			previousCascadeTexture: { value: null },
-			distanceResolution: { value: null },
-			cascadeResolution: { value: null },
-			cascadeCount: { value: null },
-			cascadeIndex: { value: null },
-			probeSpacing: { value: null },
-			interval: { value: null },
-			radianceModifier: { value: null },
-			fixEdges: { value: null },
-		},
-		glslVersion: THREE.GLSL3,
-		vertexShader: `
+    return new THREE.ShaderMaterial({
+        uniforms: {
+            sceneTexture: { value: null },
+            distanceTexture: { value: null },
+            previousCascadeTexture: { value: null },
+            distanceResolution: { value: null },
+            cascadeResolution: { value: null },
+            cascadeCount: { value: null },
+            cascadeIndex: { value: null },
+            probeSpacing: { value: null },
+            interval: { value: null },
+            radianceModifier: { value: null },
+            fixEdges: { value: null },
+        },
+        glslVersion: THREE.GLSL3,
+        vertexShader: `
             void main() { 
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `,
-		fragmentShader: `
+        fragmentShader: `
             precision highp float;
             
             uniform sampler2D sceneTexture;
@@ -147,7 +147,7 @@ export function radiancecascades() {
                 }
             }
         `,
-	});
+    });
 }
 
 /*

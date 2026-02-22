@@ -1,13 +1,12 @@
 ## Lights!
 
-
 This project is meant to be a light experiment running in your browser!
 
 ## Technical
 
 2D global illumination via Radiance Cascades. The current state of the code is a mix of [Jason's RC](https://jason.today/rc) article, [Yaazarai's RC](https://mini.gmshaders.com/p/radiance-cascades2) raticle, and the [Fundamentals of Radiance Cascades](https://m4xc.dev/articles/fundamental-rc/) article. On top of that there are multiple modes where you can play with light.
 
-RC related rendering happens at half the size of the base canvas using 2x/2x scaling/pre averaged with 4 rays per pixel. When Bilinear fix is on, 16 rays per pixel are cast that fixes the ringing artifact. To reduce pixelation objects are rendered in full res on top of their half res ones. To smooth out noise and artificats there is a bilateral filter pass at the end. Raymarching is accelerated with a DF produced with JFA. 
+RC related rendering happens at half the size of the base canvas using 2x/2x scaling/pre averaged with 4 rays per pixel. When Bilinear fix is on, 16 rays per pixel are cast that fixes the ringing artifact. To reduce pixelation objects are rendered in full res on top of their half res ones. To smooth out noise and artificats there is a bilateral filter pass at the end. Raymarching is accelerated with a DF produced with JFA.
 
 The wallpaper engine counterpart is of the program is on the lights-WE branch
 
@@ -31,7 +30,7 @@ Using naive ray marching + blue noise + bilateral filter:
 - ~~Figure out dpr shenanigans and proper scaling based on which platform the user is on~~
 - Look into holographic radiance cascades
 - ~~Switch to TypeScript as a learning experience because it looks way better~~ -> Convert to tailwind css as a learning experience
-- Hall of tiny problems that don't really matter but I can't live not knowing why: 1. Text edge problems troika 2.css select text not center positioning 3. how exactly ray marching resolves when it lands and gets pulled 4. colorspace
+- Hall of tiny problems that don't really matter but I can't live not knowing why: 1. Text edge problems troika 2. how exactly ray marching resolves when it lands and gets pulled 3. colorspace -> solved (https://discourse.threejs.org/t/updates-to-color-management-in-three-js-r152/50791)
 
 Planned Features:
 
@@ -40,6 +39,7 @@ Planned Features:
 - Many more cool things you can do with light
 
 ## License & Attribution
-Parts of this project are based on code from [Radiance Cascades](https://jason.today/rc) ([by  Jason McGhee](https://github.com/jasonjmcghee)), used under the MIT License.
+
+Parts of this project are based on code from [Radiance Cascades](https://jason.today/rc) ([by Jason McGhee](https://github.com/jasonjmcghee)), used under the MIT License.
 
 The Radiance Cascade implementation is based on [GMShaders-Radiance-Cascades](https://github.com/Yaazarai/GMShaders-Radiance-Cascades) ([by Yaazarai](https://github.com/Yaazarai))
