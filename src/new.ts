@@ -44,8 +44,8 @@ export class Visualization {
     raysW: THREE.WebGLRenderTarget[];
     raysH: THREE.WebGLRenderTarget[];
 
-    curCone: THREE.WebGLRenderTarget[]; //0 is w 1 is h
-    prevCone: THREE.WebGLRenderTarget[];
+    conesW: THREE.WebGLRenderTarget[];
+    conesH: THREE.WebGLRenderTarget[];
 
     frustums: THREE.WebGLRenderTarget[];
 
@@ -113,9 +113,11 @@ export class Visualization {
         this.width = Math.floor(this.canvas.clientWidth * this.dpr);
         this.height = Math.floor(this.canvas.clientHeight * this.dpr);
 
-        //this needs to be adjustable
-        this.fixWidth = 1024;
-        this.fixHeight = 512;
+        //this needs to be adjustable, has to be even
+        this.fixWidth = 874;
+        this.fixHeight = Math.floor(this.fixWidth / (this.width / this.height));
+        if(this.fixHeight % 2 === 1) this.fixHeight += 1;
+
         this.ccWidth = Math.ceil(Math.log2(this.fixWidth));
         this.ccHeight = Math.ceil(Math.log2(this.fixHeight));
         this.opt = 2;
@@ -142,27 +144,41 @@ export class Visualization {
 
         for (let i = 0; i < this.ccWidth; ++i) {
             const height = this.fixHeight / this.opt;
-            const width = this.fixWidth / Math.pow(2, i) * (Math.pow(2, i) + 1);
+            const width = Math.ceil(this.fixWidth / Math.pow(2, i)) * Math.pow(2, i + 1);
+
             const typ = i === 0 ? linearRT : nearestRT;
             this.raysW.push(new THREE.WebGLRenderTarget(width, height, typ));
         }
 
         for (let i = 0; i < this.ccHeight; ++i) {
             const height = this.fixWidth / this.opt;
-            const width = this.fixHeight / Math.pow(2, i) * (Math.pow(2, i) + 1);
+            const width = Math.ceil(this.fixHeight / Math.pow(2, i)) * Math.pow(2, i + 1);
+
             const typ = i === 0 ? linearRT : nearestRT;
             this.raysH.push(new THREE.WebGLRenderTarget(width, height, typ));
         }
 
-        this.prevCone = [];
-        this.curCone = [];
+        this.conesW = [];
+        this.conesH = [];
 
         //ideally this should be linear for c1 only when c0 is merging but since textures are(should) be sampled in the center of its corresponding pixel c1..cn, i think its fine
-        this.prevCone[0] = new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight / this.opt, linearRT);
-        this.curCone[0] = this.prevCone[0].clone();
+        for(let i = 0; i < this.ccWidth; ++i) {
+            const height = this.fixHeight / this.opt;
+            const width = Math.ceil(this.fixWidth / Math.pow(2, i)) * Math.pow(2, i);
+            const typ = i === 1 ? linearRT : nearestRT;
 
-        this.prevCone[1] = new THREE.WebGLRenderTarget(this.fixHeight, this.fixWidth / this.opt, linearRT);
-        this.curCone[1] = this.prevCone[1].clone();
+            this.conesW.push(new THREE.WebGLRenderTarget(width, height, typ));
+
+        }
+
+         for(let i = 0; i < this.ccHeight; ++i) {
+            const height = this.fixWidth / this.opt;
+            const width = Math.ceil(this.fixHeight / Math.pow(2, i)) * Math.pow(2, i);
+            const typ = i === 1 ? linearRT : nearestRT;
+
+            this.conesH.push(new THREE.WebGLRenderTarget(width, height, typ));
+
+        }
 
         this.frustums = [];
         for (let i = 0; i < 4; i++) {
@@ -195,7 +211,7 @@ export class Visualization {
     }
 
     resize() {
-        this.calculateBounds();
+        //this.calculateBounds();
 
         //https://github.com/mrdoob/three.js/blob/dev/src/core/RenderTarget.js setSize disposes for us! love that
         this.renderer.setSize(this.width, this.height, false);
@@ -219,31 +235,30 @@ export class Visualization {
 
         this.renderer.setRenderTarget(this.modelRT);
         this.renderer.clear();
-        this.renderer.render(this.show.scene, this.show.camera);
+        this.renderer.render(this.video.scene, this.video.camera);
 
         for (let i = 0; i < 4; ++i) {
 
-            let prev;
-            let cur;
+            let num;
+            let cones;
             let rays;
             let fw;
             let fh;
 
             if (i % 2 === 0) {
-                prev = this.prevCone[0];
-                cur = this.curCone[0];
+                num = this.ccWidth;
+                cones = this.conesW;
                 rays = this.raysW;
                 fw = this.fixWidth;
                 fh = this.fixHeight;
             }
 
             else {
-                prev = this.prevCone[1];
-                cur = this.curCone[1];
+                num = this.ccHeight;
+                cones = this.conesH;
                 rays = this.raysH;
                 fw = this.fixHeight;
                 fh = this.fixWidth;
-
             }
 
             //trace pass c0 only or c0...c2 as per paper
@@ -269,7 +284,7 @@ export class Visualization {
             //extension pass
             this.mesh.material = this.extendShader;
 
-            for (let j = 1; j < (i % 2 === 0 ? this.ccWidth : this.ccHeight); ++j) {
+            for (let j = 1; j < num; ++j) {
                 this.extendShader.uniforms.cascade.value = j;
                 this.extendShader.uniforms.frustum.value = i;
                 this.extendShader.uniforms.rays.value = rays[j - 1].texture;
@@ -285,12 +300,12 @@ export class Visualization {
             //cone pass
             this.mesh.material = this.coneShader;
 
-            for (let j = (i % 2 === 0 ? this.ccWidth : this.ccHeight) - 1; j >= 0; --j) {
-                this.coneShader.uniforms.size.value = [cur.width, cur.height];
+            for (let j = num - 1; j >= 0; --j) {
+                this.coneShader.uniforms.size.value = [cones[(j + 1) % num].width, cones[(j + 1) % num].height];
                 this.coneShader.uniforms.cascade.value = j;
-                this.coneShader.uniforms.count.value = (i % 2 === 0 ? this.ccWidth : this.ccHeight);
+                this.coneShader.uniforms.count.value = num;
                 this.coneShader.uniforms.frustum.value = i;
-                this.coneShader.uniforms.prev.value = prev.texture;
+                this.coneShader.uniforms.prev.value = cones[(j + 1) % num].texture;
                 this.coneShader.uniforms.rays.value = rays[j].texture;
                 this.coneShader.uniforms.rsize.value = [rays[j].width, rays[j].height];
                 this.coneShader.uniforms.opt.value = this.opt;
@@ -302,16 +317,15 @@ export class Visualization {
                 }
 
                 else {
-                    this.renderer.setRenderTarget(cur);
+                    this.renderer.setRenderTarget(cones[j]);
                     this.renderer.render(this.scene, this.camera);
                 }
-
-                [cur, prev] = [prev, cur];
 
             }
         }
 
         this.mesh.material = this.sumShader;
+        this.sumShader.uniforms.multiplier.value = this.state.settings.radiance;
         this.sumShader.uniforms.size.value = [this.fixWidth, this.fixHeight];
         this.sumShader.uniforms.f1.value = this.frustums[0].texture;
         this.sumShader.uniforms.f2.value = this.frustums[1].texture;
@@ -326,9 +340,9 @@ export class Visualization {
 
         const aspect = this.width / this.height;
         if (aspect >= 2.0) {
-            this.mesh.scale.set(1 / aspect * 2, 1, 1);
+            //this.mesh.scale.set(1 / aspect * 2, 1, 1);
         } else {
-            this.mesh.scale.set(1, aspect / 2, 1);
+            //this.mesh.scale.set(1, aspect / 2, 1);
         }
 
         //this.displayMaterial.map = this.frustums[2].texture;
@@ -337,10 +351,10 @@ export class Visualization {
         this.renderer.clear();
         this.renderer.render(this.scene, this.camera);
 
-        this.renderer.render(this.show.sceneOverlay, this.show.cameraOverlay);
+        this.renderer.render(this.video.sceneOverlay, this.video.cameraOverlay);
 
 
-        this.mesh.scale.set(1, 1, 1);
+        //this.mesh.scale.set(1, 1, 1);
 
         this.frameCount = this.frameCount + 1; // % 2;
 
