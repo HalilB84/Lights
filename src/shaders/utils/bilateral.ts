@@ -30,19 +30,19 @@ export function bilateral() {
             uniform float sigma_d;
             uniform float sigma_r;
             uniform float radius;
-            
+
             out vec4 fragColor;
 
             void main() {
                 vec2 ij = gl_FragCoord.xy;
                 vec3 I_ij = texture(inputTexture, vUv).rgb;
-                
+
                 vec3 I_DT = vec3(0.0);
                 float I_DB = 0.0;
 
                 for(float i = -radius; i <= radius; i++) {
                     for(float j = -radius; j  <= radius; j++) {
-                       
+
                         vec2 kl = ij + vec2(i, j);
                         vec3 I_kl = texture(inputTexture, kl / resolution).rgb;
 
@@ -52,10 +52,10 @@ export function bilateral() {
                         float w = exp( -(space_diff / (2.0 * sigma_d * sigma_d)) - (image_diff / (2.0 * sigma_r * sigma_r)) );
 
                         I_DT += w * I_kl;
-                        I_DB += w; 
+                        I_DB += w;
                     }
                 }
-                
+
                 fragColor = vec4(I_DT / I_DB, 1.0);
             }
         `,

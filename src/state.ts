@@ -2,6 +2,7 @@ import { Visualization } from "./visualization.ts";
 import { UI } from "./ui.ts";
 import * as THREE from "three";
 import Stats from "stats-gl";
+import { Visualization as nw} from "./new.ts";
 
 //Current architecture (I am not even sure this is how you are supposed to do it)
 
@@ -42,7 +43,8 @@ export class State {
     };
 
     ui: UI;
-    visualization: Visualization;
+    //visualization: Visualization;
+    visualization: nw;
     stats: Stats;
     audioUpdateFunction = () => {};
 
@@ -93,7 +95,8 @@ export class State {
         document.body.appendChild(this.stats.dom);
 
         this.ui = new UI(this);
-        this.visualization = new Visualization(this);
+        //this.visualization = new Visualization(this);
+        this.visualization = new nw(this);
     }
 
     setTextScale(value: number) {

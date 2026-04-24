@@ -16,9 +16,9 @@ export function ray() {
             srgbFix: { value: null },
         },
         glslVersion: THREE.GLSL3,
-        vertexShader: ` 
+        vertexShader: `
             out vec2 vUv;
-            void main() { 
+            void main() {
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
@@ -36,7 +36,7 @@ export function ray() {
             uniform float radianceModifier;
             uniform bool fixEdges;
             uniform bool srgbFix;
-            
+
             out vec4 fragColor;
 
             #define TAU 6.283185
@@ -57,17 +57,17 @@ export function ray() {
 
                 noise = fract(noise + time * PHI);
 
-                return noise; 
+                return noise;
             }
 
             vec4 raymarch(){
                 vec4 light = texture(sceneTexture, vUv);
-                
+
                 if(light.a != 0.0 && !fixEdges) {
                     return vec4(light.rgb, 1.0);
                 }
 
-                float oneOverRayCount = 1.0 / float(rayCount); 
+                float oneOverRayCount = 1.0 / float(rayCount);
                 float tauOverRayCount = TAU * oneOverRayCount;
 
                 float noise = blueNoiseSample(gl_FragCoord.xy);
@@ -76,7 +76,7 @@ export function ray() {
 
                 vec4 radiance = vec4(0.0); //total light that will be accumulated
                 //calculate and shoot rayCount rays that are equidstant from each other, expensive
-                
+
                 bool useBruteForce = light.a != 0.0 && fixEdges; //if we are at a seed location use fixed stop size so when the full res element is overlaid the blocky edges smooth out
                 int maxSteps = useBruteForce ? 40 : 50;
                 float fixedStepSize = 1.0;
@@ -87,18 +87,18 @@ export function ray() {
 
                     vec2 sampleUv = vUv; //start at the current uv coordinate
                     vec4 radDelta = vec4(0.0);
-                    
-                    for (int step = 1; step < maxSteps; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else 
+
+                    for (int step = 1; step < maxSteps; step++) { // one funny observation is that pixels that are close to the seed will need more steps to accumulate radiance, this is because since the dist is so small, the rays looking at the other direction (the direction not immediately looking at the seed) will need more steps to reach something else
                         float dist = useBruteForce ? fixedStepSize : texture(distanceTexture, sampleUv).r;
-                        
+
                         sampleUv += (rayDirection * dist) / resolution;
-                        
+
                         //sampleUv += rayDirection * dist; //move the pixel in the direction of the ray, dist is the distance to the nearest seed so we now we can at least move that much
-                        //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes 
-                
+                        //also sampleUV wont travel from center to center, nearestfilter will get the color of the closest pixel, but sampleUV might be somewhere else in the pixel, not a big deal tho, at most we will need more stpes
+
                         if (outOfBounds(sampleUv)) break; // end if we know we arent getting anywhere
-                        
-                        if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) { 
+
+                        if (dist == 0.0 || (useBruteForce && texture(distanceTexture, sampleUv).r == 0.0)) {
                             // at this point we now we hit a seed, so get its color and add it to the radiance
                             vec4 sampleColor = vec4(SRGB(texture(sceneTexture, sampleUv)).rgb, 1.0);
                             radDelta += sampleColor;
@@ -108,8 +108,8 @@ export function ray() {
 
                     radiance += radDelta;
                 }
-                
-                return vec4(LINEAR((radiance * oneOverRayCount * radianceModifier)).rgb, 0.0); //finally we return the color of the pixel by averaging the light 
+
+                return vec4(LINEAR((radiance * oneOverRayCount * radianceModifier)).rgb, 0.0); //finally we return the color of the pixel by averaging the light
             }
 
             void main() {

@@ -13,8 +13,8 @@ import * as THREE from "three";
 //explain why is clamping +- 1 (or 0.5) units still failing on some resolutions -> IT WAS FLOATING POINT ERRORS, fixed
 
 //RC TODOS:
-//1. I should probably learn why sRGB is used
-//2. move on to HRC
+//1. I should probably learn why sRGB is used -> Done
+//2. move on to HRC -> Done
 
 export function radiancecascades_v2() {
     return new THREE.ShaderMaterial({
@@ -33,9 +33,9 @@ export function radiancecascades_v2() {
             srgbFix: { value: null },
         },
         glslVersion: THREE.GLSL3,
-        vertexShader: ` 
+        vertexShader: `
             out vec2 vUv;
-            void main() { 
+            void main() {
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
@@ -55,7 +55,7 @@ export function radiancecascades_v2() {
             uniform float radianceModifier;
             uniform bool fixEdges;
             uniform bool srgbFix;
-            
+
             out vec4 fragColor;
 
             #define TAU 6.283185
@@ -67,18 +67,18 @@ export function radiancecascades_v2() {
 
                 for(float i = 0.0; i < interval; i++) {
                     float dist = texelFetch(distanceTexture, ivec2(ray), 0).r;
-                    
+
                     if (dist == 0.0 && i == 0.0 && fixEdges) {
                         dist = 1.0;
                     }
-                    
+
                     traveled += dist;
                     ray += dir * dist;
 
                     if (traveled >= interval || ray.x < 0.0 || ray.y < 0.0 || ray.x >= float(distanceResolution.x) || ray.y >= float(distanceResolution.y)) break;
-                    if (dist == 0.0) return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0)), 1.0); 
+                    if (dist == 0.0) return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0)), 1.0);
                 }
-                
+
                 return vec4(0.0, 0.0, 0.0, 0.0);
             }
 
@@ -88,19 +88,19 @@ export function radiancecascades_v2() {
 
                 ivec2 upperDirection = ivec2(upperRayIndex % upperAAxis, upperRayIndex / upperAAxis) * upperSize;
 
-                vec2 upperClamped = clamp(probeLocation, vec2(0.5), vec2(upperSize) - 0.5); 
+                vec2 upperClamped = clamp(probeLocation, vec2(0.5), vec2(upperSize) - 0.5);
 
                 vec2 upperProbe = vec2(upperDirection) + upperClamped;
-                
-                vec4 interpolated = texture(previousCascadeTexture, upperProbe / vec2(cascadeResolution)); 
+
+                vec4 interpolated = texture(previousCascadeTexture, upperProbe / vec2(cascadeResolution));
                 return interpolated;
             }
 
-            void main() {        
+            void main() {
                 ivec2 coord = ivec2(gl_FragCoord.xy);
 
-                int twoPowI = 1 << cascadeIndex; 
-                int fourPowI = 1 << (cascadeIndex * 2); 
+                int twoPowI = 1 << cascadeIndex;
+                int fourPowI = 1 << (cascadeIndex * 2);
 
                 int angularAxis = twoPowI;
                 int angular = angularAxis * angularAxis;
@@ -108,17 +108,17 @@ export function radiancecascades_v2() {
 
                 vec2 linear = vec2(probeSpacing * float(twoPowI));
                 vec2 upperLinear = linear * 2.0;
-                                                                            
+
                 ivec2 directionSize = cascadeResolution / angularAxis;
                 vec2 probe = vec2(coord % directionSize);
 
-                ivec2 direction2D = coord / directionSize;               
+                ivec2 direction2D = coord / directionSize;
                 int direction1D = direction2D.x + (angularAxis * direction2D.y);
 
                 //s_n = a_1 * (1 - r ^ n) / (1 - r) a_1 = interval, r = 4
                 float offset = (interval * (1.0 - float(fourPowI)) / -3.0);
                 float range = interval * float(fourPowI) + length(upperLinear);
-        
+
                 vec2 rayOrigin = (probe + 0.5) * linear;
                 int upperRayBase = direction1D * 4;
                 float raySpacing = TAU / float(upperAngular);
@@ -129,7 +129,7 @@ export function radiancecascades_v2() {
                     int upperRayIndex = upperRayBase + i;
                     float theta = float(upperRayIndex) * raySpacing;
                     vec2 dir = vec2(cos(theta), sin(theta));
-                    
+
                     vec2 start = rayOrigin + (dir * offset);
                     vec4 hit = raymarch(start, dir, range);
 
@@ -140,8 +140,8 @@ export function radiancecascades_v2() {
                 }
 
                 if (cascadeIndex == 0) {
-                    if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier; 
-                    color = vec4(LINEAR(color).rgb, 1.0);    
+                    if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier;
+                    color = vec4(LINEAR(color).rgb, 1.0);
                 }
 
                 fragColor = color;
@@ -168,9 +168,9 @@ export function radiancecascades_v3() {
             srgbFix: { value: null },
         },
         glslVersion: THREE.GLSL3,
-        vertexShader: ` 
+        vertexShader: `
             out vec2 vUv;
-            void main() { 
+            void main() {
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
@@ -190,7 +190,7 @@ export function radiancecascades_v3() {
             uniform float radianceModifier;
             uniform bool fixEdges;
             uniform bool srgbFix;
-            
+
             out vec4 fragColor;
 
             #define TAU 6.283185
@@ -202,18 +202,18 @@ export function radiancecascades_v3() {
 
                 for(float i = 0.0; i < interval; i++) {
                     float dist = texelFetch(distanceTexture, ivec2(ray), 0).r;
-                    
+
                     if (dist == 0.0 && i == 0.0 && fixEdges) {
                         dist = 1.0;
                     }
-                    
+
                     traveled += dist;
                     ray += dir * dist;
 
                     if (traveled >= interval || ray.x < 0.0 || ray.y < 0.0 || ray.x >= float(distanceResolution.x) || ray.y >= float(distanceResolution.y)) break;
                     if (dist == 0.0) return vec4(SRGB(texelFetch(sceneTexture, ivec2(ray), 0)), 1.0);
                 }
-                
+
                 return vec4(0.0, 0.0, 0.0, 0.0);
             }
 
@@ -227,15 +227,15 @@ export function radiancecascades_v3() {
 
                 vec2 upperProbe = vec2(upperDirection) + upperClamped;
 
-                vec4 interpolated = texelFetch(previousCascadeTexture, ivec2(upperProbe), 0); 
+                vec4 interpolated = texelFetch(previousCascadeTexture, ivec2(upperProbe), 0);
                 return interpolated;
             }
 
             void main() {
                 ivec2 coord = ivec2(gl_FragCoord.xy);
-                
-                int twoPowI = 1 << cascadeIndex; 
-                int fourPowI = 1 << (cascadeIndex * 2); 
+
+                int twoPowI = 1 << cascadeIndex;
+                int fourPowI = 1 << (cascadeIndex * 2);
 
                 int angularAxis = twoPowI;
                 int angular = angularAxis * angularAxis;
@@ -243,17 +243,17 @@ export function radiancecascades_v3() {
 
                 vec2 linear = vec2(probeSpacing * float(twoPowI));
                 vec2 upperLinear = linear * 2.0;
-                                                                            
+
                 ivec2 directionSize = cascadeResolution / angularAxis;
                 vec2 probe = vec2(coord % directionSize);
-                
-                ivec2 direction2D = coord / directionSize;  
+
+                ivec2 direction2D = coord / directionSize;
                 int direction1D = direction2D.x + (angularAxis * direction2D.y);
 
                 //s_n = a_1 * (1 - r ^ n) / (1 - r) a_1 = interval, r = 4
                 float offset = (interval * (1.0 - float(fourPowI)) / -3.0);
                 float range = interval * float(fourPowI);
-        
+
                 vec2 rayOrigin = (probe + 0.5) * linear;
                 int upperRayBase = direction1D * 4;
                 float raySpacing = TAU / float(upperAngular);
@@ -269,7 +269,7 @@ export function radiancecascades_v3() {
                 probes[3] = probes[0] + vec2(1.0, 1.0);
 
                 vec4 color = vec4(0.0);
-                
+
                 for(int i = 0; i < 4; i++) {
                     int upperRayIndex = upperRayBase + i;
                     float theta = float(upperRayIndex) * raySpacing;
@@ -288,17 +288,17 @@ export function radiancecascades_v3() {
                             rayColors[j] = merge(upperRayIndex, probes[j] + 0.5);
                         }
                     }
-                    
+
                     color += ((1.0 - ratio.x) * (1.0 - ratio.y) * rayColors[0] +
                              ratio.x * (1.0 - ratio.y) * rayColors[1] +
                              (1.0 - ratio.x) * ratio.y * rayColors[2] +
                              ratio.x * ratio.y * rayColors[3]) * 0.25;
                 }
 
-                
+
                 if (cascadeIndex == 0) {
-                    if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier; 
-                    color = vec4(LINEAR(color).rgb, 1.0);                                
+                    if(texture(sceneTexture, vUv).a != 1.0) color.rgb *= radianceModifier;
+                    color = vec4(LINEAR(color).rgb, 1.0);
                 }
 
                 fragColor = color;

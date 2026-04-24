@@ -47,64 +47,64 @@ export class TextTroika extends Playable {
             uniforms: {
                 time: { value: null },
             },
-            vertexShader: ` 
-			varying vec2 vUv;
-			varying float vIndex;
-			uniform float time;
-			
-			void main() { 
-				vUv = uv;
-				vIndex = aTroikaGlyphBounds.x;
-				vec4 mvPosition = vec4(position, 1.0);
+            vertexShader: `
+            varying vec2 vUv;
+            varying float vIndex;
+            uniform float time;
 
-				float frequency1 = 0.035;
-				float amplitude1 = 20.0;
-				float frequency2 = 0.025;
-				float amplitude2 = 20.0;
+            void main() {
+                vUv = uv;
+                vIndex = aTroikaGlyphBounds.x;
+                vec4 mvPosition = vec4(position, 1.0);
 
-				float offset = sin(aTroikaGlyphBounds.x * 0.005 + time * 1.5) * amplitude2;
-				mvPosition.x += offset;
+                float frequency1 = 0.035;
+                float amplitude1 = 20.0;
+                float frequency2 = 0.025;
+                float amplitude2 = 20.0;
 
-				mvPosition = modelViewMatrix * mvPosition;
-				gl_Position = projectionMatrix * mvPosition;
+                float offset = sin(aTroikaGlyphBounds.x * 0.005 + time * 1.5) * amplitude2;
+                mvPosition.x += offset;
 
-				//gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-			}
-		`,
+                mvPosition = modelViewMatrix * mvPosition;
+                gl_Position = projectionMatrix * mvPosition;
+
+                //gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
             fragmentShader: `
-			precision highp float;
-			varying vec2 vUv;
-			varying float vIndex;
-			uniform float time;
-			
-			//https://iquilezles.org/articles/palettes/
-			vec3 palette(in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d) {
-				return a + b*cos(6.28318*(c*t+d));
-			}
-			
-			void main() {
-				vec2 p = vUv * 2.0;
+            precision highp float;
+            varying vec2 vUv;
+            varying float vIndex;
+            uniform float time;
 
-				for(int i = 1; i < 10; i++) {
-					p.x += 0.4 / float(i) * sin(float(i) * 3.0 * p.y + time * 1.0 + vIndex);
-					p.y += 0.4 / float(i) * cos(float(i) * 3.0 * p.x + time * 1.0 + vIndex);
-				}
+            //https://iquilezles.org/articles/palettes/
+            vec3 palette(in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d) {
+                return a + b*cos(6.28318*(c*t+d));
+            }
 
-				float r = cos(p.x + p.y + 1.0 + time) * 0.5 + 0.5;
-				
-				//0.8, 0.5, 0.4		0.2, 0.4, 0.2	2.0, 1.0, 1.0	0.00, 0.25, 0.25
-				//0.5, 0.5, 0.5		0.5, 0.5, 0.5	1.0, 1.0, 1.0	0.30, 0.20, 0.20
-				//0.5, 0.5, 0.5		0.5, 0.5, 0.5	1.0, 0.7, 0.4	0.00, 0.15, 0.20
-				//0.5, 0.5, 0.5		0.5, 0.5, 0.5	1.0, 1.0, 1.0	0.00, 0.10, 0.20	
+            void main() {
+                vec2 p = vUv * 2.0;
 
-				vec3 c0 = vec3(0.8, 0.5, 0.4);
-				vec3 c1 = vec3(0.2, 0.4, 0.2);
-				vec3 c2 = vec3(2.0, 1.0, 1.0);
-				vec3 c3 = vec3(0.00, 0.25, 0.25);
+                for(int i = 1; i < 10; i++) {
+                    p.x += 0.4 / float(i) * sin(float(i) * 3.0 * p.y + time * 1.0 + vIndex);
+                    p.y += 0.4 / float(i) * cos(float(i) * 3.0 * p.x + time * 1.0 + vIndex);
+                }
 
-				vec3 paletteColor = vec3(1.0, 0.5, 0.0);
-				gl_FragColor = vec4(paletteColor, 1.0);
-			}`,
+                float r = cos(p.x + p.y + 1.0 + time) * 0.5 + 0.5;
+
+                //0.8, 0.5, 0.4        0.2, 0.4, 0.2    2.0, 1.0, 1.0    0.00, 0.25, 0.25
+                //0.5, 0.5, 0.5        0.5, 0.5, 0.5    1.0, 1.0, 1.0    0.30, 0.20, 0.20
+                //0.5, 0.5, 0.5        0.5, 0.5, 0.5    1.0, 0.7, 0.4    0.00, 0.15, 0.20
+                //0.5, 0.5, 0.5        0.5, 0.5, 0.5    1.0, 1.0, 1.0    0.00, 0.10, 0.20
+
+                vec3 c0 = vec3(0.5, 0.5, 0.5);
+                vec3 c1 = vec3(0.5, 0.5, 0.5);
+                vec3 c2 = vec3(1.0, 1.0, 1.0);
+                vec3 c3 = vec3(0.00, 0.10, 0.20);
+
+                vec3 paletteColor = palette(r, c0, c1, c2, c3);
+                gl_FragColor = vec4(paletteColor, 1.0);
+            }`,
         });
     }
 
@@ -118,7 +118,7 @@ export class TextTroika extends Playable {
         }
 
         this.mesh.scale.set(this.textscale, this.textscale, 1);
-        this.meshOverlay.scale.set(this.textscale * this.scaleOverlay, this.textscale * this.scaleOverlay, 1);
+        this.meshOverlay.scale.set(this.textscale * this.scaleOverlay / 1, this.textscale * this.scaleOverlay / 1.2, 1);
 
         this.mesh.material.uniforms.time.value = performance.now() * 0.001;
         this.meshOverlay.material.uniforms.time.value = performance.now() * 0.001;

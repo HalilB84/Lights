@@ -16,6 +16,7 @@ export abstract class Playable {
         this.width = width;
         this.height = height;
 
+
         this.widthOverlay = width * scaleOverlay;
         this.heightOverlay = height * scaleOverlay;
         this.scaleOverlay = scaleOverlay;

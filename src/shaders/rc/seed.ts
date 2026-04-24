@@ -7,9 +7,9 @@ export function seed() {
             resolution: { value: null },
         },
         glslVersion: THREE.GLSL3,
-        vertexShader: ` 
+        vertexShader: `
             out vec2 vUv;
-            void main() { 
+            void main() {
                 vUv = uv;
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
@@ -19,16 +19,22 @@ export function seed() {
             precision highp float;
             in vec2 vUv;
             uniform sampler2D inputTexture;
-            
+            uniform vec2 resolution;
+
             out vec4 fragColor;
 
             void main() {
                 //this is the shader that converts the input texture to a seed texture
                 //to calculate the nearest seed in the jfa phase, we need to know the location of the seed in the input texture
-                //so we are storing the coordinates in a texture, this creates a nice looking gradient 
+                //so we are storing the coordinates in a texture, this creates a nice looking gradient
+
+                /*if(vUv * resolution == gl_FragCoord.xy) {
+                    fragColor = vec4(1.0);
+                    return;
+                }*/
 
                 vec4 color = texelFetch(inputTexture, ivec2(gl_FragCoord.xy), 0);
-        
+
                 if(color.a == 1.0) { //problem for troika
                     fragColor = vec4(gl_FragCoord.xy, 0.0, 1.0);
                 } else {

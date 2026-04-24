@@ -8,7 +8,9 @@ import { Playable } from "./playable";
 
 //https://brm.io/matter-js/docs/classes/Engine.html
 export class Playable1 extends Playable {
-    circles: { body: Matter.Body; mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>; meshOverlay: THREE.Mesh }[];
+    circles: { body: Matter.Body, size: number }[];
+    mesh: THREE.InstancedMesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+    meshOverlay: THREE.InstancedMesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
 
     walls: Matter.Body[];
     engine: Matter.Engine;
@@ -76,28 +78,45 @@ export class Playable1 extends Playable {
         this.sceneOverlay.clear();
 
         //size are in pixels because camera size maps to texture size and prettier is kiilling this
-        const geometries = [new THREE.CircleGeometry(10, 32), new THREE.CircleGeometry(17, 32), new THREE.CircleGeometry(21, 32), new THREE.CircleGeometry(25, 32)];
+        const geometries = [new THREE.CircleGeometry(3, 32), new THREE.CircleGeometry(3, 32), new THREE.CircleGeometry(3, 32), new THREE.CircleGeometry(2, 32)];
 
         const materials = [new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(this.palettes[this.paletteIndex][0][0], this.palettes[this.paletteIndex][0][1], this.palettes[this.paletteIndex][0][2]) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(this.palettes[this.paletteIndex][1][0], this.palettes[this.paletteIndex][1][1], this.palettes[this.paletteIndex][1][2]) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(this.palettes[this.paletteIndex][2][0], this.palettes[this.paletteIndex][2][1], this.palettes[this.paletteIndex][2][2]) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(this.palettes[this.paletteIndex][3][0], this.palettes[this.paletteIndex][3][1], this.palettes[this.paletteIndex][3][2]) })];
         //const materials  = [new THREE.MeshBasicMaterial({color: new THREE.Color().setRGB(1.0, 0.5, 0, THREE.SRGBColorSpace)})];
-        for (let i = 0; i < 65; i++) {
-            const geom = geometries[Math.floor(Math.random() * geometries.length)];
-            const mat = materials[Math.floor(i % materials.length)];
 
-            const mesh = new THREE.Mesh(geom, mat);
-            this.scene.add(mesh);
+        this.mesh = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 8), new THREE.MeshBasicMaterial(), 100);
 
-            const meshOverlay = new THREE.Mesh(geom, mat);
-            this.sceneOverlay.add(meshOverlay);
+        const pos = new THREE.Object3D();
+        const color = new THREE.Color();
+
+        for (let i = 0; i < this.mesh.count; i++) {
+            //const geom = geometries[Math.floor(Math.random() * geometries.length)];
+            //const mat = materials[Math.floor(i % materials.length)];
+
+            //const mesh = new THREE.Mesh(geom, mat);
+            //this.scene.add(mesh);
+
+            //const meshOverlay = new THREE.Mesh(geom, mat);
+            //this.sceneOverlay.add(meshOverlay);
 
             const centerX = 0; //-this.width / 2 + (this.width / 20) * i;
             const centerY = 0; //-this.height / 2 + (this.height / 20) * i;
+            const size = Math.ceil(Math.random() * 4);
 
-            const body = Matter.Bodies.circle(centerX, centerY, geom.parameters.radius, { restitution: 1.0, frictionAir: 0.025 });
+            pos.scale.set(size,size,1);
+            pos.updateMatrix();
+            this.mesh.setMatrixAt(i, pos.matrix);
+            color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], this.palettes[this.paletteIndex][i % 4][2]);
+            this.mesh.setColorAt(i, color);
+
+            const body = Matter.Bodies.circle(centerX, centerY, pos.scale.x, { restitution: 1.0, frictionAir: 0.025 });
             Matter.Composite.add(this.engine.world, body);
 
-            this.circles.push({ body, mesh, meshOverlay });
+            const meshOverlay = new THREE.Mesh();
+
+            this.circles.push({ body, size });
         }
+
+        this.scene.add(this.mesh);
 
         const thickness = 10;
         const options = { isStatic: true, restitution: 0.8 };
@@ -114,35 +133,47 @@ export class Playable1 extends Playable {
         Matter.Engine.update(this.engine, Math.min(delta, (1 / 60) * 1000));
 
         for (let i = 0; i < this.circles.length; i++) {
-            let { body, mesh, meshOverlay } = this.circles[i];
+            let { body } = this.circles[i];
 
             //bound check rq because bodies can escape the walls
             if (body.position.x < -this.width / 2 || body.position.x > this.width / 2 || body.position.y < -this.height / 2 || body.position.y > this.height / 2) {
                 Matter.Body.setPosition(body, { x: 0, y: 0 });
             }
 
-            mesh.position.set(body.position.x, body.position.y, 0);
-            mesh.rotation.set(0, 0, body.angle);
+            const pos = new THREE.Object3D();
 
-            meshOverlay.position.set(body.position.x * this.scaleOverlay, body.position.y * this.scaleOverlay, 0);
-            meshOverlay.scale.set(this.scaleOverlay, this.scaleOverlay, 1);
-            meshOverlay.rotation.set(0, 0, body.angle);
 
-            if (body.speed < 0.5 && body.speed != 0) {
+            pos.position.set(body.position.x, body.position.y, 0);
+            pos.scale.set(this.circles[i].size, this.circles[i].size, 1);
+            pos.updateMatrix();
+
+            this.mesh.setMatrixAt(i, pos.matrix);
+
+            //meshOverlay.position.set(body.position.x * this.scaleOverlay, body.position.y * this.scaleOverlay, 0);
+            //meshOverlay.scale.set(this.scaleOverlay, this.scaleOverlay, 1);
+            //meshOverlay.rotation.set(0, 0, body.angle);
+
+            if (body.speed < 0.5) {
                 Matter.Body.setSpeed(body, 0.5);
             }
 
             //mesh.material.color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], beat);
         }
 
-        this.changeSpeed(70, 1, mouse);
+        this.mesh.instanceMatrix.needsUpdate = true;
+        this.changeSpeed(100, 1, mouse);
     }
 
     changeColors() {
         this.paletteIndex = (this.paletteIndex + 1) % this.palettes.length;
-        for (let i = 0; i < 4; i++) {
-            this.circles[i].mesh.material.color.setHSL(this.palettes[this.paletteIndex][i][0], this.palettes[this.paletteIndex][i][1], this.palettes[this.paletteIndex][i][2]);
+        for (let i = 0; i < this.circles.length; i++) {
+            const color = new THREE.Color();
+            color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], this.palettes[this.paletteIndex][i % 4][2]);
+
+            this.mesh.setColorAt(i, color);
         }
+
+        this.mesh.instanceColor!.needsUpdate = true;
     }
 
     changeSpeed(threshold: number, force: number, mouse?: { x: number; y: number }) {
@@ -172,9 +203,7 @@ export class Playable1 extends Playable {
     }
 
     dispose() {
-        for (const cir of this.circles) {
-            cir.mesh.geometry.dispose();
-            cir.mesh.material.dispose();
-        }
+        this.mesh.geometry.dispose();
+        this.mesh.material.dispose();
     }
 }

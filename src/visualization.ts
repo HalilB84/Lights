@@ -1,9 +1,9 @@
 import * as THREE from "three";
 import { cover } from "three/src/extras/TextureUtils.js";
-import { seed } from "./shaders/seed.ts";
-import { jfa } from "./shaders/jfa.ts";
-import { ray } from "./shaders/ray.ts";
-import { bilateral } from "./shaders/bilateral.ts";
+import { seed } from "./shaders/rc/seed.ts";
+import { jfa } from "./shaders/rc/jfa.ts";
+import { ray } from "./shaders/utils/ray.ts";
+import { bilateral } from "./shaders/utils/bilateral.ts";
 import { radiancecascades_v2, radiancecascades_v3 } from "./shaders/rc/radiance_cascades_v3.ts";
 import { TextTroika } from "./playables/text.ts";
 import { LRC } from "./utils/lrcplayer.ts";
@@ -75,7 +75,7 @@ export class Visualization {
         this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; //saying that trust me bro i know the colors im dealing with
         //the idea is that the colors in the fragment shader are in srgb space, rc converts the srgb color to linear(srgb?)
         //setHSL IS in srgb space if supplied the srgb colorspace options it does conversion itself however we do that manually inside the rc shader.
-        
+
         //still have some doubts but I think the defalut colorspace option is because three js parses colors to be linear srgb in shaders
         //and finally at the end converts them back to srgb
 
@@ -87,7 +87,7 @@ export class Visualization {
         this.renderer.setSize(this.width, this.height, false);
 
         this.scene = new THREE.Scene();
-        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); //this why understanding the rendering pipeling is important, even though the camera doesnt respect the aspect raitio we use the quad as a fullscreen quad fragment shader so it streching doesn't matter
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); //this why understanding the rendering pipeline is important, even though the camera doesnt respect the aspect ratio we use the quad as a fullscreen quad fragment shader so it streching doesn't matter
 
         //playground
         this.lrcPlayer = new LRC();
@@ -295,6 +295,15 @@ export class Visualization {
             this.renderer.clear();
             this.renderer.render(this.scene, this.camera);
 
+            // this.mesh.material = this.displayMaterial;
+            // this.displayMaterial.map = this.modelRT.texture;
+
+            // this.renderer.setRenderTarget(null);
+            // this.renderer.clear();
+            // this.renderer.render(this.scene, this.camera);
+
+            // return;
+
             // jfa + distance phase
             const passes = Math.ceil(Math.log2(Math.max(this.actualWidth, this.actualHeight)));
             this.mesh.material = this.jfaMaterial;
@@ -411,12 +420,12 @@ export class Visualization {
 
         //https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLInfo.js
         /*if (this.frameCount % 100 === 1) {
-			console.clear();
-			console.log("geom", this.renderer.info.memory.geometries);
-			console.log("tex", this.renderer.info.memory.textures);
-			console.log("calls:", this.renderer.info.render.calls); //meshes in all scene renders
-			console.log("triangles", this.renderer.info.render.triangles); //total triangles in all scene renders
-		}*/
+            console.clear();
+            console.log("geom", this.renderer.info.memory.geometries);
+            console.log("tex", this.renderer.info.memory.textures);
+            console.log("calls:", this.renderer.info.render.calls); //meshes in all scene renders
+            console.log("triangles", this.renderer.info.render.triangles); //total triangles in all scene renders
+        }*/
 
         this.renderer.info.reset();
     }
