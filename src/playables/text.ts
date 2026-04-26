@@ -20,6 +20,7 @@ export class TextTroika extends Playable {
 
     reset() {
         this.update(this.currentText, this.scale);
+        this.mesh.fontSize = this.width / 12;
     }
 
     createScene() {
@@ -89,7 +90,7 @@ export class TextTroika extends Playable {
             }`,
         });
 
-        this.mesh.fontSize = 70;
+        this.mesh.fontSize = this.width / 12;
         this.mesh.textAlign = "center";
         this.mesh.anchorX = "center";
         this.mesh.anchorY = "middle";
@@ -99,11 +100,10 @@ export class TextTroika extends Playable {
         //console.log(this.mesh.material);
 
         this.scene.add(this.mesh);
+        this.volScene = this.scene;
 
         this.update(this.currentText, this.scale);
     }
-
-
 
     update(text: string | null, scale: number) {
         this.scale = scale;
@@ -120,6 +120,8 @@ export class TextTroika extends Playable {
 
         this.mesh.material.uniforms.time.value = performance.now() * 0.001;
     }
+
+    volumetrics(_toggle: boolean): void {}
 
     dispose(): void {
         this.mesh.material.dispose();

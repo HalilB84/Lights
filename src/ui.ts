@@ -27,6 +27,9 @@ export class UI {
     fixEdges = document.getElementById("fix-edges") as HTMLInputElement;
     showFps = document.getElementById("show-fps") as HTMLInputElement;
 
+    probeCount = document.getElementById("probe-count") as HTMLInputElement;
+    pcValue = document.getElementById("pc-value") as HTMLElement;
+
     enableRC = document.getElementById("enable-rc") as HTMLInputElement;
     twoPassOptimization = document.getElementById("2-pass-optimization") as HTMLInputElement;
     bilinearFix = document.getElementById("bilinear-fix") as HTMLInputElement;
@@ -43,8 +46,9 @@ export class UI {
 
         ((this.state.settings.textScale = 1), (this.textScale.value = "1"));
         ((this.state.settings.radiance = 1), (this.radianceModifier.value = "1"));
+        ((this.state.settings.probeCount = 1000), (this.probeCount.value = "1000"));
 
-        this.state.settings.showFps = this.showFps.checked = true;
+        /*this.state.settings.showFps = this.showFps.checked = true;
         this.state.settings.fixEdges = this.fixEdges.checked = true;
         this.state.settings.enableRC = this.enableRC.checked = this.state.settings.isMobile ? true : true;
         this.state.settings.bilinearFix = this.bilinearFix.checked = false;
@@ -54,7 +58,7 @@ export class UI {
         this.state.settings.twoPassOptimization = this.twoPassOptimization.checked = true;
         document.querySelectorAll(".rc-collapse").forEach((div) => {
             (div as HTMLElement).style.display = this.enableRC.checked ? "flex" : "none";
-        });
+        });*/
 
         //complex state changes call a function in state to handle them
         //otherwise state values are updated inline, maybe change this later
@@ -77,7 +81,7 @@ export class UI {
         });
 
         this.mode.addEventListener("change", () => {
-            if(this.mode.value === this.state.settings.mode) return;
+            if (this.mode.value === this.state.settings.mode) return;
 
             this.state.settings.mode = this.mode.value;
 
@@ -95,8 +99,8 @@ export class UI {
                 this.radianceModifier.value = "1";
             }
 
-            this.state.settings.fixEdges = this.fixEdges.checked = this.mode.value !== "video";
-            this.fixEdges.dispatchEvent(new Event("change"));
+            //this.state.settings.fixEdges = this.fixEdges.checked = this.mode.value !== "video";
+            //this.fixEdges.dispatchEvent(new Event("change"));
             this.radianceModifier.dispatchEvent(new Event("input"));
             this.state.changeMode();
         });
@@ -116,10 +120,6 @@ export class UI {
             this.updateValue(this.radianceModifier, this.radianceModifierValue, 200);
         });
 
-        this.fixEdges.addEventListener("change", () => {
-            this.state.settings.fixEdges = this.fixEdges.checked;
-        });
-
         this.showFps.addEventListener("change", () => {
             this.state.settings.showFps = this.showFps.checked;
             this.state.stats.dom.style.display = this.showFps.checked ? "flex" : "none";
@@ -128,6 +128,17 @@ export class UI {
         this.textScale.addEventListener("input", () => {
             this.state.setTextScale(+this.textScale.value);
             this.updateValue(this.textScale, this.textScaleValue, 300);
+        });
+
+        this.probeCount.addEventListener("input", () => {
+            this.state.settings.probeCount = +this.probeCount.value;
+            this.pcValue.textContent = this.probeCount.value;
+            this.state.change();
+        });
+
+        /*
+        this.fixEdges.addEventListener("change", () => {
+            this.state.settings.fixEdges = this.fixEdges.checked;
         });
 
         this.enableRC.addEventListener("change", () => {
@@ -148,7 +159,7 @@ export class UI {
 
         this.srgbFix.addEventListener("change", () => {
             this.state.settings.srgbFix = this.srgbFix.checked;
-        });
+        });*/
     }
 
     updateValue(range: HTMLInputElement, display: HTMLElement, total: number = 100) {

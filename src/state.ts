@@ -1,8 +1,8 @@
-import { Visualization } from "./visualization.ts";
+import { RC } from "./rc_vis.ts";
 import { UI } from "./ui.ts";
 import * as THREE from "three";
 import Stats from "stats-gl";
-import { Visualization as nw } from "./new.ts";
+import { HRC } from "./hrc_vis.ts";
 import type { Playable } from "./playables/playable.ts";
 import { Video } from "./playables/video.js";
 import { Balls } from "./playables/balls.js";
@@ -25,8 +25,10 @@ export class State {
         isMobile: boolean;
         textScale: number;
         radiance: number;
-        fixEdges: boolean;
+        probeCount: number;
         showFps: boolean;
+
+        fixEdges: boolean;
         enableRC: boolean;
         twoPassOptimization: boolean;
         bilinearFix: boolean;
@@ -49,13 +51,14 @@ export class State {
     };
 
     ui: UI;
-    //visualization: Visualization;
-    visualization: nw;
+    //rc: RC;
+    hrc: HRC;
     stats: Stats;
     lrcPlayer: LRC;
     active: Playable;
 
     audioUpdateFunction = () => {};
+    lastTime: number;
 
     constructor() {
         //values are actually initialized in ui.ts
@@ -64,8 +67,10 @@ export class State {
             isMobile: false,
             textScale: 0,
             radiance: 0,
-            fixEdges: false,
+            probeCount: 0,
             showFps: false,
+
+            fixEdges: false,
             enableRC: false,
             twoPassOptimization: false,
             bilinearFix: false,
@@ -101,41 +106,50 @@ export class State {
             mode: 0,
         });
 
+        this.lastTime = 0;
+
         document.body.appendChild(this.stats.dom);
 
         this.ui = new UI(this);
-        //this.visualization = new Visualization(this);
-        this.visualization = new nw(this);
+        //this.rc = new RC(this);
+        this.hrc = new HRC(this);
         this.lrcPlayer = new LRC();
-        this.active = new TextTroika(this.visualization.fixWidth, this.visualization.fixHeight, this.settings.textScale);
+        this.active = new TextTroika(this.hrc.fixWidth, this.hrc.fixHeight, this.settings.textScale);
     }
 
     changeMode() {
         //first del the cur mode
         this.active?.dispose();
 
-        if(this.settings.mode === "video") {
-            this.active = new Video(this.visualization.fixWidth, this.visualization.fixHeight);
-        } else if(this.settings.mode === "lyrics") {
-            this.active = new TextTroika(this.visualization.fixWidth, this.visualization.fixHeight, this.settings.textScale);
-        } else if(this.settings.mode === "playable1") {
-            this.active = new Balls(this.visualization.fixWidth, this.visualization.fixHeight);
-        } else if(this.settings.mode === "playable2") {
-            this.active = new Holes(this.visualization.fixWidth, this.visualization.fixHeight);
+        if (this.settings.mode === "video") {
+            this.active = new Video(this.hrc.fixWidth, this.hrc.fixHeight);
+        } else if (this.settings.mode === "lyrics") {
+            this.active = new TextTroika(this.hrc.fixWidth, this.hrc.fixHeight, this.settings.textScale);
+        } else if (this.settings.mode === "playable1") {
+            this.active = new Balls(this.hrc.fixWidth, this.hrc.fixHeight);
+        } else if (this.settings.mode === "playable2") {
+            this.active = new Holes(this.hrc.fixWidth, this.hrc.fixHeight);
         }
     }
 
-
     update() {
-         if(this.settings.mode === "video") {
-            this.active.update(this.video.scale, this.video.texture, this.video.width, this.video.height);;
-        } else if(this.settings.mode === "lyrics") {
+        const curTime = performance.now();
+        const delta = curTime - this.lastTime;
+        this.lastTime = curTime;
+
+        if (this.settings.mode === "video") {
+            this.active.update(this.video.scale, this.video.texture, this.video.width, this.video.height);
+        } else if (this.settings.mode === "lyrics") {
             this.active.update(null, this.settings.textScale);
-        } else if(this.settings.mode === "playable1") {
-            this.active.update((1 / 60) * 1000, { x: this.visualization.mouse.x - this.visualization.fixWidth / 2, y: this.visualization.mouse.y - this.visualization.fixHeight / 2 });
-        } else if(this.settings.mode === "playable2") {
-            this.active.update(this.video.texture!);
+        } else if (this.settings.mode === "playable1") {
+            this.active.update(delta, { x: this.hrc.mouse.x - this.hrc.fixWidth / 2, y: this.hrc.mouse.y - this.hrc.fixHeight / 2 });
+        } else if (this.settings.mode === "playable2") {
+            this.active.update(this.video.texture);
         }
+    }
+
+    change() {
+        this.hrc.resize();
     }
 
     setTextScale(value: number) {
@@ -168,7 +182,7 @@ export class State {
         this.video.texture = new THREE.VideoTexture(video);
 
         this.toggleVideo(false);
-        this.ui.mode.value = "video";
+        if (this.ui.mode.value !== "video" && this.ui.mode.value !== "playable2") this.ui.mode.value = "video";
         this.ui.mode.dispatchEvent(new Event("change"));
     }
 
@@ -192,7 +206,7 @@ export class State {
         this.audio.element = audio;
         this.audio.element.volume = this.audio.volume;
 
-        if(this.active instanceof(TextTroika)) {
+        if (this.active instanceof TextTroika) {
             this.active.update("Loading lyrics...", this.settings.textScale);
         }
 
@@ -203,7 +217,7 @@ export class State {
                 const [lyric, changed] = this.lrcPlayer.update(audio.currentTime);
 
                 if (changed === "init" || changed === "changed") {
-                    if(this.active instanceof(TextTroika)) {
+                    if (this.active instanceof TextTroika) {
                         this.active.update(lyric, this.settings.textScale);
                     }
                 }
@@ -225,10 +239,6 @@ export class State {
         if (forcePause) audio.pause();
         else if (audio.paused) audio.play();
         else audio.pause();
-    }
-
-    changeFilter() {
-        this.visualization.changeFilter();
     }
 }
 

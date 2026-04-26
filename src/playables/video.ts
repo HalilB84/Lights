@@ -19,6 +19,7 @@ export class Video extends Playable {
         this.mesh = new THREE.Mesh(geometry, material);
 
         this.scene.add(this.mesh);
+        this.volScene = this.scene;
     }
 
     update(space: number, texture: THREE.VideoTexture | null, width: number, height: number) {
@@ -34,6 +35,8 @@ export class Video extends Playable {
 
         this.mesh.scale.set(actualWidth, actualHeight, 1);
     }
+
+    volumetrics(_toggle: boolean): void {}
 
     dispose() {
         this.mesh.material.dispose();

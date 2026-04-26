@@ -6,9 +6,8 @@ import { hrcv2_extend } from "./shaders/hrc/extensions.js";
 import { hrcv2_trace } from "./shaders/hrc/trace.js";
 import { hrcv2_sum } from "./shaders/hrc/sum.js";
 
-
 //https://www.typescriptlang.org/docs/handbook/2/classes.html
-export class Visualization {
+export class HRC {
     state: State;
     renderer: THREE.WebGLRenderer;
     canvas: HTMLCanvasElement;
@@ -76,27 +75,28 @@ export class Visualization {
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); //this entire thing is a full screen quad fragment shader, as long as the plane dimensions match the ortocamera bounds
         //all of the fragments in the render target will be evaluated
 
-
-        this.initialize();
+        this.targets();
         this.shaders();
 
         this.frameCount = 0;
         this.mouse = { x: 9999, y: 9999 };
         this.canvas.addEventListener("mousemove", (e) => {
-            this.mouse.x = e.clientX * this.dpr / (this.width / this.fixWidth);
-            this.mouse.y = (this.canvas.clientHeight - e.clientY) * this.dpr / (this.height / this.fixHeight);
+            this.mouse.x = (e.clientX * this.dpr) / (this.width / this.fixWidth);
+            this.mouse.y = ((this.canvas.clientHeight - e.clientY) * this.dpr) / (this.height / this.fixHeight);
         });
 
         this.renderer.setAnimationLoop(this.render.bind(this));
     }
 
     calculateBounds() {
-        this.dpr = this.state.settings.isMobile ? Math.max(window.devicePixelRatio * 0.75, 1) : window.devicePixelRatio;
+        this.dpr = window.devicePixelRatio;
         this.width = Math.floor(this.canvas.clientWidth * this.dpr);
         this.height = Math.floor(this.canvas.clientHeight * this.dpr);
 
         //this needs to be adjustable, has to be even
-        this.fixWidth = 1000;
+        this.fixWidth = this.state.settings.probeCount;
+        if (this.fixWidth % 2 === 1) this.fixWidth += 1;
+
         this.fixHeight = Math.floor(this.fixWidth / (this.width / this.height));
         if (this.fixHeight % 2 === 1) this.fixHeight += 1;
 
@@ -105,7 +105,7 @@ export class Visualization {
         this.opt = 2;
     }
 
-    initialize() {
+    targets() {
         const nearestRT = {
             minFilter: THREE.NearestFilter,
             magFilter: THREE.NearestFilter,
@@ -118,7 +118,16 @@ export class Visualization {
             type: THREE.HalfFloatType,
         };
 
+        this.modelRT?.dispose();
         this.modelRT = new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight, nearestRT);
+
+        this.raysW?.forEach((target) => {
+            target.dispose();
+        });
+
+        this.raysH?.forEach((target) => {
+            target.dispose();
+        });
 
         this.raysW = [];
         this.raysH = [];
@@ -139,6 +148,14 @@ export class Visualization {
             const typ = i === 0 ? linearRT : nearestRT;
             this.raysH.push(new THREE.WebGLRenderTarget(width, height, typ));
         }
+
+        this.conesW?.forEach((target) => {
+            target.dispose();
+        });
+
+        this.conesH?.forEach((target) => {
+            target.dispose();
+        });
 
         this.conesW = [];
         this.conesH = [];
@@ -161,13 +178,17 @@ export class Visualization {
             this.conesH.push(new THREE.WebGLRenderTarget(width, height, typ));
         }
 
+        this.frustums?.forEach((target) => {
+            target.dispose();
+        });
+
         this.frustums = [];
         for (let i = 0; i < 4; ++i) {
             if (i % 2 === 0) this.frustums.push(new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight / this.opt, linearRT));
             else this.frustums.push(new THREE.WebGLRenderTarget(this.fixHeight, this.fixWidth / this.opt, linearRT));
         }
 
-        this.final = new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight, linearRT);
+        // this.final = new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight, linearRT);
     }
 
     shaders() {
@@ -183,25 +204,21 @@ export class Visualization {
     }
 
     resize() {
-        //this.calculateBounds();
+        this.calculateBounds();
+        this.targets();
+        this.state.active.resize(this.fixWidth, this.fixHeight);
 
         //https://github.com/mrdoob/three.js/blob/dev/src/core/RenderTarget.js setSize disposes for us! love that
         this.renderer.setSize(this.width, this.height, false);
     }
-
-    changeFilter() {}
 
     render() {
         if (Math.floor(this.canvas.clientWidth * this.dpr) !== this.width || Math.floor(this.canvas.clientHeight * this.dpr) !== this.height) {
             this.resize();
         }
 
-        //this.video.update(this.state.video.scale, this.state.video.texture, this.state.video.width, this.state.video.height);
-        //this.balls.update((1 / 60) * 1000, { x: this.mouse.x - this.fixWidth / 2, y: this.mouse.y - this.fixHeight / 2 });
-        //this.holes.update(this.state.video.texture!);
-        //this.text.update(null);
-
         this.state.update();
+        this.state.active.volumetrics(false);
 
         this.renderer.setRenderTarget(this.modelRT);
         this.renderer.clear();
@@ -305,7 +322,8 @@ export class Visualization {
         this.renderer.render(this.scene, this.camera);
 
         //dont render overlay on volumetrics
-        this.renderer.render(this.state.active.scene, this.state.active.camera);
+        this.state.active.volumetrics(true);
+        this.renderer.render(this.state.active.volScene, this.state.active.camera);
 
         this.frameCount = this.frameCount + 1; // % 2;
 

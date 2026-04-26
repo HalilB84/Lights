@@ -5,27 +5,18 @@ import { jfa } from "./shaders/rc/jfa.ts";
 import { ray } from "./shaders/utils/ray.ts";
 import { bilateral } from "./shaders/utils/bilateral.ts";
 import { radiancecascades_v2, radiancecascades_v3 } from "./shaders/rc/radiance_cascades_v3.ts";
-import { TextTroika } from "./playables/text.ts";
-import { LRC } from "./utils/lrcplayer.ts";
-import { Balls } from "./playables/balls.ts";
-import { Holes } from "./playables/holes.ts";
 import type { State } from "./state.js";
-import { Video } from "./playables/video.ts";
+
+//old setup for RC not used anymore
 
 //https://www.typescriptlang.org/docs/handbook/2/classes.html
-export class Visualization {
+export class RC {
     state: State;
     renderer: THREE.WebGLRenderer;
     canvas: HTMLCanvasElement;
 
     scene: THREE.Scene;
     camera: THREE.OrthographicCamera;
-
-    lrcPlayer: LRC;
-    text: TextTroika;
-    balls: Balls;
-    holes: Holes;
-    video: Video;
 
     width: number;
     height: number;
@@ -64,7 +55,6 @@ export class Visualization {
 
     mouse: { x: number; y: number };
     frameCount: number;
-    lastTime: number;
 
     constructor(state: State) {
         this.state = state;
@@ -88,13 +78,6 @@ export class Visualization {
 
         this.scene = new THREE.Scene();
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); //this why understanding the rendering pipeline is important, even though the camera doesnt respect the aspect ratio we use the quad as a fullscreen quad fragment shader so it streching doesn't matter
-
-        //playground
-        this.lrcPlayer = new LRC();
-        this.text = new TextTroika(this.actualWidth, this.actualHeight, this.state.settings.textScale);
-        this.balls = new Balls(this.actualWidth, this.actualHeight);
-        this.holes = new Holes(this.actualWidth, this.actualHeight);
-        this.video = new Video(this.actualWidth, this.actualHeight);
 
         this.initialize();
         this.shaders();
@@ -209,11 +192,6 @@ export class Visualization {
         this.curCascade.setSize(this.cascadeWidth, this.cascadeHeight);
         this.prevCascade.setSize(this.cascadeWidth, this.cascadeHeight);
         this.overlayRT.setSize(this.actualWidth * this.scaleDown, this.actualHeight * this.scaleDown);
-
-        this.text.resize(this.actualWidth, this.actualHeight);
-        this.balls.resize(this.actualWidth, this.actualHeight);
-        this.holes.resize(this.actualWidth, this.actualHeight);
-        this.video.resize(this.actualWidth, this.actualHeight);
     }
 
     changeFilter() {
@@ -234,10 +212,6 @@ export class Visualization {
         if (Math.floor(this.canvas.clientWidth * this.dpr) !== this.width || Math.floor(this.canvas.clientHeight * this.dpr) !== this.height) {
             this.resize();
         }
-
-        const currentTime = performance.now();
-        const delta = this.lastTime ? currentTime - this.lastTime : 0;
-        this.lastTime = currentTime;
 
         let optimizationMode;
         if (this.state.settings.enableRC && this.state.settings.twoPassOptimization) {
@@ -395,3 +369,36 @@ export class Visualization {
         this.renderer.info.reset();
     }
 }
+
+/*
+
+<div class="setting-row">
+    <label for="fix-edges">Fix blocky edges</label>
+    <input id="fix-edges" type="checkbox" />
+</div>
+<div class="setting-row">
+    <label for="enable-rc">Enable Radiance Cascades</label>
+    <input id="enable-rc" type="checkbox" />
+    <img src="help.svg" />
+    <span class="tooltiptext">Radiance Cascades is a global illumination technique that runs faster and doesn't have noise. Checking off this checkbox will default to shooting N random rays per pixel, however keeping it on for lighting is recommended for better performance and looks. Technical details on this can be found on Github. </span>
+</div>
+<div class="setting-row rc-collapse">
+    <label for="2-pass-optimization">2 pass optimization</label>
+    <input id="2-pass-optimization" type="checkbox" />
+    <img src="help.svg" />
+    <span class="tooltiptext">If performance is an issue, enable this. The cascade calculation happens in 2 passes, meaning if the overlay is 60 fps, the lighting is calculated at 30 fps. Because the overlay and the light are calculated at different speeds, there will be artifacts where the previous frame is visible for a split second.</span>
+</div>
+<div class="setting-row rc-collapse">
+    <label for="bilinear-fix">Bilinear Fix</label>
+    <input id="bilinear-fix" type="checkbox" />
+    <img src="help.svg" />
+    <span class="tooltiptext">Fixes the ringing artifacts in RC, but brings down performance as more rays are cast</span>
+</div>
+<div class="setting-row">
+    <label for="srgb-fix">SRGB Fix</label>
+    <input id="srgb-fix" type="checkbox" />
+    <img src="help.svg" />
+    <span class="tooltiptext">Lighting calculations need to happen in linear space but colors are in srgb space, this makes that conversion. The lighting effect will be there when this option is off, but it will be technically incorrect. The reason its off by default is because it makes the ringing artifacts way more visible.</span>
+</div>
+
+*/

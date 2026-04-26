@@ -75,7 +75,6 @@ export class Balls extends Playable {
 
         this.scene.clear();
 
-
         //const materials  = [new THREE.MeshBasicMaterial({color: new THREE.Color().setRGB(1.0, 0.5, 0, THREE.SRGBColorSpace)})];
 
         const geom = new THREE.CircleGeometry(1, 12);
@@ -87,7 +86,6 @@ export class Balls extends Playable {
         const color = new THREE.Color();
 
         for (let i = 0; i < this.mesh.count; i++) {
-
             const centerX = 0; //-this.width / 2 + (this.width / 20) * i;
             const centerY = 0; //-this.height / 2 + (this.height / 20) * i;
             const size = Math.ceil(Math.random() * 12) + 2;
@@ -98,15 +96,14 @@ export class Balls extends Playable {
             color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], this.palettes[this.paletteIndex][i % 4][2]);
             this.mesh.setColorAt(i, color);
 
-
             const body = Matter.Bodies.circle(centerX, centerY, pos.scale.x, { restitution: 1.0, frictionAir: 0.025 });
             Matter.Composite.add(this.engine.world, body);
-
 
             this.circles.push({ body, size });
         }
 
         this.scene.add(this.mesh);
+        this.volScene = this.scene;
 
         const thickness = 10;
         const options = { isStatic: true, restitution: 0.8 };
@@ -184,6 +181,8 @@ export class Balls extends Playable {
             }
         }
     }
+
+    volumetrics(_toggle: boolean): void {}
 
     dispose() {
         this.mesh.geometry.dispose();

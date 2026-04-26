@@ -2,6 +2,8 @@ import * as THREE from "three";
 
 export abstract class Playable {
     scene: THREE.Scene;
+    volScene: THREE.Scene;
+
     camera: THREE.OrthographicCamera;
 
     width: number;
@@ -12,6 +14,7 @@ export abstract class Playable {
         this.height = height;
 
         this.scene = new THREE.Scene();
+        this.volScene = new THREE.Scene();
         this.camera = new THREE.OrthographicCamera(-this.width / 2, this.width / 2, this.height / 2, -this.height / 2, 0, 1);
     }
 
@@ -27,5 +30,6 @@ export abstract class Playable {
     abstract reset(): void;
     abstract createScene(): void;
     abstract update(...args: any[]): void;
+    abstract volumetrics(toggle: boolean): void;
     abstract dispose(): void;
 }
