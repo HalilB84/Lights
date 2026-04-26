@@ -5,11 +5,7 @@ import { hrcv2_cones } from "./shaders/hrc/cones.js";
 import { hrcv2_extend } from "./shaders/hrc/extensions.js";
 import { hrcv2_trace } from "./shaders/hrc/trace.js";
 import { hrcv2_sum } from "./shaders/hrc/sum.js";
-import { Video } from "./playables/video.js";
-import { Playable1 } from "./playables/playable1.js";
-import { TextTroika } from "./playables/text.js";
-import { LRC } from "./utils/lrcplayer.js";
-import { Playable2 } from "./playables/playable2.js";
+
 
 //https://www.typescriptlang.org/docs/handbook/2/classes.html
 export class Visualization {
@@ -20,12 +16,6 @@ export class Visualization {
     scene: THREE.Scene;
     camera: THREE.OrthographicCamera;
 
-    lrcPlayer: LRC;
-    video: Video;
-    balls: Playable1;
-    show: Playable2;
-    text: TextTroika;
-
     width: number;
     height: number;
     dpr: number;
@@ -35,9 +25,6 @@ export class Visualization {
     ccWidth: number;
     ccHeight: number;
     opt: number;
-
-    sceneEmiss: THREE.Texture;
-    sceneAbsorp: THREE.Texture;
 
     modelRT: THREE.WebGLRenderTarget;
 
@@ -89,11 +76,6 @@ export class Visualization {
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); //this entire thing is a full screen quad fragment shader, as long as the plane dimensions match the ortocamera bounds
         //all of the fragments in the render target will be evaluated
 
-        this.lrcPlayer = new LRC();
-        this.video = new Video(this.fixWidth, this.fixHeight, 2);
-        //this.balls = new Playable1(this.fixWidth, this.fixHeight, 2);
-        this.show = new Playable2(this.fixWidth, this.fixHeight, 1);
-        this.text = new TextTroika(this.fixWidth, this.fixHeight, 1, 1);
 
         this.initialize();
         this.shaders();
@@ -101,8 +83,8 @@ export class Visualization {
         this.frameCount = 0;
         this.mouse = { x: 9999, y: 9999 };
         this.canvas.addEventListener("mousemove", (e) => {
-            this.mouse.x = (e.clientX * this.dpr);
-            this.mouse.y = ((this.canvas.clientHeight - e.clientY) * this.dpr);
+            this.mouse.x = e.clientX * this.dpr / (this.width / this.fixWidth);
+            this.mouse.y = (this.canvas.clientHeight - e.clientY) * this.dpr / (this.height / this.fixHeight);
         });
 
         this.renderer.setAnimationLoop(this.render.bind(this));
@@ -114,14 +96,13 @@ export class Visualization {
         this.height = Math.floor(this.canvas.clientHeight * this.dpr);
 
         //this needs to be adjustable, has to be even
-        this.fixWidth = 874;
+        this.fixWidth = 1000;
         this.fixHeight = Math.floor(this.fixWidth / (this.width / this.height));
-        if(this.fixHeight % 2 === 1) this.fixHeight += 1;
+        if (this.fixHeight % 2 === 1) this.fixHeight += 1;
 
         this.ccWidth = Math.ceil(Math.log2(this.fixWidth));
         this.ccHeight = Math.ceil(Math.log2(this.fixHeight));
         this.opt = 2;
-
     }
 
     initialize() {
@@ -142,9 +123,10 @@ export class Visualization {
         this.raysW = [];
         this.raysH = [];
 
+        //linear in c0 cuz when opt = 2, c1 needs interpolation when extending the second half the ray
         for (let i = 0; i < this.ccWidth; ++i) {
             const height = this.fixHeight / this.opt;
-            const width = Math.ceil(this.fixWidth / Math.pow(2, i)) * Math.pow(2, i + 1);
+            const width = Math.ceil(this.fixWidth / Math.pow(2, i)) * (Math.pow(2, i) + 1);
 
             const typ = i === 0 ? linearRT : nearestRT;
             this.raysW.push(new THREE.WebGLRenderTarget(width, height, typ));
@@ -152,7 +134,7 @@ export class Visualization {
 
         for (let i = 0; i < this.ccHeight; ++i) {
             const height = this.fixWidth / this.opt;
-            const width = Math.ceil(this.fixHeight / Math.pow(2, i)) * Math.pow(2, i + 1);
+            const width = Math.ceil(this.fixHeight / Math.pow(2, i)) * (Math.pow(2, i) + 1);
 
             const typ = i === 0 ? linearRT : nearestRT;
             this.raysH.push(new THREE.WebGLRenderTarget(width, height, typ));
@@ -161,33 +143,31 @@ export class Visualization {
         this.conesW = [];
         this.conesH = [];
 
-        //ideally this should be linear for c1 only when c0 is merging but since textures are(should) be sampled in the center of its corresponding pixel c1..cn, i think its fine
-        for(let i = 0; i < this.ccWidth; ++i) {
+        //linear in c1 because when opt = 2, c0 needs interpolation for half the probes
+        for (let i = 1; i < this.ccWidth; ++i) {
             const height = this.fixHeight / this.opt;
             const width = Math.ceil(this.fixWidth / Math.pow(2, i)) * Math.pow(2, i);
+
             const typ = i === 1 ? linearRT : nearestRT;
 
             this.conesW.push(new THREE.WebGLRenderTarget(width, height, typ));
-
         }
 
-         for(let i = 0; i < this.ccHeight; ++i) {
+        for (let i = 1; i < this.ccHeight; ++i) {
             const height = this.fixWidth / this.opt;
             const width = Math.ceil(this.fixHeight / Math.pow(2, i)) * Math.pow(2, i);
             const typ = i === 1 ? linearRT : nearestRT;
 
             this.conesH.push(new THREE.WebGLRenderTarget(width, height, typ));
-
         }
 
         this.frustums = [];
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 4; ++i) {
             if (i % 2 === 0) this.frustums.push(new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight / this.opt, linearRT));
             else this.frustums.push(new THREE.WebGLRenderTarget(this.fixHeight, this.fixWidth / this.opt, linearRT));
         }
 
         this.final = new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight, linearRT);
-
     }
 
     shaders() {
@@ -195,14 +175,6 @@ export class Visualization {
         this.extendShader = hrcv2_extend();
         this.coneShader = hrcv2_cones();
         this.sumShader = hrcv2_sum();
-
-        const loader = new THREE.TextureLoader();
-        this.sceneEmiss = loader.load("emission.png");
-        this.sceneAbsorp = loader.load("absorption.png");
-        this.sceneEmiss.minFilter = THREE.NearestFilter;
-        this.sceneEmiss.magFilter = THREE.NearestFilter;
-        this.sceneAbsorp.minFilter = THREE.NearestFilter;
-        this.sceneAbsorp.magFilter = THREE.NearestFilter;
 
         this.displayMaterial = new THREE.MeshBasicMaterial();
         this.geometry = new THREE.PlaneGeometry(2, 2);
@@ -215,30 +187,27 @@ export class Visualization {
 
         //https://github.com/mrdoob/three.js/blob/dev/src/core/RenderTarget.js setSize disposes for us! love that
         this.renderer.setSize(this.width, this.height, false);
-
     }
 
-    changeFilter() {
-
-    }
+    changeFilter() {}
 
     render() {
         if (Math.floor(this.canvas.clientWidth * this.dpr) !== this.width || Math.floor(this.canvas.clientHeight * this.dpr) !== this.height) {
             this.resize();
         }
 
-        this.video.update(this.state.video.scale, this.state.video.texture, this.state.video.width, this.state.video.height);
+        //this.video.update(this.state.video.scale, this.state.video.texture, this.state.video.width, this.state.video.height);
         //this.balls.update((1 / 60) * 1000, { x: this.mouse.x - this.fixWidth / 2, y: this.mouse.y - this.fixHeight / 2 });
-        this.show.update(this.state.video.texture!);
-        this.text.update(null);
+        //this.holes.update(this.state.video.texture!);
+        //this.text.update(null);
 
+        this.state.update();
 
         this.renderer.setRenderTarget(this.modelRT);
         this.renderer.clear();
-        this.renderer.render(this.video.scene, this.video.camera);
+        this.renderer.render(this.state.active.scene, this.state.active.camera);
 
         for (let i = 0; i < 4; ++i) {
-
             let num;
             let cones;
             let rays;
@@ -251,9 +220,7 @@ export class Visualization {
                 rays = this.raysW;
                 fw = this.fixWidth;
                 fh = this.fixHeight;
-            }
-
-            else {
+            } else {
                 num = this.ccHeight;
                 cones = this.conesH;
                 rays = this.raysH;
@@ -293,34 +260,27 @@ export class Visualization {
 
                 this.renderer.setRenderTarget(rays[j]);
                 this.renderer.render(this.scene, this.camera);
-
             }
-
 
             //cone pass
             this.mesh.material = this.coneShader;
 
             for (let j = num - 1; j >= 0; --j) {
-                this.coneShader.uniforms.size.value = [cones[(j + 1) % num].width, cones[(j + 1) % num].height];
+                let width = j === num - 1 ? 1 : cones[j].width;
+                let height = j === num - 1 ? 1 : cones[j].height;
+                let tex = j === num - 1 ? null : cones[j].texture;
+
+                this.coneShader.uniforms.size.value = [width, height];
                 this.coneShader.uniforms.cascade.value = j;
                 this.coneShader.uniforms.count.value = num;
                 this.coneShader.uniforms.frustum.value = i;
-                this.coneShader.uniforms.prev.value = cones[(j + 1) % num].texture;
+                this.coneShader.uniforms.prev.value = tex;
                 this.coneShader.uniforms.rays.value = rays[j].texture;
                 this.coneShader.uniforms.rsize.value = [rays[j].width, rays[j].height];
                 this.coneShader.uniforms.opt.value = this.opt;
 
-
-                if (j === 0) {
-                    this.renderer.setRenderTarget(this.frustums[i]);
-                    this.renderer.render(this.scene, this.camera);
-                }
-
-                else {
-                    this.renderer.setRenderTarget(cones[j]);
-                    this.renderer.render(this.scene, this.camera);
-                }
-
+                this.renderer.setRenderTarget(j === 0 ? this.frustums[i] : cones[j - 1]);
+                this.renderer.render(this.scene, this.camera);
             }
         }
 
@@ -332,29 +292,20 @@ export class Visualization {
         this.sumShader.uniforms.f3.value = this.frustums[2].texture;
         this.sumShader.uniforms.f4.value = this.frustums[3].texture;
 
-        // this.renderer.setRenderTarget(this.final);
-        // this.renderer.render(this.scene, this.camera);
+        //this.renderer.setRenderTarget(this.final);
+        //this.renderer.render(this.scene, this.camera);
 
-        // this.mesh.material = this.displayMaterial;
-        // this.displayMaterial.map = this.final.texture;
+        //this.mesh.material = this.displayMaterial;
+        //this.displayMaterial.map = this.final.texture;
 
-        const aspect = this.width / this.height;
-        if (aspect >= 2.0) {
-            //this.mesh.scale.set(1 / aspect * 2, 1, 1);
-        } else {
-            //this.mesh.scale.set(1, aspect / 2, 1);
-        }
-
-        //this.displayMaterial.map = this.frustums[2].texture;
+        //this.displayMaterial.map = this.frustums[0].texture;
 
         this.renderer.setRenderTarget(null);
         this.renderer.clear();
         this.renderer.render(this.scene, this.camera);
 
-        this.renderer.render(this.video.sceneOverlay, this.video.cameraOverlay);
-
-
-        //this.mesh.scale.set(1, 1, 1);
+        //dont render overlay on volumetrics
+        this.renderer.render(this.state.active.scene, this.state.active.camera);
 
         this.frameCount = this.frameCount + 1; // % 2;
 

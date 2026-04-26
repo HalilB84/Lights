@@ -51,8 +51,8 @@ export function hrcv2_cones() {
                 Light l;
 
                 if(floor(loc) != vec2(0.0)) {
-                    l.rad = vec3(0.0);
-                    l.tran = 1.0;
+                    l.rad = vec3(0.0);//vec3(1.0, 0.0, 0.0);
+                    l.tran = 1.0;//0.0
                     return l;
                 }
 
@@ -66,7 +66,7 @@ export function hrcv2_cones() {
             vec3 upperCone(vec2 probe, int index) {
 
                 vec2 pos = vec2(probe.x + float(index), floor(probe.y) / float(opt) + 0.5) / size;
-                if(floor(pos) != vec2(0.0)) return vec3(0.0);
+                if(floor(pos) != vec2(0.0)) return vec3(0.0, 0.0, 0.0); // 1.0
                 return texture(prev, pos).rgb;
             }
 

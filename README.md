@@ -31,7 +31,7 @@ Using Holographic Radiance Cascades
 - ~~Cleanup/structure code~~ -> More work?
 - ~~Look into holographic radiance cascades -> Implemented~~ -> Optimize and cleanup + look into webgpu
 - ~~Switch to TypeScript as a learning experience because it looks way better~~ -> Convert to tailwind css as a learning experience
-- Hall of tiny problems that don't really matter but I can't live not knowing why: 1. Text edge problems troika 2. colorspace -> solved (https://discourse.threejs.org/t/updates-to-color-management-in-three-js-r152/50791)
+- Hall of tiny problems that don't really matter but I can't live not knowing why: 1. ~~Text edge problems troika~~ 2. colorspace -> solved (https://discourse.threejs.org/t/updates-to-color-management-in-three-js-r152/50791)
 
 Planned Features:
 

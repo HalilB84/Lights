@@ -9,7 +9,6 @@ export function hrcv2_sum() {
             f2: { value: null },
             f3: { value: null },
             f4: { value: null },
-
         },
         glslVersion: THREE.GLSL3,
         vertexShader: `

@@ -2,7 +2,13 @@ import { Visualization } from "./visualization.ts";
 import { UI } from "./ui.ts";
 import * as THREE from "three";
 import Stats from "stats-gl";
-import { Visualization as nw} from "./new.ts";
+import { Visualization as nw } from "./new.ts";
+import type { Playable } from "./playables/playable.ts";
+import { Video } from "./playables/video.js";
+import { Balls } from "./playables/balls.js";
+import { TextTroika } from "./playables/text.js";
+import { LRC } from "./utils/lrcplayer.js";
+import { Holes } from "./playables/holes.js";
 
 //Current architecture (I am not even sure this is how you are supposed to do it)
 
@@ -46,6 +52,9 @@ export class State {
     //visualization: Visualization;
     visualization: nw;
     stats: Stats;
+    lrcPlayer: LRC;
+    active: Playable;
+
     audioUpdateFunction = () => {};
 
     constructor() {
@@ -97,11 +106,40 @@ export class State {
         this.ui = new UI(this);
         //this.visualization = new Visualization(this);
         this.visualization = new nw(this);
+        this.lrcPlayer = new LRC();
+        this.active = new TextTroika(this.visualization.fixWidth, this.visualization.fixHeight, this.settings.textScale);
+    }
+
+    changeMode() {
+        //first del the cur mode
+        this.active?.dispose();
+
+        if(this.settings.mode === "video") {
+            this.active = new Video(this.visualization.fixWidth, this.visualization.fixHeight);
+        } else if(this.settings.mode === "lyrics") {
+            this.active = new TextTroika(this.visualization.fixWidth, this.visualization.fixHeight, this.settings.textScale);
+        } else if(this.settings.mode === "playable1") {
+            this.active = new Balls(this.visualization.fixWidth, this.visualization.fixHeight);
+        } else if(this.settings.mode === "playable2") {
+            this.active = new Holes(this.visualization.fixWidth, this.visualization.fixHeight);
+        }
+    }
+
+
+    update() {
+         if(this.settings.mode === "video") {
+            this.active.update(this.video.scale, this.video.texture, this.video.width, this.video.height);;
+        } else if(this.settings.mode === "lyrics") {
+            this.active.update(null, this.settings.textScale);
+        } else if(this.settings.mode === "playable1") {
+            this.active.update((1 / 60) * 1000, { x: this.visualization.mouse.x - this.visualization.fixWidth / 2, y: this.visualization.mouse.y - this.visualization.fixHeight / 2 });
+        } else if(this.settings.mode === "playable2") {
+            this.active.update(this.video.texture!);
+        }
     }
 
     setTextScale(value: number) {
         this.settings.textScale = value;
-        this.visualization.text.textscale = this.settings.textScale;
     }
 
     setMediaVolume(vol: number) {
@@ -154,15 +192,20 @@ export class State {
         this.audio.element = audio;
         this.audio.element.volume = this.audio.volume;
 
-        this.visualization.text.update("Loading lyrics...");
+        if(this.active instanceof(TextTroika)) {
+            this.active.update("Loading lyrics...", this.settings.textScale);
+        }
+
         this.audio.loading = true;
 
-        this.visualization.lrcPlayer.getLRCLIB(trackName, artistName).then(() => {
+        this.lrcPlayer.getLRCLIB(trackName, artistName).then(() => {
             this.audioUpdateFunction = () => {
-                const [lyric, changed] = this.visualization.lrcPlayer.update(audio.currentTime);
+                const [lyric, changed] = this.lrcPlayer.update(audio.currentTime);
 
                 if (changed === "init" || changed === "changed") {
-                    this.visualization.text.update(lyric);
+                    if(this.active instanceof(TextTroika)) {
+                        this.active.update(lyric, this.settings.textScale);
+                    }
                 }
             };
 
@@ -178,7 +221,7 @@ export class State {
 
     toggleAudio(forcePause: boolean) {
         const audio = this.audio.element;
-        if (!audio || !this.visualization.lrcPlayer.isReady) return;
+        if (!audio || !this.lrcPlayer.isReady) return;
         if (forcePause) audio.pause();
         else if (audio.paused) audio.play();
         else audio.pause();

@@ -7,8 +7,8 @@ import { bilateral } from "./shaders/utils/bilateral.ts";
 import { radiancecascades_v2, radiancecascades_v3 } from "./shaders/rc/radiance_cascades_v3.ts";
 import { TextTroika } from "./playables/text.ts";
 import { LRC } from "./utils/lrcplayer.ts";
-import { Playable1 } from "./playables/playable1.ts";
-import { Playable2 } from "./playables/playable2.ts";
+import { Balls } from "./playables/balls.ts";
+import { Holes } from "./playables/holes.ts";
 import type { State } from "./state.js";
 import { Video } from "./playables/video.ts";
 
@@ -23,8 +23,8 @@ export class Visualization {
 
     lrcPlayer: LRC;
     text: TextTroika;
-    playable1: Playable1;
-    playable2: Playable2;
+    balls: Balls;
+    holes: Holes;
     video: Video;
 
     width: number;
@@ -91,10 +91,10 @@ export class Visualization {
 
         //playground
         this.lrcPlayer = new LRC();
-        this.text = new TextTroika(this.actualWidth, this.actualHeight, this.state.settings.textScale, this.scaleDown);
-        this.playable1 = new Playable1(this.actualWidth, this.actualHeight, this.scaleDown);
-        this.playable2 = new Playable2(this.actualWidth, this.actualHeight, this.scaleDown);
-        this.video = new Video(this.actualWidth, this.actualHeight, this.scaleDown);
+        this.text = new TextTroika(this.actualWidth, this.actualHeight, this.state.settings.textScale);
+        this.balls = new Balls(this.actualWidth, this.actualHeight);
+        this.holes = new Holes(this.actualWidth, this.actualHeight);
+        this.video = new Video(this.actualWidth, this.actualHeight);
 
         this.initialize();
         this.shaders();
@@ -210,10 +210,10 @@ export class Visualization {
         this.prevCascade.setSize(this.cascadeWidth, this.cascadeHeight);
         this.overlayRT.setSize(this.actualWidth * this.scaleDown, this.actualHeight * this.scaleDown);
 
-        this.text.resize(this.actualWidth, this.actualHeight, this.scaleDown);
-        this.playable1.resize(this.actualWidth, this.actualHeight, this.scaleDown);
-        this.playable2.resize(this.actualWidth, this.actualHeight, this.scaleDown);
-        this.video.resize(this.actualWidth, this.actualHeight, this.scaleDown);
+        this.text.resize(this.actualWidth, this.actualHeight);
+        this.balls.resize(this.actualWidth, this.actualHeight);
+        this.holes.resize(this.actualWidth, this.actualHeight);
+        this.video.resize(this.actualWidth, this.actualHeight);
     }
 
     changeFilter() {
@@ -246,36 +246,12 @@ export class Visualization {
             optimizationMode = 3;
         }
 
-        if (this.state.settings.mode === "playable1") {
-            this.playable1.update(delta, { x: this.mouse.x - this.actualWidth / 2, y: this.mouse.y - this.actualHeight / 2 });
-        } else if (this.state.settings.mode === "playable2" && this.state.video.texture) {
-            this.playable2.update(this.state.video.texture);
-        } else if (this.state.settings.mode === "lyrics") {
-            this.text.update(null);
-        } else if (this.state.settings.mode === "video") {
-            this.video.update(this.state.video.scale, this.state.video.texture, this.state.video.width, this.state.video.height);
-        }
+        this.state.update();
 
         if (optimizationMode !== 2) {
-            if (this.state.settings.mode === "video") {
-                this.renderer.setRenderTarget(this.modelRT);
-                this.renderer.clear();
-                this.renderer.render(this.video.scene, this.video.camera);
-                //
-            } else if (this.state.settings.mode === "lyrics") {
-                this.renderer.setRenderTarget(this.modelRT);
-                this.renderer.clear();
-                this.renderer.render(this.text.scene, this.text.camera);
-                //
-            } else if (this.state.settings.mode === "playable1") {
-                this.renderer.setRenderTarget(this.modelRT);
-                this.renderer.clear();
-                this.renderer.render(this.playable1.scene, this.playable1.camera);
-            } else if (this.state.settings.mode === "playable2") {
-                this.renderer.setRenderTarget(this.modelRT);
-                this.renderer.clear();
-                this.renderer.render(this.playable2.scene, this.playable2.camera);
-            }
+            this.renderer.setRenderTarget(this.modelRT);
+            this.renderer.clear();
+            this.renderer.render(this.state.active.scene, this.state.active.camera);
 
             // this.mesh.material = this.displayMaterial;
             // this.displayMaterial.map = this.modelRT.texture;
@@ -392,18 +368,7 @@ export class Visualization {
         this.renderer.render(this.scene, this.camera);
 
         //overlay phase (to display text/video on full res)
-        if (this.state.settings.mode === "playable1") {
-            this.renderer.render(this.playable1.sceneOverlay, this.playable1.cameraOverlay);
-            //
-        } else if (this.state.settings.mode === "lyrics") {
-            this.renderer.render(this.text.sceneOverlay, this.text.cameraOverlay);
-            //
-        } else if (this.state.settings.mode === "video") {
-            this.renderer.render(this.video.sceneOverlay, this.video.cameraOverlay);
-            //
-        } else if (this.state.settings.mode === "playable2") {
-            this.renderer.render(this.playable2.sceneOverlay, this.playable2.cameraOverlay);
-        }
+        this.renderer.render(this.state.active.scene, this.state.active.camera);
 
         cover(this.overlayRT.texture, this.width / this.height);
         this.mesh.material = this.displayMaterial;

@@ -52,7 +52,7 @@ export function hrc_cones() {
                 vec2 sgn = sign(dir);
                 vec2 base = floor(probe);
 
-                vec2 size = vec2(sqrt(1.0 + (dir.y / dir.x) * (dir.y / dir.x)),
+                vec2 dist = vec2(sqrt(1.0 + (dir.y / dir.x) * (dir.y / dir.x)),
                                  sqrt(1.0 + (dir.x / dir.y) * (dir.x / dir.y)));
 
                 vec2 frac = fract(probe);
@@ -92,10 +92,10 @@ export function hrc_cones() {
 
                     if (ray.x < ray.y) {
                         base.x += sgn.x;
-                        ray.x += size.x;
+                        ray.x += dist.x;
                     } else {
                         base.y += sgn.y;
-                        ray.y += size.y;
+                        ray.y += dist.y;
                     }
                 }
 

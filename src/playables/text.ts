@@ -3,47 +3,29 @@ import { Text } from "troika-three-text";
 import { Playable } from "./playable";
 
 export class TextTroika extends Playable {
-    textscale: number;
+    scale: number;
     currentText: string;
 
     mesh: any;
-    meshOverlay: any;
 
-    constructor(width: number, height: number, textscale: number, scaleOverlay: number) {
-        super(width, height, scaleOverlay);
+    constructor(width: number, height: number, scale: number) {
+        super(width, height);
 
-        this.textscale = textscale;
+        this.scale = scale;
 
-        this.currentText = "The show is starting!"; //this.currentText = "àéîõüçñ ¿¡€ßæœΩ πφψД ЖЙלוֹ界 こんにちは안녕하세";
+        this.currentText = "Hello Light!"; //this.currentText = "àéîõüçñ ¿¡€ßæœΩ πφψД ЖЙלוֹ界 こんにちは안녕하세";
 
         this.createScene();
     }
 
     reset() {
-        this.update(this.currentText);
+        this.update(this.currentText, this.scale);
     }
 
     createScene() {
         this.mesh = new Text();
-        this.meshOverlay = new Text();
 
-        this.mesh.material = this.createMaterial();
-        this.meshOverlay.material = this.createMaterial();
-
-        this.meshOverlay.fontSize = this.mesh.fontSize = 70;
-        this.meshOverlay.textAlign = this.mesh.textAlign = "center";
-        this.meshOverlay.anchorX = this.mesh.anchorX = "center";
-        this.meshOverlay.anchorY = this.mesh.anchorY = "middle";
-        this.meshOverlay.overflowWrap = this.mesh.overflowWrap = "break-word";
-
-        this.scene.add(this.mesh);
-        this.sceneOverlay.add(this.meshOverlay);
-
-        this.update(this.currentText);
-    }
-
-    createMaterial() {
-        return new THREE.ShaderMaterial({
+        this.mesh.material = new THREE.ShaderMaterial({
             uniforms: {
                 time: { value: null },
             },
@@ -106,25 +88,41 @@ export class TextTroika extends Playable {
                 gl_FragColor = vec4(paletteColor, 1.0);
             }`,
         });
+
+        this.mesh.fontSize = 70;
+        this.mesh.textAlign = "center";
+        this.mesh.anchorX = "center";
+        this.mesh.anchorY = "middle";
+        this.mesh.overflowWrap = "break-word";
+        this.mesh.material.defines.IS_DEPTH_MATERIAL = "";
+
+        //console.log(this.mesh.material);
+
+        this.scene.add(this.mesh);
+
+        this.update(this.currentText, this.scale);
     }
 
-    update(text: string | null) {
+
+
+    update(text: string | null, scale: number) {
+        this.scale = scale;
+
         if (text) {
             this.currentText = text;
-            this.mesh.text = this.meshOverlay.text = this.currentText;
-            this.mesh.maxWidth = this.meshOverlay.maxWidth = this.width / this.textscale;
+            this.mesh.text = this.currentText;
             this.mesh.sync();
-            this.meshOverlay.sync();
         }
 
-        this.mesh.scale.set(this.textscale, this.textscale, 1);
-        this.meshOverlay.scale.set(this.textscale * this.scaleOverlay / 1, this.textscale * this.scaleOverlay / 1.2, 1);
+        this.mesh.maxWidth = this.width / this.scale;
+
+        this.mesh.scale.set(this.scale, this.scale, 1);
 
         this.mesh.material.uniforms.time.value = performance.now() * 0.001;
-        this.meshOverlay.material.uniforms.time.value = performance.now() * 0.001;
     }
 
     dispose(): void {
-        //not needed?
+        this.mesh.material.dispose();
+        this.mesh.dispose();
     }
 }

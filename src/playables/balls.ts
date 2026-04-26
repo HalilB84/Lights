@@ -7,10 +7,9 @@ import { Playable } from "./playable";
 //the colors are extracted from screenshoots using gemini. I hope this is not violating copyright
 
 //https://brm.io/matter-js/docs/classes/Engine.html
-export class Playable1 extends Playable {
-    circles: { body: Matter.Body, size: number }[];
+export class Balls extends Playable {
+    circles: { body: Matter.Body; size: number }[];
     mesh: THREE.InstancedMesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
-    meshOverlay: THREE.InstancedMesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
 
     walls: Matter.Body[];
     engine: Matter.Engine;
@@ -49,8 +48,8 @@ export class Playable1 extends Playable {
     ];
     paletteIndex = 0;
 
-    constructor(width: number, height: number, scaleOverlay: number) {
-        super(width, height, scaleOverlay);
+    constructor(width: number, height: number) {
+        super(width, height);
 
         this.circles = [];
         this.walls = [];
@@ -75,43 +74,34 @@ export class Playable1 extends Playable {
         });
 
         this.scene.clear();
-        this.sceneOverlay.clear();
 
-        //size are in pixels because camera size maps to texture size and prettier is kiilling this
-        const geometries = [new THREE.CircleGeometry(3, 32), new THREE.CircleGeometry(3, 32), new THREE.CircleGeometry(3, 32), new THREE.CircleGeometry(2, 32)];
 
-        const materials = [new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(this.palettes[this.paletteIndex][0][0], this.palettes[this.paletteIndex][0][1], this.palettes[this.paletteIndex][0][2]) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(this.palettes[this.paletteIndex][1][0], this.palettes[this.paletteIndex][1][1], this.palettes[this.paletteIndex][1][2]) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(this.palettes[this.paletteIndex][2][0], this.palettes[this.paletteIndex][2][1], this.palettes[this.paletteIndex][2][2]) }), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(this.palettes[this.paletteIndex][3][0], this.palettes[this.paletteIndex][3][1], this.palettes[this.paletteIndex][3][2]) })];
         //const materials  = [new THREE.MeshBasicMaterial({color: new THREE.Color().setRGB(1.0, 0.5, 0, THREE.SRGBColorSpace)})];
 
-        this.mesh = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 8), new THREE.MeshBasicMaterial(), 100);
+        const geom = new THREE.CircleGeometry(1, 12);
+        const mat = new THREE.MeshBasicMaterial();
+
+        this.mesh = new THREE.InstancedMesh(geom, mat, 100);
 
         const pos = new THREE.Object3D();
         const color = new THREE.Color();
 
         for (let i = 0; i < this.mesh.count; i++) {
-            //const geom = geometries[Math.floor(Math.random() * geometries.length)];
-            //const mat = materials[Math.floor(i % materials.length)];
-
-            //const mesh = new THREE.Mesh(geom, mat);
-            //this.scene.add(mesh);
-
-            //const meshOverlay = new THREE.Mesh(geom, mat);
-            //this.sceneOverlay.add(meshOverlay);
 
             const centerX = 0; //-this.width / 2 + (this.width / 20) * i;
             const centerY = 0; //-this.height / 2 + (this.height / 20) * i;
-            const size = Math.ceil(Math.random() * 4);
+            const size = Math.ceil(Math.random() * 12) + 2;
 
-            pos.scale.set(size,size,1);
+            pos.scale.set(size, size, 1);
             pos.updateMatrix();
             this.mesh.setMatrixAt(i, pos.matrix);
             color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], this.palettes[this.paletteIndex][i % 4][2]);
             this.mesh.setColorAt(i, color);
 
+
             const body = Matter.Bodies.circle(centerX, centerY, pos.scale.x, { restitution: 1.0, frictionAir: 0.025 });
             Matter.Composite.add(this.engine.world, body);
 
-            const meshOverlay = new THREE.Mesh();
 
             this.circles.push({ body, size });
         }
@@ -142,22 +132,15 @@ export class Playable1 extends Playable {
 
             const pos = new THREE.Object3D();
 
-
             pos.position.set(body.position.x, body.position.y, 0);
             pos.scale.set(this.circles[i].size, this.circles[i].size, 1);
             pos.updateMatrix();
 
             this.mesh.setMatrixAt(i, pos.matrix);
 
-            //meshOverlay.position.set(body.position.x * this.scaleOverlay, body.position.y * this.scaleOverlay, 0);
-            //meshOverlay.scale.set(this.scaleOverlay, this.scaleOverlay, 1);
-            //meshOverlay.rotation.set(0, 0, body.angle);
-
             if (body.speed < 0.5) {
                 Matter.Body.setSpeed(body, 0.5);
             }
-
-            //mesh.material.color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], beat);
         }
 
         this.mesh.instanceMatrix.needsUpdate = true;

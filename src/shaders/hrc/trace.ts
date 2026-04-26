@@ -67,7 +67,12 @@ export function hrcv2_trace() {
 
                     vec2 c = (base + vec2(0.5)) / size;
 
-                    if(floor(c) != vec2(0.0)) break;
+                    if(floor(c) != vec2(0.0)) {
+                        //we reached the sky!
+                        //l.rad += l.tran * vec3(1.0, 0.0, 0.0);
+                        //l.tran = 0.0;
+                        break;
+                    }
 
                     //flipping idea from yaazarai's but without flipping
                     vec2 rotate = vec2[](
@@ -100,10 +105,10 @@ export function hrcv2_trace() {
 
                     if (ray.x < ray.y) {
                         base.x += sgn.x;
-                        ray.x += size.x;
+                        ray.x += dist.x;
                     } else {
                         base.y += sgn.y;
-                        ray.y += size.y;
+                        ray.y += dist.y;
                     }
                 }
 

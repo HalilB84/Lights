@@ -77,6 +77,8 @@ export class UI {
         });
 
         this.mode.addEventListener("change", () => {
+            if(this.mode.value === this.state.settings.mode) return;
+
             this.state.settings.mode = this.mode.value;
 
             if (this.mode.value !== "lyrics") {
@@ -96,6 +98,7 @@ export class UI {
             this.state.settings.fixEdges = this.fixEdges.checked = this.mode.value !== "video";
             this.fixEdges.dispatchEvent(new Event("change"));
             this.radianceModifier.dispatchEvent(new Event("input"));
+            this.state.changeMode();
         });
 
         this.videoVolume.addEventListener("input", () => {
@@ -193,10 +196,9 @@ export class UI {
             "canplay",
             () => {
                 console.log("Audio loaded");
-                this.state.loadAudio(audio, trackName, artistName);
-
                 this.mode.value = "lyrics";
                 this.mode.dispatchEvent(new Event("change"));
+                this.state.loadAudio(audio, trackName, artistName);
             },
             { once: true },
         );
