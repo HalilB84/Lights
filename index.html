@@ -17,22 +17,25 @@
             gtag("config", "G-R5E6NEWCY0");
         </script>
 
-      <script type="module" crossorigin src="/assets/index-Diw8nsKI.js"></script>
-      <link rel="stylesheet" crossorigin href="/assets/index-DISaBkt3.css">
+      <script type="module" crossorigin src="/assets/index-DE52dWMm.js"></script>
+      <link rel="stylesheet" crossorigin href="/assets/index-Co20iNR2.css">
     </head>
 
     <body>
         <canvas></canvas>
+
         <div id="settings-flex">
+            <!--settings here-->
             <button id="hide-settings">Hide Settings</button>
             <div id="settings">
-                <div class="setting-row">
+                <div class="row">
                     <label>What is this?</label>
                     <img src="help.svg" />
-                    <span class="tooltiptext">This website is a 2D light playground. The ligthing algorithm is called HRC (Holographic Radiance Cascades). More technical details are on the github page</span>
+                    <span class="tooltiptext">This website is a 2D light playground. The ligthing algorithm is called Holographic Radiance Cascades. More technical details are on the github page.</span>
+                    <a href="https://github.com/HalilB84/Lights">Source Code</a>
                 </div>
 
-                <div class="setting-row">
+                <div class="row">
                     <label>Choose mode</label>
                     <select id="mode">
                         <option value="lyrics">Lyrics</option>
@@ -41,61 +44,126 @@
                         <option value="holes">Holes</option>
                     </select>
                     <img src="help.svg" />
-                    <span class="tooltiptext">Here you can switch between different modes, these are in development with more to be added.</span>
+                    <span class="tooltiptext">Here you can switch between different modes, more to be added.</span>
                 </div>
 
-                <div class="setting-row">
+                <div class="row">
                     <label id="video-button" for="video-upload">Upload Video File</label>
                     <label id="video-name" for="video-upload">No file</label>
                     <input id="video-upload" type="file" accept="video/*" hidden />
                     <img src="help.svg" />
-                    <span class="tooltiptext">Upload a video to start the light show.</span>
+                    <span class="tooltiptext">Upload a video to start the light show. Some modes use a video texture as part of it. Everything stays on your device, no data is uploaded anywhere.</span>
                 </div>
 
-                <div class="setting-row">
+                <div class="row">
                     <label id="audio-button" for="audio-upload">Upload Audio File</label>
                     <label id="audio-name" for="audio-upload">No file</label>
                     <input id="audio-upload" type="file" accept="audio/*" hidden />
                     <img src="help.svg" />
-                    <span class="tooltiptext">For the lyrics mode upload an audio file with this naming convention for it to correctly work: songname-artist.mp3</span>
+                    <span class="tooltiptext">Upload an audio file with this naming convention for it to correctly work: songname-artist.mp3. Everything stays on your device, no data is uploaded anywhere.</span>
                 </div>
 
                 <button id="play-pause">Play / Pause</button>
 
-                <div class="setting-row">
+                <div class="row">
                     <label>Volume</label>
                     <input id="video-volume" type="range" min="0" max="1" step="0.01" />
-                    <span class="range-value" id="vv-value">50</span>
+                    <span class="range-value" id="vv-value"></span>
                 </div>
-                <div class="setting-row">
-                    <label>Video scale</label>
-                    <input id="video-scale" type="range" min="0" max="1" step="0.01" />
-                    <span class="range-value" id="vs-value">50</span>
-                </div>
-                <div class="setting-row">
-                    <label>Text scale</label>
-                    <input id="text-scale" type="range" min="0" max="3" step="0.01" />
-                    <span class="range-value" id="ts-value">100</span>
-                </div>
-                <div class="setting-row">
+
+                <div class="row">
                     <label>Radiance</label>
                     <input id="radiance-modifier" type="range" min="0" max="2" step="0.01" />
-                    <span class="range-value" id="rm-value">100</span>
+                    <span class="range-value" id="rm-value"></span>
                 </div>
 
-                <div class="setting-row">
+                <div class="row">
                     <label>Probe Count</label>
-                    <input id="probe-count" type="range" min="128" max="2048" step="2" />
-                    <span class="range-value" id="pc-value">1024</span>
+                    <input id="probe-count" type="range" min="128" max="4096" step="2" />
+                    <span class="range-value" id="pc-value"></span>
                     <img src="help.svg" />
-                    <span class="tooltiptext">This is the quality of the lighting. (Resolution of the HRC grid). Higher means more quality but lower performance and vice versa. </span>
+                    <span class="tooltiptext">Warning: Beware of setting this too high as it greatly impacts performance. This is the quality of the lighting (Resolution of the HRC grid). Higher means more quality but lower performance and vice versa. </span>
                 </div>
 
-                <div class="setting-row">
+                <div class="row">
                     <label for="show-fps">Show FPS</label>
                     <input id="show-fps" type="checkbox" />
                 </div>
+
+                <!--balls panel here-->
+                <div id="balls-panel" class="panel">
+                    <div class="row">
+                        <label>Ball Mode Settings</label>
+                        <img src="help.svg" />
+                        <span class="tooltiptext">Bunch of bouncing balls, yeah uh thats it. Looks really good with a video uploaded and a large ball count. I recommend using a video with flashy effects, edits, etc. </span>
+                    </div>
+
+                    <div class="row">
+                        <label>Ball Count</label>
+                        <input id="bc" type="range" min="1" max="10000" step="1" />
+                        <span class="range-value" id="bc-value"></span>
+                    </div>
+                    <div class="row">
+                        <label>Min Speed</label>
+                        <input id="speed" type="range" min="0" max="7" step="0.1" />
+                        <span class="range-value" id="speed-value"></span>
+                    </div>
+                    <div class="row">
+                        <label>Size variation</label>
+                        <input id="size-variation" type="range" min="1" max="10" step="0.1" />
+                        <span class="range-value" id="size-variation-value"></span>
+                    </div>
+                    <div class="row">
+                        <label>Force</label>
+                        <input id="force" type="range" min="0" max="5" step="0.1" />
+                        <span class="range-value" id="force-value"></span>
+                    </div>
+                    <div class="row">
+                        <label>Force Radius</label>
+                        <input id="force-radius" type="range" min="0" max="200" step="1" />
+                        <span class="range-value" id="force-radius-value"></span>
+                    </div>
+                </div>
+
+                <!--video panel here-->
+                <div id="video-panel" class="panel">
+                    <div class="row">
+                        <label>Video Mode Settings</label>
+                        <img src="help.svg" />
+                        <span class="tooltiptext">Upload an uncropped video as there needs to be color at the edges. I recommend using flashy videos, edits.</span>
+                    </div>
+                    <div class="row">
+                        <label>Video scale</label>
+                        <input id="video-scale" type="range" min="0" max="1" step="0.01" />
+                        <span class="range-value" id="vs-value"></span>
+                    </div>
+                </div>
+
+                <!--holes panel here-->
+                <div id="holes-panel" class="panel">
+                    <div class="row">
+                        <label>Holes Mode Settings</label>
+                        <img src="help.svg" />
+                        <span class="tooltiptext">Upload any video to start the show.</span>
+                    </div>
+                    <div class="row"></div>
+                </div>
+
+                <!--lyrics panel here-->
+                <div id="lyrics-panel" class="panel">
+                    <div class="row">
+                        <label>Lyrics Mode Settings</label>
+                        <img src="help.svg" />
+                        <span class="tooltiptext">Upload a song file to display its lyrics.</span>
+                    </div>
+                    <div class="row">
+                        <label>Text scale</label>
+                        <input id="text-scale" type="range" min="0" max="3" step="0.01" />
+                        <span class="range-value" id="ts-value"></span>
+                    </div>
+                </div>
             </div>
         </div>
+
     </body>
 </html>
