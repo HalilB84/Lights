@@ -57,8 +57,8 @@ export function hrcv2_extend() {
                 Light l;
 
                 if(floor(loc2) != vec2(0.0)) {
-                    l.rad = rad;// + (tran * vec3(1.0, 0.0, 0.0)); //do i need this?
-                    l.tran = tran;// * 0.0;
+                    l.rad = rad;
+                    l.tran = tran;
                     return l;
                 }
 

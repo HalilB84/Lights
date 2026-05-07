@@ -12,6 +12,7 @@ export function hrcv2_cones() {
             prev: { value: null },
             rays: { value: null },
             rsize: { value: null },
+            sky: { value: null },
             opt: { value: null },
         },
 
@@ -36,8 +37,11 @@ export function hrcv2_cones() {
             uniform sampler2D rays;
             uniform vec2 rsize;
             uniform int opt;
+            uniform sampler2D sky;
 
             out vec4 fragColor;
+
+            #define TAU 6.283185
 
             struct Light {
                 vec3 rad;
@@ -51,8 +55,9 @@ export function hrcv2_cones() {
                 Light l;
 
                 if(floor(loc) != vec2(0.0)) {
-                    l.rad = vec3(0.0);//vec3(1.0, 0.0, 0.0);
-                    l.tran = 1.0;//0.0
+                    //sky is not contant emission everywhere its infinitely far away
+                    l.rad = vec3(0.0);
+                    l.tran = 1.0;
                     return l;
                 }
 
@@ -63,11 +68,32 @@ export function hrcv2_cones() {
                 return l;
             }
 
-            vec3 upperCone(vec2 probe, int index) {
+            vec3 upperCone(vec2 probe, int index, float top, float bottom) {
 
                 vec2 pos = vec2(probe.x + float(index), floor(probe.y) / float(opt) + 0.5) / size;
-                if(floor(pos) != vec2(0.0)) return vec3(0.0, 0.0, 0.0); // 1.0
-                return texture(prev, pos).rgb;
+                if(floor(pos) == vec2(0.0)) return texture(prev, pos).rgb;
+
+                //atp sample sky, get corresponding weight for the upper cone
+                //our dir is going to be the middle of the cone
+
+                float mid = (top + bottom) / 2.0; //this is fine because consecutive rays in c1 and above never jump quadrants
+                vec2 dir = vec2(cos(mid), sin(mid));
+
+                vec2 rotate[4]; //rotation matrix for the 1d texture sample
+                rotate[0] = dir;
+                rotate[1] = vec2(-dir.y, dir.x);
+                rotate[2] = -dir;
+                rotate[3] = vec2(dir.y, -dir.x);
+
+                dir = rotate[frustum];
+
+                float angle = atan(dir.y, dir.x);
+
+                if(angle < 0.0) angle += TAU; //cvrt -pi..0 to pi..2pi
+                angle = angle / TAU;
+
+                vec4 ss = texture(sky, vec2(angle, 0.5)); //linear
+                return ss.rgb * (top - bottom);
             }
 
             void main() {
@@ -91,15 +117,15 @@ export function hrcv2_cones() {
                 int upCone = index * 2 + 1;
 
                 //A_n+1(j) = ang(v_n+1(j + 1/2)) - ang(v_n+1(j - 1/2)) eq 13 there is a little switch up between the paper and integer indexes here
-                ivec2 one = ivec2(twoN1, 2 * downCone - twoN1);
-                ivec2 two = ivec2(twoN1, 2 * upCone - twoN1);
-                ivec2 three = ivec2(twoN1, 2 * (upCone + 1) - twoN1);
+                float one = atan(float(2 * downCone - twoN1), float(twoN1));
+                float two = atan(float(2 * upCone - twoN1), float(twoN1));
+                float three = atan(float(2 * (upCone + 1) - twoN1), float(twoN1));
 
-                float downWeight = atan(float(two.y), float(two.x)) - atan(float(one.y), float(one.x));
-                float upWeight = atan(float(three.y), float(three.x)) - atan(float(two.y), float(two.x));
+                float downWeight = two - one;
+                float upWeight = three - two;
 
-                vec3 downVal = upperCone(probe + vec2(even * downRay), downCone);
-                vec3 upVal = upperCone(probe + vec2(even * upRay), upCone);
+                vec3 downVal = upperCone(probe + vec2(even * downRay), downCone, two, one);
+                vec3 upVal = upperCone(probe + vec2(even * upRay), upCone, three, two);
 
                 Light dTrace = curRay(plane, index, probe, count);
                 Light uTrace = curRay(plane, index + 1, probe, count);
@@ -121,8 +147,8 @@ export function hrcv2_cones() {
                     radDown = dRad * downWeight + dTran * downVal;
                     radUp = uRad * upWeight + uTran * upVal;
 
-                    vec3 nearDown = upperCone(probe, downCone);
-                    vec3 nearUp = upperCone(probe, upCone);
+                    vec3 nearDown = upperCone(probe, downCone, 0.0, 0.0);
+                    vec3 nearUp = upperCone(probe, upCone, 0.0, 0.0);
 
                     radDown = (radDown + nearDown) / 2.0;
                     radUp = (radUp + nearUp) / 2.0;

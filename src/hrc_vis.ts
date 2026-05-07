@@ -10,14 +10,12 @@ import { hrcv2_sum } from "./shaders/hrc/sum.js";
 export class HRC {
     state: State;
     renderer: THREE.WebGLRenderer;
-    canvas: HTMLCanvasElement;
 
     scene: THREE.Scene;
     camera: THREE.OrthographicCamera;
 
     width: number;
     height: number;
-    dpr: number;
 
     fixWidth: number;
     fixHeight: number;
@@ -26,6 +24,7 @@ export class HRC {
     opt: number;
 
     modelRT: THREE.WebGLRenderTarget;
+    sky: THREE.DataTexture;
 
     raysW: THREE.WebGLRenderTarget[];
     raysH: THREE.WebGLRenderTarget[];
@@ -47,58 +46,59 @@ export class HRC {
     geometry: THREE.PlaneGeometry;
     mesh: THREE.Mesh;
 
-    mouse: { x: number; y: number };
     frameCount: number;
-    lastTime: number;
 
     constructor(state: State) {
         this.state = state;
 
-        this.renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("canvas") as HTMLCanvasElement, antialias: true });
+        this.renderer = new THREE.WebGLRenderer({ canvas: this.state.canvas, antialias: true });
         this.renderer.autoClear = false;
+        this.renderer.setClearColor(0x000000, 0); //premultiplied
         this.renderer.info.autoReset = false;
-        this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; //saying that trust me bro i know the colors im dealing with
-        //the idea is that the colors in the fragment shader are in srgb space, rc converts the srgb color to linear(srgb?)
-        //setHSL IS in srgb space if supplied the srgb colorspace options it does conversion itself however we do that manually inside the rc shader.
+        this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+        //finally figured this out -> outputcolorspace linearsrgb changes how builtin three js materials gets converted
+        //if you are running shader material (see below) applying this conversion based on the colorspace is on you
+        //i incorrectly assumed that this automatically happened, which it technically does but only for builtin (like meshbasic) materials
 
-        //still have some doubts but I think the defalut colorspace option is because three js parses colors to be linear srgb in shaders
-        //and finally at the end converts them back to srgb
+        //so rn hrc needs to convert linear color to srgb either via three js injections or manually
+        //so because of this whole thing there can be conflicts bceause im using built in material and shader materials at the same time
+        //if outputspace is srgb video.texture.colorspace needs to be srgb bc mesh basic map samples srgb -> linear then output color space converts linear ->srgb BUT because now trace.ts gets linear I cant have manual srgb correction but this collides with text.ts
+        //anyways current method is fine three js makes no conversions to anything eveything is assumed to be srgb going into trace.ts
+        //also who knew you had to specify texture colorspace idk why i assumed the would all be srgb (CAREFUL there is a difference between a color being srgb and how webgl reads and gives it you via sampler2D)
 
-        this.renderer.setClearColor(0x000000, 0);
-
-        this.canvas = this.renderer.domElement;
-
-        this.calculateBounds();
-        this.renderer.setSize(this.width, this.height, false);
+        //https://threejs.org/manual/#en/color-management -> "Custom materials based on ShaderMaterial and RawShaderMaterial have to implement their own output color space conversion"
+        //https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLProgram.js -> shows what conversion is given to shaders
+        //https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLPrograms.js //s proves that there is no conversion in render targets
 
         this.scene = new THREE.Scene();
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); //this entire thing is a full screen quad fragment shader, as long as the plane dimensions match the ortocamera bounds
         //all of the fragments in the render target will be evaluated
 
+        this.calculateBounds();
         this.targets();
         this.shaders();
 
-        this.frameCount = 0;
-        this.mouse = { x: 9999, y: 9999 };
-        this.canvas.addEventListener("mousemove", (e) => {
-            this.mouse.x = (e.clientX * this.dpr) / (this.width / this.fixWidth);
-            this.mouse.y = ((this.canvas.clientHeight - e.clientY) * this.dpr) / (this.height / this.fixHeight);
-        });
-
+        this.renderer.setSize(this.width, this.height, false);
         this.renderer.setAnimationLoop(this.render.bind(this));
+
+        this.frameCount = 0;
     }
 
     calculateBounds() {
-        this.dpr = window.devicePixelRatio;
-        this.width = Math.floor(this.canvas.clientWidth * this.dpr);
-        this.height = Math.floor(this.canvas.clientHeight * this.dpr);
+        this.width = Math.floor(this.state.canvas.clientWidth * this.state.dpr);
+        this.height = Math.floor(this.state.canvas.clientHeight * this.state.dpr);
 
         //this needs to be adjustable, has to be even
         this.fixWidth = this.state.settings.probeCount;
-        if (this.fixWidth % 2 === 1) this.fixWidth += 1;
 
         this.fixHeight = Math.floor(this.fixWidth / (this.width / this.height));
         if (this.fixHeight % 2 === 1) this.fixHeight += 1;
+
+        if (this.height > this.width) {
+            this.fixHeight = this.state.settings.probeCount;
+            this.fixWidth = Math.floor(this.fixHeight / (this.height / this.width));
+            if (this.fixWidth % 2 === 1) this.fixWidth += 1;
+        }
 
         this.ccWidth = Math.ceil(Math.log2(this.fixWidth));
         this.ccHeight = Math.ceil(Math.log2(this.fixHeight));
@@ -120,6 +120,24 @@ export class HRC {
 
         this.modelRT?.dispose();
         this.modelRT = new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight, nearestRT);
+
+        let sky = new Float32Array(200 * 4); //each texel covers an angle of 2pi/num
+        //new Float16Array()
+        const hsl = new THREE.Color();
+
+        for (let i = 0; i < 200; ++i) {
+            hsl.set(0.0, 0.0, 0.0);
+            //hsl.setHSL(i / 200, 1.0, 0.5, THREE.SRGBColorSpace);
+
+            sky[i * 4] = hsl.r;
+            sky[i * 4 + 1] = hsl.g;
+            sky[i * 4 + 2] = hsl.b;
+            sky[i * 4 + 3] = 1;
+        }
+
+        this.sky?.dispose();
+        this.sky = new THREE.DataTexture(sky, 200, 1, THREE.RGBAFormat, THREE.FloatType);
+        this.sky.needsUpdate = true;
 
         this.raysW?.forEach((target) => {
             target.dispose();
@@ -212,8 +230,10 @@ export class HRC {
         this.renderer.setSize(this.width, this.height, false);
     }
 
+    //4 * (ceil(log2(num)) * 2) + 2 passes every frame (82 for 1024, 90 for 2048)
+    //1 + 2 * ccWidth - 1 + 2 * ccHeight - 1 + 4 textures in total
     render() {
-        if (Math.floor(this.canvas.clientWidth * this.dpr) !== this.width || Math.floor(this.canvas.clientHeight * this.dpr) !== this.height) {
+        if (Math.floor(this.state.canvas.clientWidth * this.state.dpr) !== this.width || Math.floor(this.state.canvas.clientHeight * this.state.dpr) !== this.height) {
             this.resize();
         }
 
@@ -251,8 +271,7 @@ export class HRC {
             this.traceShader.uniforms.size.value = [fw, fh];
             this.traceShader.uniforms.cascade.value = 0;
             this.traceShader.uniforms.frustum.value = i;
-            this.traceShader.uniforms.absorption.value = this.modelRT.texture;
-            this.traceShader.uniforms.emissivity.value = this.modelRT.texture;
+            this.traceShader.uniforms.emissAbsrp.value = this.modelRT.texture;
             this.traceShader.uniforms.opt.value = this.opt;
 
             this.renderer.setRenderTarget(rays[0]);
@@ -294,6 +313,7 @@ export class HRC {
                 this.coneShader.uniforms.prev.value = tex;
                 this.coneShader.uniforms.rays.value = rays[j].texture;
                 this.coneShader.uniforms.rsize.value = [rays[j].width, rays[j].height];
+                this.coneShader.uniforms.sky.value = this.sky;
                 this.coneShader.uniforms.opt.value = this.opt;
 
                 this.renderer.setRenderTarget(j === 0 ? this.frustums[i] : cones[j - 1]);

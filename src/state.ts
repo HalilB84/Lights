@@ -1,5 +1,5 @@
-import { RC } from "./rc_vis.ts";
-import { UI } from "./ui.ts";
+//import { RC } from "./rc_vis.ts";
+import { UI } from "./ui/ui.ts";
 import * as THREE from "three";
 import Stats from "stats-gl";
 import { HRC } from "./hrc_vis.ts";
@@ -17,96 +17,73 @@ import { Holes } from "./playables/holes.js";
 //If a class needs access to data, access it through the state
 
 //The methods of state are only responsible for updating its own state values and not for doing anything else (which is not even the case right now)
-//type assertions here because of syntax issues? Js doesn't know about types and you initialize things with the : operator which can't we used to specify types (inside an object).
+//what? i swear this didnt work before
 
 export class State {
-    settings: {
-        mode: string;
-        isMobile: boolean;
-        textScale: number;
-        radiance: number;
-        probeCount: number;
-        showFps: boolean;
+    canvas: HTMLCanvasElement;
+    dpr: number;
 
-        fixEdges: boolean;
-        enableRC: boolean;
-        twoPassOptimization: boolean;
-        bilinearFix: boolean;
-        srgbFix: boolean;
+    settings = {
+        mode: "",
+        isMobile: false,
+        radiance: 0,
+        probeCount: 0,
+        showFps: false,
+
+        fixEdges: false,
+        enableRC: false,
+        twoPassOptimization: false,
+        bilinearFix: false,
+        srgbFix: false,
     };
 
-    video: {
-        element: HTMLVideoElement | null;
-        texture: THREE.VideoTexture | null;
-        height: number;
-        width: number;
-        scale: number;
-        volume: number;
+    video = {
+        element: null as HTMLVideoElement | null,
+        texture: null as THREE.VideoTexture | null,
+        height: 0,
+        width: 0,
+        volume: 0,
     };
 
-    audio: {
-        element: HTMLAudioElement | null;
-        volume: number;
-        loading: boolean;
+    audio = {
+        element: null as HTMLAudioElement | null,
+        volume: 0,
+        loading: false,
     };
 
     ui: UI;
     //rc: RC;
     hrc: HRC;
-    stats: Stats;
     lrcPlayer: LRC;
     active: Playable;
 
+    mouse = { x: 9999, y: 9999 };
     audioUpdateFunction = () => {};
-    lastTime: number;
+    stats = new Stats({
+        trackGPU: true,
+        trackHz: false,
+        trackCPT: false,
+        logsPerSecond: 4,
+        graphsPerSecond: 30,
+        samplesLog: 40,
+        samplesGraph: 10,
+        precision: 2,
+        horizontal: true,
+        minimal: true,
+        mode: 0,
+    });
+
+    lastTime = 0;
 
     constructor() {
         //values are actually initialized in ui.ts
-        this.settings = {
-            mode: "lyrics",
-            isMobile: false,
-            textScale: 0,
-            radiance: 0,
-            probeCount: 0,
-            showFps: false,
+        this.canvas = document.querySelector("canvas")!;
+        this.dpr = window.devicePixelRatio;
 
-            fixEdges: false,
-            enableRC: false,
-            twoPassOptimization: false,
-            bilinearFix: false,
-            srgbFix: false,
-        };
-
-        this.video = {
-            element: null,
-            texture: null,
-            height: 0,
-            width: 0,
-            scale: 0,
-            volume: 0,
-        };
-
-        this.audio = {
-            element: null,
-            volume: 0,
-            loading: false,
-        };
-
-        this.stats = new Stats({
-            trackGPU: true,
-            trackHz: false,
-            trackCPT: false,
-            logsPerSecond: 4,
-            graphsPerSecond: 30,
-            samplesLog: 40,
-            samplesGraph: 10,
-            precision: 2,
-            horizontal: true,
-            minimal: true,
-            mode: 0,
+        this.canvas.addEventListener("mousemove", (e) => {
+            this.mouse.x = e.clientX;
+            this.mouse.y = this.canvas.clientHeight - e.clientY;
         });
-
-        this.lastTime = 0;
 
         document.body.appendChild(this.stats.dom);
 
@@ -114,21 +91,24 @@ export class State {
         //this.rc = new RC(this);
         this.hrc = new HRC(this);
         this.lrcPlayer = new LRC();
-        this.active = new TextTroika(this.hrc.fixWidth, this.hrc.fixHeight, this.settings.textScale);
+        this.active = new TextTroika(this.hrc.fixWidth, this.hrc.fixHeight);
     }
 
     changeMode() {
         //first del the cur mode
         this.active?.dispose();
 
+        const w = this.hrc.fixWidth;
+        const h = this.hrc.fixHeight;
+
         if (this.settings.mode === "video") {
-            this.active = new Video(this.hrc.fixWidth, this.hrc.fixHeight);
+            this.active = new Video(w, h);
         } else if (this.settings.mode === "lyrics") {
-            this.active = new TextTroika(this.hrc.fixWidth, this.hrc.fixHeight, this.settings.textScale);
-        } else if (this.settings.mode === "playable1") {
-            this.active = new Balls(this.hrc.fixWidth, this.hrc.fixHeight);
-        } else if (this.settings.mode === "playable2") {
-            this.active = new Holes(this.hrc.fixWidth, this.hrc.fixHeight);
+            this.active = new TextTroika(w, h);
+        } else if (this.settings.mode === "balls") {
+            this.active = new Balls(w, h);
+        } else if (this.settings.mode === "holes") {
+            this.active = new Holes(w, h);
         }
     }
 
@@ -138,22 +118,32 @@ export class State {
         this.lastTime = curTime;
 
         if (this.settings.mode === "video") {
-            this.active.update(this.video.scale, this.video.texture, this.video.width, this.video.height);
+            this.active.update(this.video.texture, this.video.width, this.video.height, this.ui.videoPanel.exportState());
+            //
+            //
         } else if (this.settings.mode === "lyrics") {
-            this.active.update(null, this.settings.textScale);
-        } else if (this.settings.mode === "playable1") {
-            this.active.update(delta, { x: this.hrc.mouse.x - this.hrc.fixWidth / 2, y: this.hrc.mouse.y - this.hrc.fixHeight / 2 });
-        } else if (this.settings.mode === "playable2") {
+            this.active.update(null, this.ui.lyricsPanel.exportState());
+            //
+            //
+        } else if (this.settings.mode === "balls") {
+            this.active.update(
+                delta,
+                {
+                    x: (this.mouse.x * this.dpr) / (this.hrc.width / this.hrc.fixWidth) - this.hrc.fixWidth / 2,
+                    y: (this.mouse.y * this.dpr) / (this.hrc.height / this.hrc.fixHeight) - this.hrc.fixHeight / 2,
+                },
+                this.video.texture,
+                this.ui.ballsPanel.exportState(),
+            );
+            //
+            //
+        } else if (this.settings.mode === "holes") {
             this.active.update(this.video.texture);
         }
     }
 
     change() {
         this.hrc.resize();
-    }
-
-    setTextScale(value: number) {
-        this.settings.textScale = value;
     }
 
     setMediaVolume(vol: number) {
@@ -180,9 +170,10 @@ export class State {
         this.video.height = video.videoHeight;
         this.video.width = video.videoWidth;
         this.video.texture = new THREE.VideoTexture(video);
+        //this.video.texture.colorSpace = THREE.SRGBColorSpace;
 
         this.toggleVideo(false);
-        if (this.ui.mode.value !== "video" && this.ui.mode.value !== "playable2") this.ui.mode.value = "video";
+        if (this.ui.mode.value !== "video" && this.ui.mode.value !== "holes") this.ui.mode.value = "video";
         this.ui.mode.dispatchEvent(new Event("change"));
     }
 
@@ -207,7 +198,7 @@ export class State {
         this.audio.element.volume = this.audio.volume;
 
         if (this.active instanceof TextTroika) {
-            this.active.update("Loading lyrics...", this.settings.textScale);
+            this.active.update("Loading lyrics...", null);
         }
 
         this.audio.loading = true;
@@ -218,7 +209,7 @@ export class State {
 
                 if (changed === "init" || changed === "changed") {
                     if (this.active instanceof TextTroika) {
-                        this.active.update(lyric, this.settings.textScale);
+                        this.active.update(lyric, null);
                     }
                 }
             };

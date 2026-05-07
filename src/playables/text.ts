@@ -7,11 +7,10 @@ export class TextTroika extends Playable {
     currentText: string;
 
     mesh: any;
-
-    constructor(width: number, height: number, scale: number) {
+    constructor(width: number, height: number) {
         super(width, height);
 
-        this.scale = scale;
+        this.scale = 1;
 
         this.currentText = "Hello Light!"; //this.currentText = "àéîõüçñ ¿¡€ßæœΩ πφψД ЖЙלוֹ界 こんにちは안녕하세";
 
@@ -19,8 +18,9 @@ export class TextTroika extends Playable {
     }
 
     reset() {
-        this.update(this.currentText, this.scale);
+        this.update(this.currentText, null);
         this.mesh.fontSize = this.width / 12;
+        this.mesh.material.uniforms.width.value = this.width;
     }
 
     createScene() {
@@ -29,29 +29,26 @@ export class TextTroika extends Playable {
         this.mesh.material = new THREE.ShaderMaterial({
             uniforms: {
                 time: { value: null },
+                width: { value: null },
             },
             vertexShader: `
             varying vec2 vUv;
             varying float vIndex;
             uniform float time;
+            uniform float width;
 
             void main() {
                 vUv = uv;
                 vIndex = aTroikaGlyphBounds.x;
-                vec4 mvPosition = vec4(position, 1.0);
 
-                float frequency1 = 0.035;
-                float amplitude1 = 20.0;
-                float frequency2 = 0.025;
-                float amplitude2 = 20.0;
+                float norm = (aTroikaGlyphBounds.x + width / 2.0) / width;
 
-                float offset = sin(aTroikaGlyphBounds.x * 0.005 + time * 1.5) * amplitude2;
+                float offset = 0.0; //sin(norm * 3.5 + time * 1.7) * width * 0.03;
+
+                vec4 mvPosition = modelMatrix * vec4(position, 1.0);
                 mvPosition.x += offset;
 
-                mvPosition = modelViewMatrix * mvPosition;
-                gl_Position = projectionMatrix * mvPosition;
-
-                //gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                gl_Position = projectionMatrix * viewMatrix * mvPosition;
             }
         `,
             fragmentShader: `
@@ -90,6 +87,8 @@ export class TextTroika extends Playable {
             }`,
         });
 
+        this.mesh.material.uniforms.width.value = this.width;
+
         this.mesh.fontSize = this.width / 12;
         this.mesh.textAlign = "center";
         this.mesh.anchorX = "center";
@@ -102,11 +101,11 @@ export class TextTroika extends Playable {
         this.scene.add(this.mesh);
         this.volScene = this.scene;
 
-        this.update(this.currentText, this.scale);
+        this.update(this.currentText, null);
     }
 
-    update(text: string | null, scale: number) {
-        this.scale = scale;
+    update(text: string | null, s: { scale: number } | null) {
+        this.scale = s?.scale ?? this.scale;
 
         if (text) {
             this.currentText = text;

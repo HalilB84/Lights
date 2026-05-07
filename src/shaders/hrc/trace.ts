@@ -9,8 +9,7 @@ export function hrcv2_trace() {
             size: { value: null },
             cascade: { value: null },
             frustum: { value: null },
-            absorption: { value: null },
-            emissivity: { value: null },
+            emissAbsrp: { value: null },
             opt: { value: null },
         },
         glslVersion: THREE.GLSL3,
@@ -30,7 +29,7 @@ export function hrcv2_trace() {
             uniform vec2 size;
             uniform int cascade;
             uniform int frustum;
-            uniform sampler2D absorption;
+            uniform sampler2D emissAbsrp;
             uniform sampler2D emissivity;
             uniform int opt;
 
@@ -59,7 +58,7 @@ export function hrcv2_trace() {
                 float cur = 0.0;
                 float mx = length(dir);
 
-                for(int i = 0; i < 2000; ++i) {
+                for(int i = 0; ; ++i) {
                     if(cur >= mx) break;
                     float next = min(ray.x, ray.y);
                     float step = min(next, mx) - cur;
@@ -69,36 +68,37 @@ export function hrcv2_trace() {
 
                     if(floor(c) != vec2(0.0)) {
                         //we reached the sky!
-                        //l.rad += l.tran * vec3(1.0, 0.0, 0.0);
-                        //l.tran = 0.0;
                         break;
                     }
 
-                    //flipping idea from yaazarai's but without flipping
-                    vec2 rotate = vec2[](
-                        c,
-                        vec2(1.0 - c.y, c.x),
-                        1.0 - c,
-                        vec2(c.y, 1.0 - c.x)
-                    )[frustum];
+                    //rotating idea from yaazarai's but without flipping, old syntax was breaking mobile
+                    //also be careful where uv(0, 0) is changes the below eqs
+                    vec2 rotate[4];
+                    rotate[0] = c;
+                    rotate[1] = vec2(1.0 - c.y, c.x);
+                    rotate[2] = 1.0 - c;
+                    rotate[3] = vec2(c.y, 1.0 - c.x);
 
                     //ok so this part is a little confusing, first of rn absortion values are between 0 to 1 but absrp 1 gives tran = 0.24 at max step length so it can be bigger?
-                    vec3 emiss = pow( texture(emissivity, rotate).rgb, vec3(2.2) );
-                    float absrp = pow( texture(absorption, rotate).a, 2.2 );
+                    vec4 emissAbsrp = pow(texture(emissAbsrp, rotate[frustum]), vec4(2.2));
+                    vec3 emiss = emissAbsrp.rgb;
+                    float absrp = emissAbsrp.a;
 
                     //way to think about this is if absrp is 0.0 then transmittance is 1.0 meaning all light passes through and emits none
                     //if absrp going to infinity then transmittance is going to 0. If absrp inf then only emit, anywhere in between means you emit some and let some
                     //but also eq 4 on the paper comes out to be divided by absrp but we don't do that?
 
                     //what I dont understand is, if absrp 0.0 lets all the light through then a light source should have infinite absrp for this to properly work?
-                    if(absrp == 1.0) { //tbd
-                        absrp = 50.0;
-                    }
+                    //but then you would also divide by inf absrp???? i dont know maybe this is a problem of representing things in the 0 to 1 range
+                    //logic is if absrp 1 then its a fully opaque object. if absrp remained 1.0 then tran becomes 0.24 - 0.36 which is not what we want
+                    //you could also just give absrp values > 1 to the texture which probably makes more sense than just jumping the value but again anything below 1 becomes related to volumetrics
+                    //even with volumetrics since anything absrp > 0 leads to tran being < 1, in just a few steps l.tran becomes small anyways so it shouldnt differ much
+                    //anyways since I overlay opque surface that is handled
 
                     //whaaa? look later
 
                     float tran = exp(-absrp * step); //eq2
-                    vec3 rad = emiss * (1.0 - tran); //eq4
+                    vec3 rad = emiss * (1.0 - tran); //eq4 (this actually needs to be divided by absrp according to eq4 but havent figured it out yet, as long as volumetrics (a < 1) are not involved this works)
 
                     l.rad += l.tran * rad; //eq5
                     l.tran *= tran; //eq6

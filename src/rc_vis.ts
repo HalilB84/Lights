@@ -59,15 +59,13 @@ export class RC {
     constructor(state: State) {
         this.state = state;
 
-        this.renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("canvas") as HTMLCanvasElement, antialias: true });
+        this.renderer = new THREE.WebGLRenderer({
+            canvas: document.querySelector("canvas") as HTMLCanvasElement,
+            antialias: true,
+        });
         this.renderer.autoClear = false;
         this.renderer.info.autoReset = false;
-        this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; //saying that trust me bro i know the colors im dealing with
-        //the idea is that the colors in the fragment shader are in srgb space, rc converts the srgb color to linear(srgb?)
-        //setHSL IS in srgb space if supplied the srgb colorspace options it does conversion itself however we do that manually inside the rc shader.
-
-        //still have some doubts but I think the defalut colorspace option is because three js parses colors to be linear srgb in shaders
-        //and finally at the end converts them back to srgb
+        this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace; //see hrc_vis
 
         this.renderer.setClearColor(0x848484, 0);
 
@@ -372,29 +370,29 @@ export class RC {
 
 /*
 
-<div class="setting-row">
+<div class="row">
     <label for="fix-edges">Fix blocky edges</label>
     <input id="fix-edges" type="checkbox" />
 </div>
-<div class="setting-row">
+<div class="row">
     <label for="enable-rc">Enable Radiance Cascades</label>
     <input id="enable-rc" type="checkbox" />
     <img src="help.svg" />
     <span class="tooltiptext">Radiance Cascades is a global illumination technique that runs faster and doesn't have noise. Checking off this checkbox will default to shooting N random rays per pixel, however keeping it on for lighting is recommended for better performance and looks. Technical details on this can be found on Github. </span>
 </div>
-<div class="setting-row rc-collapse">
+<div class="row rc-collapse">
     <label for="2-pass-optimization">2 pass optimization</label>
     <input id="2-pass-optimization" type="checkbox" />
     <img src="help.svg" />
     <span class="tooltiptext">If performance is an issue, enable this. The cascade calculation happens in 2 passes, meaning if the overlay is 60 fps, the lighting is calculated at 30 fps. Because the overlay and the light are calculated at different speeds, there will be artifacts where the previous frame is visible for a split second.</span>
 </div>
-<div class="setting-row rc-collapse">
+<div class="row rc-collapse">
     <label for="bilinear-fix">Bilinear Fix</label>
     <input id="bilinear-fix" type="checkbox" />
     <img src="help.svg" />
     <span class="tooltiptext">Fixes the ringing artifacts in RC, but brings down performance as more rays are cast</span>
 </div>
-<div class="setting-row">
+<div class="row">
     <label for="srgb-fix">SRGB Fix</label>
     <input id="srgb-fix" type="checkbox" />
     <img src="help.svg" />

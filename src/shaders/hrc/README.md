@@ -15,4 +15,5 @@ Optimizations \ Features:
 
 - optional per rgb transmittance cuz fps
 - optional half probes in a plane as they go unused except in c0-c1 and interp in c0 - gives around 2x boost
-- non POT resolutions need work but this should be not too hard, I just need per cascade res and complete to the nearest POT - will harm fps
+- rgb9e5 packing/unpacking mayb
+- 1D sky texture

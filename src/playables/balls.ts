@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import Matter from "matter-js";
 import { Playable } from "./playable";
+import { sample_video } from "./pShaders/sample";
 
 //inspired by https://akari.lusion.co/#spheres (i promise I didnt look at their code so no copying)
 //i have no idea how they have achieve those color palletes but it looks crazy good.
@@ -9,10 +10,20 @@ import { Playable } from "./playable";
 //https://brm.io/matter-js/docs/classes/Engine.html
 export class Balls extends Playable {
     circles: { body: Matter.Body; size: number }[];
-    mesh: THREE.InstancedMesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+    //mesh: THREE.InstancedMesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+    mesh: THREE.InstancedMesh<THREE.CircleGeometry, THREE.ShaderMaterial>;
+    mat: THREE.ShaderMaterial;
 
     walls: Matter.Body[];
     engine: Matter.Engine;
+
+    p = {
+        count: 500,
+        speed: 1,
+        variation: 0,
+        force: 1,
+        forceRadius: 70,
+    };
 
     palettes: number[][][] = [
         [
@@ -54,13 +65,11 @@ export class Balls extends Playable {
         this.circles = [];
         this.walls = [];
         this.createScene();
-
-        document.querySelector("canvas")?.addEventListener("click", () => {
-            this.changeColors();
-        });
     }
+
     reset() {
         this.dispose();
+        this.scene.clear();
 
         this.circles = [];
         this.walls = [];
@@ -73,30 +82,30 @@ export class Balls extends Playable {
             gravity: { x: 0, y: 0, scale: 0 },
         });
 
-        this.scene.clear();
-
-        //const materials  = [new THREE.MeshBasicMaterial({color: new THREE.Color().setRGB(1.0, 0.5, 0, THREE.SRGBColorSpace)})];
-
         const geom = new THREE.CircleGeometry(1, 12);
-        const mat = new THREE.MeshBasicMaterial();
+        //const mat = new THREE.MeshBasicMaterial();
+        this.mat = sample_video();
+        this.mat.uniforms.resolution.value = [this.width, this.height];
 
-        this.mesh = new THREE.InstancedMesh(geom, mat, 100);
+        this.mesh = new THREE.InstancedMesh(geom, this.mat, this.p.count);
 
         const pos = new THREE.Object3D();
-        const color = new THREE.Color();
 
         for (let i = 0; i < this.mesh.count; i++) {
-            const centerX = 0; //-this.width / 2 + (this.width / 20) * i;
-            const centerY = 0; //-this.height / 2 + (this.height / 20) * i;
-            const size = Math.ceil(Math.random() * 12) + 2;
+            const centerX = ((Math.random() * 2 - 1) * this.width) / 2;
+            const centerY = ((Math.random() * 2 - 1) * this.height) / 2;
+            const size = Math.max(Math.ceil(Math.random() * this.p.variation), 1);
 
             pos.scale.set(size, size, 1);
             pos.updateMatrix();
             this.mesh.setMatrixAt(i, pos.matrix);
-            color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], this.palettes[this.paletteIndex][i % 4][2]);
-            this.mesh.setColorAt(i, color);
+            //color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], this.palettes[this.paletteIndex][i % 4][2]);
+            //this.mesh.setColorAt(i, color);
 
-            const body = Matter.Bodies.circle(centerX, centerY, pos.scale.x, { restitution: 1.0, frictionAir: 0.025 });
+            const body = Matter.Bodies.circle(centerX, centerY, size, {
+                restitution: 1.0,
+                frictionAir: 0.005,
+            });
             Matter.Composite.add(this.engine.world, body);
 
             this.circles.push({ body, size });
@@ -105,7 +114,7 @@ export class Balls extends Playable {
         this.scene.add(this.mesh);
         this.volScene = this.scene;
 
-        const thickness = 10;
+        const thickness = 100;
         const options = { isStatic: true, restitution: 0.8 };
 
         this.walls.push(Matter.Bodies.rectangle(0, this.height / 2 + thickness / 2, this.width + thickness, thickness, options));
@@ -116,38 +125,50 @@ export class Balls extends Playable {
         Matter.Composite.add(this.engine.world, this.walls);
     }
 
-    update(delta: number, mouse: { x: number; y: number }) {
+    update(delta: number, mouse: { x: number; y: number }, videoTexture: THREE.VideoTexture | null, s: { count: number; speed: number; variation: number; force: number; forceRadius: number }) {
+        if (this.p.count !== s.count || this.p.variation !== s.variation) {
+            this.p = { ...s };
+            this.reset();
+            return;
+        }
+
+        this.p = { ...s };
+
+        let pos = new THREE.Object3D();
+
         Matter.Engine.update(this.engine, Math.min(delta, (1 / 60) * 1000));
 
         for (let i = 0; i < this.circles.length; i++) {
-            let { body } = this.circles[i];
+            let { body, size } = this.circles[i];
 
             //bound check rq because bodies can escape the walls
             if (body.position.x < -this.width / 2 || body.position.x > this.width / 2 || body.position.y < -this.height / 2 || body.position.y > this.height / 2) {
                 Matter.Body.setPosition(body, { x: 0, y: 0 });
             }
 
-            const pos = new THREE.Object3D();
-
             pos.position.set(body.position.x, body.position.y, 0);
-            pos.scale.set(this.circles[i].size, this.circles[i].size, 1);
+            pos.scale.set(size, size, 1);
             pos.updateMatrix();
 
             this.mesh.setMatrixAt(i, pos.matrix);
 
-            if (body.speed < 0.5) {
-                Matter.Body.setSpeed(body, 0.5);
+            if (body.speed < s.speed) {
+                if (body.speed === 0) Matter.Body.setVelocity(body, { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1 });
+                Matter.Body.setSpeed(body, s.speed);
             }
         }
 
         this.mesh.instanceMatrix.needsUpdate = true;
-        this.changeSpeed(100, 1, mouse);
+        this.changeSpeed(mouse);
+
+        this.mat.uniforms.videoTexture.value = videoTexture;
+        this.mat.uniforms.init.value = videoTexture ? false : true;
     }
 
     changeColors() {
         this.paletteIndex = (this.paletteIndex + 1) % this.palettes.length;
+        const color = new THREE.Color();
         for (let i = 0; i < this.circles.length; i++) {
-            const color = new THREE.Color();
             color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], this.palettes[this.paletteIndex][i % 4][2]);
 
             this.mesh.setColorAt(i, color);
@@ -156,7 +177,7 @@ export class Balls extends Playable {
         this.mesh.instanceColor!.needsUpdate = true;
     }
 
-    changeSpeed(threshold: number, force: number, mouse?: { x: number; y: number }) {
+    changeSpeed(mouse?: { x: number; y: number }) {
         for (let i = 0; i < this.circles.length; i++) {
             let { body } = this.circles[i];
 
@@ -173,10 +194,10 @@ export class Balls extends Playable {
                 angle = Math.random() * Math.PI * 2;
             }
 
-            if (distance < threshold) {
+            if (distance < this.p.forceRadius) {
                 Matter.Body.setVelocity(body, {
-                    x: body.velocity.x + force * Math.cos(angle),
-                    y: body.velocity.y + force * Math.sin(angle),
+                    x: body.velocity.x + this.p.force * Math.cos(angle),
+                    y: body.velocity.y + this.p.force * Math.sin(angle),
                 });
             }
         }

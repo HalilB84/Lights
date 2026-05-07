@@ -74,18 +74,17 @@ export function hrc_cones() {
 
                     if(floor(c) != vec2(0.0)) break;
 
-                    vec2 rotate = vec2[](
-                        c,
-                        vec2(1.0 - c.y, c.x),
-                        vec2(1.0 - c.x, 1.0 - c.y),
-                        vec2(c.y, 1.0 - c.x)
-                    )[frustum];
+                    vec2 rotate[4];
+                    rotate[0] = c;
+                    rotate[1] = vec2(1.0 - c.y, c.x);
+                    rotate[2] = 1.0 - c;
+                    rotate[3] = vec2(c.y, 1.0 - c.x);
 
-                    vec4 emiss = LINEAR( texture(emissivity, rotate) );
-                    vec4 absrp = LINEAR( texture(absorption, rotate) );
+                    vec4 emiss = LINEAR( texture(emissivity, rotate[frustum]) );
+                    vec4 absrp = LINEAR( texture(absorption, rotate[frustum]) );
 
                     vec4 tran = exp(-absrp * step);
-                    vec4 rad = emiss * (1.0 - tran); //this is not even right but im not questioning it anymore the actual eq comes out to be divided by abrsp that everyone seems to admit
+                    vec4 rad = emiss * (1.0 - tran); //this is not even right but im not questioning it anymore the actual eq comes out to be divided by abrsp that everyone seems to omit
 
                     l.rad += l.tran * rad;
                     l.tran *= tran;
@@ -139,12 +138,12 @@ export function hrc_cones() {
                 int upCone = index * 2 + 1;
 
                 //A_n+1(j) = ang(v_n+1(j + 1/2)) - ang(v_n+1(j - 1/2)) eq 13 there is a little switch up between the paper and integer indexes here
-                ivec2 one = ivec2(twoN1, 2 * downCone - twoN1);
-                ivec2 two = ivec2(twoN1, 2 * upCone - twoN1);
-                ivec2 three = ivec2(twoN1, 2 * (upCone + 1) - twoN1);
+                float one = atan(float(2 * downCone - twoN1), float(twoN1));
+                float two = atan(float(2 * upCone - twoN1), float(twoN1));
+                float three = atan(float(2 * (upCone + 1) - twoN1), float(twoN1));
 
-                float downWeight = atan(float(two.y), float(two.x)) - atan(float(one.y), float(one.x));
-                float upWeight = atan(float(three.y), float(three.x)) - atan(float(two.y), float(two.x));
+                float downWeight = two - one;
+                float upWeight = three - two;
 
                 //now for both rays trace and merge
                 Light dTrace = DDA(probe, vec2(downRay));

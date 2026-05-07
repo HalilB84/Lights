@@ -22,14 +22,14 @@ export class Video extends Playable {
         this.volScene = this.scene;
     }
 
-    update(space: number, texture: THREE.VideoTexture | null, width: number, height: number) {
+    update(texture: THREE.VideoTexture | null, width: number, height: number, s: { scale: number }) {
         if (texture && this.mesh.material.map === null) {
             this.mesh.material.needsUpdate = true;
         }
 
         this.mesh.material.map = texture;
 
-        const scale = Math.min(this.width / width, this.height / height) * space;
+        const scale = Math.min(this.width / width, this.height / height) * s.scale;
         const actualWidth = width * scale;
         const actualHeight = height * scale;
 
