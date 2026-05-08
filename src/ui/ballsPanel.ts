@@ -14,6 +14,8 @@ export class BallsPanel {
     forceRadius = document.getElementById("force-radius") as HTMLInputElement;
     forceRadiusVal = document.getElementById("force-radius-value") as HTMLInputElement;
 
+    matSel = document.getElementById("mat") as HTMLInputElement;
+
     constructor() {
         ((this.ballCount.value = "500"), (this.bcVal.textContent = this.ballCount.value));
         this.ballCount.addEventListener("change", () => {
@@ -25,7 +27,7 @@ export class BallsPanel {
             this.speedVal.textContent = this.speed.value;
         });
 
-        ((this.variation.value = "0"), (this.variationVal.textContent = this.variation.value));
+        ((this.variation.value = "5"), (this.variationVal.textContent = this.variation.value));
         this.variation.addEventListener("input", () => {
             this.variationVal.textContent = this.variation.value;
         });
@@ -39,6 +41,8 @@ export class BallsPanel {
         this.forceRadius.addEventListener("input", () => {
             this.forceRadiusVal.textContent = this.forceRadius.value;
         });
+
+        this.matSel.value = "10";
     }
 
     exportState() {
@@ -48,6 +52,7 @@ export class BallsPanel {
             variation: +this.variationVal.textContent,
             force: +this.forceVal.textContent,
             forceRadius: +this.forceRadiusVal.textContent,
+            mat: +this.matSel.value,
         };
     }
 }

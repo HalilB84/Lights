@@ -126,10 +126,11 @@ select:focus {
     cursor: pointer;
 }
 
-/*its off wtf man its 2025 why cant I style sliders properly. THE FIREFOX SLIDERs ARE OFF WHY???????*/
+/*below is broken on some mobile? looks like sliders are gonna change*/
 
 input[type="range"] {
     -webkit-appearance: none;
+
     appearance: none;
     background: transparent;
     cursor: pointer;
@@ -199,7 +200,10 @@ img {
     padding: var(--padding);
     border: var(--border);
     border-radius: var(--border-radius);
-    width: 140%;
+
+    width: max-content;
+    max-width: min(140%, 100vw);
+    min-width: 100%;
     word-spacing: -0.15em;
 }
 

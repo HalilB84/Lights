@@ -16,7 +16,7 @@ The wallpaper engine counterpart is of the program is on the lights-WE branch.
 
 Using Holographic Radiance Cascades
 
-[Arcane  - Enemy by Imagine Dragons](https://www.youtube.com/watch?v=SZ9eAXbluZ4)
+[Arcane - Enemy by Imagine Dragons](https://www.youtube.com/watch?v=SZ9eAXbluZ4)
 
 [Random Insta edit](https://www.youtube.com/watch?v=jnPWmIXKgb4)
 

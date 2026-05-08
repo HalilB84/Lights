@@ -24,9 +24,10 @@
         <canvas></canvas>
 
         <div id="settings-flex">
-            <!--settings here-->
             <button id="hide-settings">Hide Settings</button>
             <div id="settings">
+                <!---->
+                <!--general settings here-->
                 <div class="row">
                     <label>What is this?</label>
                     <img src="help.svg" />
@@ -43,7 +44,7 @@
                         <option value="holes">Holes</option>
                     </select>
                     <img src="help.svg" />
-                    <span class="tooltiptext">Here you can switch between different modes, these are in development with more to be added.</span>
+                    <span class="tooltiptext">Here you can switch between different modes, more to be added.</span>
                 </div>
 
                 <div class="row">
@@ -51,7 +52,7 @@
                     <label id="video-name" for="video-upload">No file</label>
                     <input id="video-upload" type="file" accept="video/*" hidden />
                     <img src="help.svg" />
-                    <span class="tooltiptext">Upload a video to start the light show.</span>
+                    <span class="tooltiptext">Upload a video to start the light show. Some modes use a video texture as part of it. Everything stays on your device, no data is uploaded anywhere.</span>
                 </div>
 
                 <div class="row">
@@ -59,7 +60,7 @@
                     <label id="audio-name" for="audio-upload">No file</label>
                     <input id="audio-upload" type="file" accept="audio/*" hidden />
                     <img src="help.svg" />
-                    <span class="tooltiptext">For the lyrics mode upload an audio file with this naming convention for it to correctly work: songname-artist.mp3</span>
+                    <span class="tooltiptext">Upload an audio file with this naming convention for it to correctly work: songname-artist.mp3. Everything stays on your device, no data is uploaded anywhere.</span>
                 </div>
 
                 <button id="play-pause">Play / Pause</button>
@@ -77,21 +78,27 @@
                 </div>
 
                 <div class="row">
-                    <label>Probe Count</label>
+                    <label>Resolution</label>
                     <input id="probe-count" type="range" min="128" max="4096" step="2" />
                     <span class="range-value" id="pc-value"></span>
                     <img src="help.svg" />
-                    <span class="tooltiptext">This is the quality of the lighting. (Resolution of the HRC grid). Higher means more quality but lower performance and vice versa. </span>
+                    <span class="tooltiptext">Warning: Beware of setting this too high as it greatly impacts performance. This is the quality of the lighting (Resolution of the HRC grid). Higher means more quality but lower performance and vice versa. </span>
                 </div>
 
                 <div class="row">
-                    <label for="show-fps">Show FPS</label>
-                    <input id="show-fps" type="checkbox" />
+                    <label for="fps">FPS</label>
+                    <span id="fps"></span>
                 </div>
 
+                <!---->
                 <!--balls panel here-->
                 <div id="balls-panel" class="panel">
-                    <label>Ball Mode Settings</label>
+                    <div class="row">
+                        <label>Ball Mode Settings</label>
+                        <img src="help.svg" />
+                        <span class="tooltiptext">Bunch of bouncing balls, yeah uh thats it. Looks really good with a video uploaded,large ball count and small sizes. I recommend using a video with flashy effects, edits, etc. </span>
+                    </div>
+
                     <div class="row">
                         <label>Ball Count</label>
                         <input id="bc" type="range" min="1" max="10000" step="1" />
@@ -117,27 +124,59 @@
                         <input id="force-radius" type="range" min="0" max="200" step="1" />
                         <span class="range-value" id="force-radius-value"></span>
                     </div>
+
+                    <div class="row">
+                        <label>Choose material</label>
+                        <select id="mat">
+                            <option value="10">Video texture</option>
+                            <option value="0">Colors 1</option>
+                            <option value="1">Colors 2</option>
+                            <option value="2">Colors 3</option>
+                        </select>
+                    </div>
                 </div>
 
+                <!---->
                 <!--video panel here-->
                 <div id="video-panel" class="panel">
-                    <label>Video Mode Settings</label>
+                    <div class="row">
+                        <label>Video Mode Settings</label>
+                        <img src="help.svg" />
+                        <span class="tooltiptext">Upload an uncropped video (no black bars) as there needs to be color at the edges. I recommend using flashy videos, edits.</span>
+                    </div>
                     <div class="row">
                         <label>Video scale</label>
                         <input id="video-scale" type="range" min="0" max="1" step="0.01" />
                         <span class="range-value" id="vs-value"></span>
                     </div>
+                    <div class="row">
+                        <label>Scenes</label>
+                        <select id="scenes">
+                            <option value="1">Vanilla</option>
+                            <option value="2">Volumetric circles</option>
+                        </select>
+                    </div>
                 </div>
 
+                <!---->
                 <!--holes panel here-->
                 <div id="holes-panel" class="panel">
-                    <label>Holes Mode Settings</label>
+                    <div class="row">
+                        <label>Holes Mode Settings</label>
+                        <img src="help.svg" />
+                        <span class="tooltiptext">Upload any video to start the show.</span>
+                    </div>
                     <div class="row"></div>
                 </div>
 
+                <!---->
                 <!--lyrics panel here-->
                 <div id="lyrics-panel" class="panel">
-                    <label>Lyrics Mode Settings</label>
+                    <div class="row">
+                        <label>Lyrics Mode Settings</label>
+                        <img src="help.svg" />
+                        <span class="tooltiptext">Upload a song file to display its lyrics.</span>
+                    </div>
                     <div class="row">
                         <label>Text scale</label>
                         <input id="text-scale" type="range" min="0" max="3" step="0.01" />

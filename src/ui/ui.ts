@@ -17,6 +17,7 @@ export class UI {
     audioName = document.getElementById("audio-name") as HTMLElement;
 
     mode = document.getElementById("mode") as HTMLInputElement;
+    modePrev = "";
 
     playPause = document.getElementById("play-pause") as HTMLInputElement;
 
@@ -25,8 +26,6 @@ export class UI {
 
     radianceModifier = document.getElementById("radiance-modifier") as HTMLInputElement;
     radianceModifierValue = document.getElementById("rm-value") as HTMLElement;
-
-    showFps = document.getElementById("show-fps") as HTMLInputElement;
 
     probeCount = document.getElementById("probe-count") as HTMLInputElement;
     pcValue = document.getElementById("pc-value") as HTMLElement;
@@ -42,20 +41,18 @@ export class UI {
         const svideo = this.state.video;
         const saudio = this.state.audio;
 
-        sett.mode = this.mode.value = "lyrics";
-        sett.isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        document.getElementById(sett.mode + "-panel")!.style.display = "flex";
+        this.mode.value = this.modePrev = "lyrics";
+        document.getElementById(this.mode.value + "-panel")!.style.display = "flex";
 
         ((svideo.volume = saudio.volume = 0.5), (this.volume.value = "0.5"));
         ((sett.radiance = 1), (this.radianceModifier.value = "1"));
-        ((sett.probeCount = sett.isMobile ? 800 : 1024), (this.probeCount.value = sett.isMobile ? "800" : "1024"));
+        ((sett.probeCount = isMobile ? 800 : 1024), (this.probeCount.value = isMobile ? "800" : "1024"));
 
         this.volumeValue.textContent = this.volume.value;
         this.radianceModifierValue.textContent = this.radianceModifier.value;
         this.pcValue.textContent = this.probeCount.value;
-
-        sett.showFps = this.showFps.checked = true;
 
         //complex state changes call a function in state to handle them
         //otherwise state values are updated inline, maybe change this later
@@ -71,7 +68,7 @@ export class UI {
 
         //if mode has the media tag
         this.playPause.addEventListener("click", () => {
-            if (this.mode.value === "holes" || this.mode.value === "video" || this.mode.value === "balls") {
+            if (this.mode.value !== "lyrics") {
                 this.state.toggleVideo(false);
             } else if (this.mode.value === "lyrics") {
                 this.state.toggleAudio(false);
@@ -79,12 +76,12 @@ export class UI {
         });
 
         this.mode.addEventListener("change", () => {
-            if (this.mode.value === sett.mode) return;
+            if (this.mode.value === this.modePrev) return;
 
-            document.getElementById(sett.mode + "-panel")!.style.display = "none";
+            document.getElementById(this.modePrev + "-panel")!.style.display = "none";
             document.getElementById(this.mode.value + "-panel")!.style.display = "flex";
 
-            sett.mode = this.mode.value;
+            this.modePrev = this.mode.value;
 
             if (this.mode.value !== "lyrics") {
                 this.state.toggleAudio(true);
@@ -100,8 +97,6 @@ export class UI {
                 this.radianceModifier.value = "1";
             }
 
-            //sett.fixEdges = this.fixEdges.checked = this.mode.value !== "video";
-            //this.fixEdges.dispatchEvent(new Event("change"));
             this.radianceModifier.dispatchEvent(new Event("input"));
             this.state.changeMode();
         });
@@ -114,11 +109,6 @@ export class UI {
         this.radianceModifier.addEventListener("input", () => {
             sett.radiance = +this.radianceModifier.value;
             this.radianceModifierValue.textContent = this.radianceModifier.value;
-        });
-
-        this.showFps.addEventListener("change", () => {
-            sett.showFps = this.showFps.checked;
-            this.state.stats.dom.style.display = this.showFps.checked ? "flex" : "none";
         });
 
         this.probeCount.addEventListener("change", () => {

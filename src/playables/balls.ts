@@ -4,15 +4,13 @@ import { Playable } from "./playable";
 import { sample_video } from "./pShaders/sample";
 
 //inspired by https://akari.lusion.co/#spheres (i promise I didnt look at their code so no copying)
-//i have no idea how they have achieve those color palletes but it looks crazy good.
-//the colors are extracted from screenshoots using gemini. I hope this is not violating copyright
 
 //https://brm.io/matter-js/docs/classes/Engine.html
 export class Balls extends Playable {
     circles: { body: Matter.Body; size: number }[];
     //mesh: THREE.InstancedMesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
-    mesh: THREE.InstancedMesh<THREE.CircleGeometry, THREE.ShaderMaterial>;
-    mat: THREE.ShaderMaterial;
+    mesh: THREE.InstancedMesh<THREE.CircleGeometry, THREE.ShaderMaterial | THREE.MeshBasicMaterial>;
+    mat: THREE.ShaderMaterial | THREE.MeshBasicMaterial;
 
     walls: Matter.Body[];
     engine: Matter.Engine;
@@ -20,41 +18,30 @@ export class Balls extends Playable {
     p = {
         count: 500,
         speed: 1,
-        variation: 0,
+        variation: 5,
         force: 1,
         forceRadius: 70,
+        mat: 10,
     };
 
     palettes: number[][][] = [
         [
-            [0.067, 1.0, 0.74],
-            [0.0, 1.0, 0.63],
-            [0.333, 0.15, 0.49],
-            [0.0, 0.0, 0.05],
+            [0.0, 1.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [0.541, 0.169, 0.886],
+            [1.0, 0.702, 0.0],
         ],
         [
-            [0.167, 0.35, 0.87],
-            [0.025, 0.7, 0.45],
-            [0.425, 0.28, 0.58],
-            [0.0, 0.0, 0.1],
+            [0.169, 0.675, 0.71],
+            [1.0, 0.494, 0.235],
+            [0.435, 0.157, 0.722],
+            [1.0, 0.839, 0.416],
         ],
         [
-            [0.1, 1.0, 0.5],
-            [0.5, 0.7, 0.81],
-            [0.0, 1.0, 0.5],
-            [0.667, 0.6, 0.05],
-        ],
-        [
-            [0.144, 0.75, 0.79],
-            [0.0, 1.0, 0.68],
-            [0.506, 0.25, 0.5],
-            [0.311, 0.6, 0.82],
-        ],
-        [
-            [0.022, 1.0, 0.5],
-            [0.5, 1.0, 0.25],
-            [0.544, 1.0, 0.33],
-            [0.625, 0.6, 0.02],
+            [1.0, 0.0, 0.498],
+            [0.0, 1.0, 1.0],
+            [0.188, 0.0, 0.6],
+            [1.0, 0.8, 0.0],
         ],
     ];
     paletteIndex = 0;
@@ -83,13 +70,18 @@ export class Balls extends Playable {
         });
 
         const geom = new THREE.CircleGeometry(1, 12);
-        //const mat = new THREE.MeshBasicMaterial();
-        this.mat = sample_video();
-        this.mat.uniforms.resolution.value = [this.width, this.height];
+
+        if (this.p.mat === 10) {
+            this.mat = sample_video();
+            this.mat.uniforms.resolution.value = [this.width, this.height];
+        } else {
+            this.mat = new THREE.MeshBasicMaterial();
+        }
 
         this.mesh = new THREE.InstancedMesh(geom, this.mat, this.p.count);
 
         const pos = new THREE.Object3D();
+        const color = new THREE.Color();
 
         for (let i = 0; i < this.mesh.count; i++) {
             const centerX = ((Math.random() * 2 - 1) * this.width) / 2;
@@ -99,8 +91,11 @@ export class Balls extends Playable {
             pos.scale.set(size, size, 1);
             pos.updateMatrix();
             this.mesh.setMatrixAt(i, pos.matrix);
-            //color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], this.palettes[this.paletteIndex][i % 4][2]);
-            //this.mesh.setColorAt(i, color);
+
+            if (this.p.mat < 10) {
+                color.setRGB(this.palettes[this.p.mat][i % 4][0], this.palettes[this.p.mat][i % 4][1], this.palettes[this.p.mat][i % 4][2]);
+                this.mesh.setColorAt(i, color);
+            }
 
             const body = Matter.Bodies.circle(centerX, centerY, size, {
                 restitution: 1.0,
@@ -125,8 +120,8 @@ export class Balls extends Playable {
         Matter.Composite.add(this.engine.world, this.walls);
     }
 
-    update(delta: number, mouse: { x: number; y: number }, videoTexture: THREE.VideoTexture | null, s: { count: number; speed: number; variation: number; force: number; forceRadius: number }) {
-        if (this.p.count !== s.count || this.p.variation !== s.variation) {
+    update(delta: number, mouse: { x: number; y: number }, videoTexture: THREE.VideoTexture | null, s: { count: number; speed: number; variation: number; force: number; forceRadius: number; mat: number }) {
+        if (this.p.count !== s.count || this.p.variation !== s.variation || this.p.mat !== s.mat) {
             this.p = { ...s };
             this.reset();
             return;
@@ -161,20 +156,10 @@ export class Balls extends Playable {
         this.mesh.instanceMatrix.needsUpdate = true;
         this.changeSpeed(mouse);
 
-        this.mat.uniforms.videoTexture.value = videoTexture;
-        this.mat.uniforms.init.value = videoTexture ? false : true;
-    }
-
-    changeColors() {
-        this.paletteIndex = (this.paletteIndex + 1) % this.palettes.length;
-        const color = new THREE.Color();
-        for (let i = 0; i < this.circles.length; i++) {
-            color.setHSL(this.palettes[this.paletteIndex][i % 4][0], this.palettes[this.paletteIndex][i % 4][1], this.palettes[this.paletteIndex][i % 4][2]);
-
-            this.mesh.setColorAt(i, color);
+        if (this.mat instanceof THREE.ShaderMaterial) {
+            this.mat.uniforms.videoTexture.value = videoTexture;
+            this.mat.uniforms.init.value = videoTexture ? false : true;
         }
-
-        this.mesh.instanceColor!.needsUpdate = true;
     }
 
     changeSpeed(mouse?: { x: number; y: number }) {

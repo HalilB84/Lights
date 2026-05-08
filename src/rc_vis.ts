@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as THREE from "three";
 import { cover } from "three/src/extras/TextureUtils.js";
 import { seed } from "./shaders/rc/seed.ts";

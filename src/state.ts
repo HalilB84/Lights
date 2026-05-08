@@ -24,17 +24,8 @@ export class State {
     dpr: number;
 
     settings = {
-        mode: "",
-        isMobile: false,
         radiance: 0,
         probeCount: 0,
-        showFps: false,
-
-        fixEdges: false,
-        enableRC: false,
-        twoPassOptimization: false,
-        bilinearFix: false,
-        srgbFix: false,
     };
 
     video = {
@@ -52,7 +43,6 @@ export class State {
     };
 
     ui: UI;
-    //rc: RC;
     hrc: HRC;
     lrcPlayer: LRC;
     active: Playable;
@@ -85,7 +75,7 @@ export class State {
             this.mouse.y = this.canvas.clientHeight - e.clientY;
         });
 
-        document.body.appendChild(this.stats.dom);
+        //document.body.appendChild(this.stats.dom);
 
         this.ui = new UI(this);
         //this.rc = new RC(this);
@@ -101,13 +91,13 @@ export class State {
         const w = this.hrc.fixWidth;
         const h = this.hrc.fixHeight;
 
-        if (this.settings.mode === "video") {
+        if (this.ui.mode.value === "video") {
             this.active = new Video(w, h);
-        } else if (this.settings.mode === "lyrics") {
+        } else if (this.ui.mode.value === "lyrics") {
             this.active = new TextTroika(w, h);
-        } else if (this.settings.mode === "balls") {
+        } else if (this.ui.mode.value === "balls") {
             this.active = new Balls(w, h);
-        } else if (this.settings.mode === "holes") {
+        } else if (this.ui.mode.value === "holes") {
             this.active = new Holes(w, h);
         }
     }
@@ -117,15 +107,15 @@ export class State {
         const delta = curTime - this.lastTime;
         this.lastTime = curTime;
 
-        if (this.settings.mode === "video") {
+        if (this.active instanceof Video) {
             this.active.update(this.video.texture, this.video.width, this.video.height, this.ui.videoPanel.exportState());
             //
             //
-        } else if (this.settings.mode === "lyrics") {
+        } else if (this.active instanceof TextTroika) {
             this.active.update(null, this.ui.lyricsPanel.exportState());
             //
             //
-        } else if (this.settings.mode === "balls") {
+        } else if (this.active instanceof Balls) {
             this.active.update(
                 delta,
                 {
@@ -137,8 +127,10 @@ export class State {
             );
             //
             //
-        } else if (this.settings.mode === "holes") {
+        } else if (this.active instanceof Holes) {
             this.active.update(this.video.texture);
+            //
+            //
         }
     }
 
@@ -173,7 +165,8 @@ export class State {
         //this.video.texture.colorSpace = THREE.SRGBColorSpace;
 
         this.toggleVideo(false);
-        if (this.ui.mode.value !== "video" && this.ui.mode.value !== "holes") this.ui.mode.value = "video";
+
+        if (this.ui.mode.value === "lyrics") this.ui.mode.value = "video"; //ik bla bla but need to add more modes before this
         this.ui.mode.dispatchEvent(new Event("change"));
     }
 

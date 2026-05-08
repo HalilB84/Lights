@@ -41,7 +41,7 @@ export class Holes extends Playable {
         this.material.uniforms.resolution.value = [this.width, this.height];
         this.volMaterial = new THREE.MeshBasicMaterial({
             blending: THREE.NoBlending,
-            opacity: 0.3,
+            opacity: 0.5,
             transparent: true,
             color: new THREE.Color().setRGB(0, 0, 0),
         });

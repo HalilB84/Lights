@@ -127,7 +127,7 @@ export class HRC {
 
         for (let i = 0; i < 200; ++i) {
             hsl.set(0.0, 0.0, 0.0);
-            //hsl.setHSL(i / 200, 1.0, 0.5, THREE.SRGBColorSpace);
+            //if(i <= 50) hsl.setHSL(i / 50, 1.0, 0.6, THREE.SRGBColorSpace);
 
             sky[i * 4] = hsl.r;
             sky[i * 4 + 1] = hsl.g;
@@ -150,7 +150,7 @@ export class HRC {
         this.raysW = [];
         this.raysH = [];
 
-        //linear in c0 cuz when opt = 2, c1 needs interpolation when extending the second half the ray
+        //linear in c0 cuz when opt = 2, c1 needs interpolation when extending the second half the ray + c0 needs interp ray data during merge
         for (let i = 0; i < this.ccWidth; ++i) {
             const height = this.fixHeight / this.opt;
             const width = Math.ceil(this.fixWidth / Math.pow(2, i)) * (Math.pow(2, i) + 1);
@@ -178,7 +178,7 @@ export class HRC {
         this.conesW = [];
         this.conesH = [];
 
-        //linear in c1 because when opt = 2, c0 needs interpolation for half the probes
+        //linear in c1 because when opt = 2, c0 needs interpolation when reading upperCone values
         for (let i = 1; i < this.ccWidth; ++i) {
             const height = this.fixHeight / this.opt;
             const width = Math.ceil(this.fixWidth / Math.pow(2, i)) * Math.pow(2, i);
@@ -348,6 +348,11 @@ export class HRC {
         this.frameCount = this.frameCount + 1; // % 2;
 
         this.state.stats.update();
+
+        const fps = this.state.stats.getData().fps;
+        const ms = (1000 / fps).toFixed(1);
+
+        document.getElementById("fps")!.textContent = fps.toString() + " (" + ms + "ms)";
 
         //https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLInfo.js
         /*if (this.frameCount % 100 === 1) {
