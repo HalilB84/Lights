@@ -17,8 +17,8 @@
             gtag("config", "G-R5E6NEWCY0");
         </script>
 
-      <script type="module" crossorigin src="/assets/index-BMnOv3i2.js"></script>
-      <link rel="stylesheet" crossorigin href="/assets/index--rJUdPZ8.css">
+      <script type="module" crossorigin src="/assets/index-BBW3cqDo.js"></script>
+      <link rel="stylesheet" crossorigin href="/assets/index-C1kdoEt7.css">
     </head>
 
     <body>
@@ -43,6 +43,7 @@
                         <option value="video">Video</option>
                         <option value="balls">Balls</option>
                         <option value="holes">Holes</option>
+                        <option value="test">Test</option>
                     </select>
                     <img src="help.svg" />
                     <span class="tooltiptext">Here you can switch between different modes, more to be added.</span>
@@ -97,13 +98,12 @@
                     <div class="row">
                         <label>Ball Mode Settings</label>
                         <img src="help.svg" />
-                        <span class="tooltiptext">Bunch of bouncing balls, yeah uh thats it. Looks really good with a video uploaded,large ball count and small sizes. I recommend using a video with flashy effects, edits, etc. </span>
+                        <span class="tooltiptext">Bunch of bouncing balls, thats it. Looks really good with a video uploaded, large ball count and small sizes. I recommend using a video with flashy effects, edits, etc. </span>
                     </div>
 
                     <div class="row">
                         <label>Ball Count</label>
-                        <input id="bc" type="range" min="1" max="10000" step="1" />
-                        <span class="range-value" id="bc-value"></span>
+                        <input id="bc" type="number" />
                     </div>
                     <div class="row">
                         <label>Min Speed</label>
@@ -112,7 +112,7 @@
                     </div>
                     <div class="row">
                         <label>Size variation</label>
-                        <input id="size-variation" type="range" min="1" max="10" step="0.1" />
+                        <input id="size-variation" type="range" min="1" max="20" step="0.1" />
                         <span class="range-value" id="size-variation-value"></span>
                     </div>
                     <div class="row">
@@ -182,6 +182,14 @@
                         <label>Text scale</label>
                         <input id="text-scale" type="range" min="0" max="3" step="0.01" />
                         <span class="range-value" id="ts-value"></span>
+                    </div>
+                </div>
+
+                <!---->
+                <!--test panel here-->
+                <div id="test-panel" class="panel">
+                    <div class="row">
+                        <label>Test Mode Settings</label>
                     </div>
                 </div>
             </div>
