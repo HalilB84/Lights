@@ -20,6 +20,8 @@ export class UI {
     mode = document.getElementById("mode") as HTMLInputElement;
     modePrev = "";
 
+    sky = document.getElementById("sky") as HTMLSelectElement;
+
     playPause = document.getElementById("play-pause") as HTMLInputElement;
 
     volume = document.getElementById("video-volume") as HTMLInputElement;
@@ -47,6 +49,8 @@ export class UI {
 
         this.mode.value = this.modePrev = "lyrics";
         document.getElementById(this.mode.value + "-panel")!.style.display = "flex";
+
+        this.sky.value = "none";
 
         ((svideo.volume = saudio.volume = 0.5), (this.volume.value = "0.5"));
         ((sett.radiance = 1), (this.radianceModifier.value = "1"));
@@ -100,6 +104,10 @@ export class UI {
             this.state.changeMode();
         });
 
+        this.sky.addEventListener("change", () => {
+            this.state.changeSky(this.sky.value);
+        });
+
         this.volume.addEventListener("input", () => {
             this.state.setMediaVolume(+this.volume.value);
             this.volumeValue.textContent = this.volume.value;
@@ -113,7 +121,7 @@ export class UI {
         this.probeCount.addEventListener("change", () => {
             sett.probeCount = +this.probeCount.value;
             this.pcValue.textContent = this.probeCount.value;
-            this.state.change();
+            this.state.changeRes();
         });
 
         //handles video files

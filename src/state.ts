@@ -158,8 +158,12 @@ export class State {
         this.pspos = this.mspos;
     }
 
-    change() {
+    changeRes() {
         this.hrc.resize();
+    }
+
+    changeSky(sky: string) {
+        this.hrc.sky(sky);
     }
 
     setMediaVolume(vol: number) {

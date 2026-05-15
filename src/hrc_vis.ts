@@ -24,7 +24,7 @@ export class HRC {
     opt: number;
 
     modelRT: THREE.WebGLRenderTarget;
-    sky: THREE.DataTexture;
+    skyData: THREE.DataTexture;
 
     raysW: THREE.WebGLRenderTarget[];
     raysH: THREE.WebGLRenderTarget[];
@@ -80,6 +80,7 @@ export class HRC {
         this.calculateBounds();
         this.targets();
         this.shaders();
+        this.sky("none");
 
         this.renderer.setSize(this.width, this.height, false);
         this.renderer.setAnimationLoop(this.render.bind(this));
@@ -123,24 +124,6 @@ export class HRC {
 
         this.modelRT?.dispose();
         this.modelRT = new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight, nearestRT);
-
-        let sky = new Float32Array(200 * 4); //each texel covers an angle of 2pi/num
-        //new Float16Array()
-        const hsl = new THREE.Color();
-
-        for (let i = 0; i < 200; ++i) {
-            hsl.set(0.0, 0.0, 0.0);
-            //if (i <= 50) hsl.setHSL(i / 50, 1.0, 0.5, THREE.SRGBColorSpace);
-
-            sky[i * 4] = hsl.r;
-            sky[i * 4 + 1] = hsl.g;
-            sky[i * 4 + 2] = hsl.b;
-            sky[i * 4 + 3] = 1;
-        }
-
-        this.sky?.dispose();
-        this.sky = new THREE.DataTexture(sky, 200, 1, THREE.RGBAFormat, THREE.FloatType);
-        this.sky.needsUpdate = true;
 
         this.raysW?.forEach((target) => {
             target.dispose();
@@ -208,7 +191,6 @@ export class HRC {
             if (i % 2 === 0) this.frustums.push(new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight / this.opt, linearRT));
             else this.frustums.push(new THREE.WebGLRenderTarget(this.fixHeight, this.fixWidth / this.opt, linearRT));
         }
-
         // this.final = new THREE.WebGLRenderTarget(this.fixWidth, this.fixHeight, linearRT);
     }
 
@@ -222,6 +204,26 @@ export class HRC {
         this.geometry = new THREE.PlaneGeometry(2, 2);
         this.mesh = new THREE.Mesh(this.geometry, this.traceShader);
         this.scene.add(this.mesh);
+    }
+
+    sky(mode: string) {
+        let sky = new Float32Array(200 * 4); //each texel covers an angle of 2pi/num
+        //new Float16Array()
+        const hsl = new THREE.Color();
+
+        for (let i = 0; i < 200; ++i) {
+            hsl.set(0.0, 0.0, 0.0);
+            if (i <= 50 && mode === "rainbow") hsl.setHSL(i / 50, 1.0, 0.5, THREE.SRGBColorSpace);
+
+            sky[i * 4] = hsl.r;
+            sky[i * 4 + 1] = hsl.g;
+            sky[i * 4 + 2] = hsl.b;
+            sky[i * 4 + 3] = 1;
+        }
+
+        this.skyData?.dispose();
+        this.skyData = new THREE.DataTexture(sky, 200, 1, THREE.RGBAFormat, THREE.FloatType);
+        this.skyData.needsUpdate = true;
     }
 
     resize() {
@@ -316,7 +318,7 @@ export class HRC {
                 this.coneShader.uniforms.prev.value = tex;
                 this.coneShader.uniforms.rays.value = rays[j].texture;
                 this.coneShader.uniforms.rsize.value = [rays[j].width, rays[j].height];
-                this.coneShader.uniforms.sky.value = this.sky;
+                this.coneShader.uniforms.sky.value = this.skyData;
                 this.coneShader.uniforms.opt.value = this.opt;
 
                 this.renderer.setRenderTarget(j === 0 ? this.frustums[i] : cones[j - 1]);
