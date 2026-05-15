@@ -9,6 +9,7 @@ import { Balls } from "./playables/balls.js";
 import { TextTroika } from "./playables/text.js";
 import { LRC } from "./utils/lrcplayer.js";
 import { Holes } from "./playables/holes.js";
+import { Draw } from "./playables/draw.js";
 
 //Current architecture (I am not even sure this is how you are supposed to do it)
 
@@ -48,6 +49,9 @@ export class State {
     active: Playable;
 
     mouse = { x: 9999, y: 9999 };
+    mspos = { x: 9999, y: 9999 };
+    pspos = { x: 9999, y: 9999 };
+
     audioUpdateFunction = () => {};
     stats = new Stats({
         trackGPU: true,
@@ -64,6 +68,7 @@ export class State {
     });
 
     lastTime = 0;
+    isInput = false;
 
     constructor() {
         //values are actually initialized in ui.ts
@@ -73,6 +78,18 @@ export class State {
         this.canvas.addEventListener("mousemove", (e) => {
             this.mouse.x = e.clientX;
             this.mouse.y = this.canvas.clientHeight - e.clientY;
+        });
+
+        this.canvas.addEventListener("mousedown", () => {
+            this.isInput = true;
+        });
+
+        this.canvas.addEventListener("mouseup", () => {
+            this.isInput = false;
+        });
+
+        this.canvas.addEventListener("mouseleave", () => {
+            this.isInput = false;
         });
 
         //document.body.appendChild(this.stats.dom);
@@ -99,6 +116,8 @@ export class State {
             this.active = new Balls(w, h);
         } else if (this.ui.mode.value === "holes") {
             this.active = new Holes(w, h);
+        } else if (this.ui.mode.value === "draw") {
+            this.active = new Draw(w, h);
         }
     }
 
@@ -106,6 +125,15 @@ export class State {
         const curTime = performance.now();
         const delta = curTime - this.lastTime;
         this.lastTime = curTime;
+        const mpos = {
+            x: (this.mouse.x * this.dpr) / (this.hrc.width / this.hrc.fixWidth) - this.hrc.fixWidth / 2,
+            y: (this.mouse.y * this.dpr) / (this.hrc.height / this.hrc.fixHeight) - this.hrc.fixHeight / 2,
+        };
+
+        this.mspos = {
+            x: mpos.x + this.hrc.fixWidth / 2,
+            y: mpos.y + this.hrc.fixHeight / 2,
+        };
 
         if (this.active instanceof Video) {
             this.active.update(this.video.texture, this.video.width, this.video.height, this.ui.videoPanel.exportState());
@@ -116,22 +144,18 @@ export class State {
             //
             //
         } else if (this.active instanceof Balls) {
-            this.active.update(
-                delta,
-                {
-                    x: (this.mouse.x * this.dpr) / (this.hrc.width / this.hrc.fixWidth) - this.hrc.fixWidth / 2,
-                    y: (this.mouse.y * this.dpr) / (this.hrc.height / this.hrc.fixHeight) - this.hrc.fixHeight / 2,
-                },
-                this.video.texture,
-                this.ui.ballsPanel.exportState(),
-            );
+            this.active.update(delta, mpos, this.video.texture, this.ui.ballsPanel.exportState());
             //
             //
         } else if (this.active instanceof Holes) {
             this.active.update(this.video.texture);
             //
             //
+        } else if (this.active instanceof Draw) {
+            this.active.update(this.hrc.renderer, this.isInput, this.pspos, this.mspos, this.ui.drawPanel.exportState());
         }
+
+        this.pspos = this.mspos;
     }
 
     change() {

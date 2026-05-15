@@ -16,9 +16,9 @@ export class Balls extends Playable {
     engine: Matter.Engine;
 
     p = {
-        count: 500,
+        count: 100,
         speed: 1,
-        variation: 5,
+        variation: 6,
         force: 1,
         forceRadius: 70,
         mat: 10,
@@ -75,7 +75,10 @@ export class Balls extends Playable {
             this.mat = sample_video();
             this.mat.uniforms.resolution.value = [this.width, this.height];
         } else {
-            this.mat = new THREE.MeshBasicMaterial();
+            this.mat = new THREE.MeshBasicMaterial({
+                opacity: 30.0,
+                blending: THREE.NoBlending,
+            });
         }
 
         this.mesh = new THREE.InstancedMesh(geom, this.mat, this.p.count);
@@ -122,12 +125,12 @@ export class Balls extends Playable {
 
     update(delta: number, mouse: { x: number; y: number }, videoTexture: THREE.VideoTexture | null, s: { count: number; speed: number; variation: number; force: number; forceRadius: number; mat: number }) {
         if (this.p.count !== s.count || this.p.variation !== s.variation || this.p.mat !== s.mat) {
-            this.p = { ...s };
+            this.p = s;
             this.reset();
             return;
         }
 
-        this.p = { ...s };
+        this.p = s;
 
         let pos = new THREE.Object3D();
 

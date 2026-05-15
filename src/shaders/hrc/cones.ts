@@ -79,15 +79,8 @@ export function hrcv2_cones() {
                 float mid = (top + bottom) / 2.0; //this is fine because consecutive rays in c1 and above never jump quadrants
                 vec2 dir = vec2(cos(mid), sin(mid));
 
-                vec2 rotate[4]; //rotation matrix for the 1d texture sample
-                rotate[0] = dir;
-                rotate[1] = vec2(-dir.y, dir.x);
-                rotate[2] = -dir;
-                rotate[3] = vec2(dir.y, -dir.x);
-
-                dir = rotate[frustum];
-
                 float angle = atan(dir.y, dir.x);
+                angle += 1.5708 * float(frustum);
 
                 if(angle < 0.0) angle += TAU; //cvrt -pi..0 to pi..2pi
                 angle = angle / TAU;

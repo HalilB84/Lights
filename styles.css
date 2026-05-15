@@ -91,7 +91,8 @@ canvas {
 #video-button,
 #audio-button,
 select,
-button {
+button,
+input[type="number"] {
     background: var(--bgs);
     border: var(--border);
     border-radius: var(--border-radius);
@@ -113,7 +114,8 @@ select {
     padding: 0px;
 }
 
-select:focus {
+select:focus,
+input[type="number"]:focus {
     outline: none;
 }
 
@@ -168,6 +170,16 @@ input[type="range"]::-moz-range-track {
 input[type="checkbox"] {
     accent-color: #333;
     margin: 0;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
 }
 
 /*premium rage bait here. I genuinely have no idea how people do this shit*/

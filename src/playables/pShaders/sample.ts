@@ -30,10 +30,10 @@ export function sample_video() {
             void main() {
                 vec2 uv = (vWorldPosition.xy + (resolution / 2.0)) / resolution;
                 if(init) {
-                    fragColor = vec4(1.0);
+                    fragColor = vec4(vec3(1.0), 30.0);
                 }
                 else {
-                    fragColor = texture(videoTexture, uv);
+                    fragColor = vec4(texture(videoTexture, uv).rgb, 30.0);
                 }
             }
         `,

@@ -24,7 +24,7 @@ export class Video extends Playable {
         this.scene.clear();
 
         const geom = new THREE.PlaneGeometry(1, 1);
-        const mat = new THREE.MeshBasicMaterial();
+        const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         this.mesh = new THREE.Mesh(geom, mat);
 
         if (this.variant === 2) {
@@ -41,11 +41,16 @@ export class Video extends Playable {
             return;
         }
 
-        if (texture && this.mesh.material.map === null) {
+        if (!this.mesh.material.map && texture) {
             this.mesh.material.needsUpdate = true;
         }
 
         this.mesh.material.map = texture;
+
+        if (width === 0 || height === 0) {
+            width = this.width;
+            height = this.height;
+        }
 
         const scale = Math.min(this.width / width, this.height / height) * s.scale;
         const actualWidth = width * scale;
@@ -78,7 +83,6 @@ export class Video extends Playable {
         const volMat = new THREE.MeshBasicMaterial({
             blending: THREE.NoBlending,
             opacity: 0.45,
-            transparent: true,
             color: new THREE.Color().setRGB(0, 0, 0),
         });
 

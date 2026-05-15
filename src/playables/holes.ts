@@ -1,5 +1,3 @@
-//THIS IS JUST A TESTING CONCEPT, PLAYABLE 2 IS NOT THIS. THIS IS NOT FINAL
-
 import * as THREE from "three";
 import { Playable } from "./playable";
 import { sample_video } from "./pShaders/sample";
@@ -34,7 +32,8 @@ export class Holes extends Playable {
     createScene() {
         const numCircles = 10;
 
-        const geometry = new THREE.CircleGeometry(10, 16);
+        const geometry = new THREE.CircleGeometry(1, 16);
+        const geom2 = new THREE.RingGeometry(0.8, 1, 32, 1, 0);
 
         this.material = sample_video();
 
@@ -42,13 +41,12 @@ export class Holes extends Playable {
         this.volMaterial = new THREE.MeshBasicMaterial({
             blending: THREE.NoBlending,
             opacity: 0.5,
-            transparent: true,
             color: new THREE.Color().setRGB(0, 0, 0),
         });
 
         const count = (numCircles - 2) * (numCircles - 4);
 
-        this.mesh = new THREE.InstancedMesh(geometry, this.material, count);
+        this.mesh = new THREE.InstancedMesh(geom2, this.material, count);
         this.volMesh = new THREE.InstancedMesh(geometry, this.volMaterial, numCircles * numCircles - count);
 
         let pos = new THREE.Object3D();
@@ -59,8 +57,10 @@ export class Holes extends Playable {
             for (let j = 0; j < numCircles; j++) {
                 const centerX = (this.width / numCircles) * (j + 0.5) - this.width / 2;
                 const centerY = (this.height / numCircles) * (i + 0.5) - this.height / 2;
+                const size = Math.min(this.width, this.height) / 50;
 
                 pos.position.set(centerX, centerY, 0);
+                pos.scale.set(size, size, 1);
                 pos.updateMatrix();
 
                 if (i <= 1 || j <= 0 || i >= numCircles - 2 || j >= numCircles - 1) {

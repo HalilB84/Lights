@@ -69,6 +69,9 @@ export class HRC {
         //https://threejs.org/manual/#en/color-management -> "Custom materials based on ShaderMaterial and RawShaderMaterial have to implement their own output color space conversion"
         //https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLProgram.js -> shows what conversion is given to shaders
         //https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLPrograms.js //s proves that there is no conversion in render targets
+        //also one more thing I learned (line 259 in above file -> material.transparent === false && material.blending === NormalBlending)
+        //this was why I thought transparent = true was needed to alpha values to work, but actually you can just have blending rules diff to make them work
+        //a lot of the problems can be just solved by not relying on built in mats tbh but its ok. the more we know
 
         this.scene = new THREE.Scene();
         this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); //this entire thing is a full screen quad fragment shader, as long as the plane dimensions match the ortocamera bounds
@@ -127,7 +130,7 @@ export class HRC {
 
         for (let i = 0; i < 200; ++i) {
             hsl.set(0.0, 0.0, 0.0);
-            //if(i <= 50) hsl.setHSL(i / 50, 1.0, 0.6, THREE.SRGBColorSpace);
+            //if (i <= 50) hsl.setHSL(i / 50, 1.0, 0.5, THREE.SRGBColorSpace);
 
             sky[i * 4] = hsl.r;
             sky[i * 4 + 1] = hsl.g;
@@ -352,7 +355,7 @@ export class HRC {
         const fps = this.state.stats.getData().fps;
         const ms = (1000 / fps).toFixed(1);
 
-        document.getElementById("fps")!.textContent = fps.toString() + " (" + ms + "ms)";
+        document.getElementById("fps")!.textContent = fps + " (" + ms + "ms)";
 
         //https://github.com/mrdoob/three.js/blob/dev/src/renderers/webgl/WebGLInfo.js
         /*if (this.frameCount % 100 === 1) {

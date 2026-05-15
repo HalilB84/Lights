@@ -1,34 +1,30 @@
 export class BallsPanel {
     ballCount = document.getElementById("bc") as HTMLInputElement;
-    bcVal = document.getElementById("bc-value") as HTMLInputElement;
 
     speed = document.getElementById("speed") as HTMLInputElement;
-    speedVal = document.getElementById("speed-value") as HTMLInputElement;
+    speedVal = document.getElementById("speed-value") as HTMLElement;
 
     variation = document.getElementById("size-variation") as HTMLInputElement;
-    variationVal = document.getElementById("size-variation-value") as HTMLInputElement;
+    variationVal = document.getElementById("size-variation-value") as HTMLElement;
 
     force = document.getElementById("force") as HTMLInputElement;
-    forceVal = document.getElementById("force-value") as HTMLInputElement;
+    forceVal = document.getElementById("force-value") as HTMLElement;
 
     forceRadius = document.getElementById("force-radius") as HTMLInputElement;
-    forceRadiusVal = document.getElementById("force-radius-value") as HTMLInputElement;
+    forceRadiusVal = document.getElementById("force-radius-value") as HTMLElement;
 
-    matSel = document.getElementById("mat") as HTMLInputElement;
+    matSel = document.getElementById("mat") as HTMLSelectElement;
 
     constructor() {
-        ((this.ballCount.value = "500"), (this.bcVal.textContent = this.ballCount.value));
-        this.ballCount.addEventListener("change", () => {
-            this.bcVal.textContent = this.ballCount.value;
-        });
+        this.ballCount.value = "100";
 
         ((this.speed.value = "1"), (this.speedVal.textContent = this.speed.value));
         this.speed.addEventListener("input", () => {
             this.speedVal.textContent = this.speed.value;
         });
 
-        ((this.variation.value = "5"), (this.variationVal.textContent = this.variation.value));
-        this.variation.addEventListener("input", () => {
+        ((this.variation.value = "6"), (this.variationVal.textContent = this.variation.value));
+        this.variation.addEventListener("change", () => {
             this.variationVal.textContent = this.variation.value;
         });
 
@@ -47,7 +43,7 @@ export class BallsPanel {
 
     exportState() {
         return {
-            count: +this.bcVal.textContent,
+            count: Math.max(1, Math.min(10000, +this.ballCount.value)),
             speed: +this.speedVal.textContent,
             variation: +this.variationVal.textContent,
             force: +this.forceVal.textContent,

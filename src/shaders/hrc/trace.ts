@@ -98,7 +98,7 @@ export function hrcv2_trace() {
                     //whaaa? look later
 
                     float tran = exp(-absrp * step); //eq2
-                    vec3 rad = emiss * (1.0 - tran); //eq4 (this actually needs to be divided by absrp according to eq4 but havent figured it out yet, as long as volumetrics (a < 1) are not involved this works)
+                    vec3 rad = emiss * (1.0 - tran); //eq4 (no absrp div)
 
                     l.rad += l.tran * rad; //eq5
                     l.tran *= tran; //eq6

@@ -2,6 +2,7 @@ import type { State } from "../state.js";
 import { BallsPanel } from "./ballsPanel.js";
 import { VideoPanel } from "./videoPanel.js";
 import { LyricsPanel } from "./lyricsPanel.js";
+import { DrawPanel } from "./drawPanel.js";
 
 //https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions
 export class UI {
@@ -33,6 +34,7 @@ export class UI {
     ballsPanel = new BallsPanel();
     videoPanel = new VideoPanel();
     lyricsPanel = new LyricsPanel();
+    drawPanel = new DrawPanel();
 
     constructor(state: State) {
         this.state = state;
@@ -62,9 +64,6 @@ export class UI {
             const hidden = this.settings.classList.toggle("hidden");
             this.hideSettings.textContent = hidden ? "Show Settings" : "Hide Settings";
         });
-
-        this.videoInput.addEventListener("change", () => this.handleVideo());
-        this.audioInput.addEventListener("change", () => this.handleAudio());
 
         //if mode has the media tag
         this.playPause.addEventListener("click", () => {
@@ -116,51 +115,53 @@ export class UI {
             this.pcValue.textContent = this.probeCount.value;
             this.state.change();
         });
-    }
 
-    //create element does NOT put the element in the Dom it only exists in memory
-    handleVideo() {
-        const file = this.videoInput.files![0];
-        const video = document.createElement("video");
-        const url = URL.createObjectURL(file);
+        //handles video files
+        //create element does NOT put the element in the Dom it only exists in memory
+        this.videoInput.addEventListener("change", () => {
+            const file = this.videoInput.files![0];
+            const video = document.createElement("video");
+            const url = URL.createObjectURL(file);
 
-        video.src = url;
-        this.videoName.textContent = file.name;
+            video.src = url;
+            this.videoName.textContent = file.name;
 
-        video.addEventListener(
-            "canplay",
-            () => {
-                this.state.loadVideo(video);
-            },
-            { once: true },
-        );
-    }
+            video.addEventListener(
+                "canplay",
+                () => {
+                    this.state.loadVideo(video);
+                },
+                { once: true },
+            );
+        });
 
-    handleAudio() {
-        if (this.state.audio.loading) {
-            console.log("cant upload while waiting response!");
-            return;
-        }
+        //handles audio files
+        this.audioInput.addEventListener("change", () => {
+            if (this.state.audio.loading) {
+                console.log("cant upload while waiting response!");
+                return;
+            }
 
-        const file = this.audioInput.files![0];
-        const audio = document.createElement("audio");
-        const url = URL.createObjectURL(file);
+            const file = this.audioInput.files![0];
+            const audio = document.createElement("audio");
+            const url = URL.createObjectURL(file);
 
-        const name = file.name.split("-");
-        const trackName = name[0].trim();
-        const artistName = name[1].trim().replace(/\.[^/.]+$/, "");
+            const name = file.name.split("-");
+            const trackName = name[0].trim();
+            const artistName = name[1].trim().replace(/\.[^/.]+$/, "");
 
-        audio.src = url;
-        this.audioName.textContent = file.name;
+            audio.src = url;
+            this.audioName.textContent = file.name;
 
-        audio.addEventListener(
-            "canplay",
-            () => {
-                this.mode.value = "lyrics";
-                this.mode.dispatchEvent(new Event("change"));
-                this.state.loadAudio(audio, trackName, artistName);
-            },
-            { once: true },
-        );
+            audio.addEventListener(
+                "canplay",
+                () => {
+                    this.mode.value = "lyrics";
+                    this.mode.dispatchEvent(new Event("change"));
+                    this.state.loadAudio(audio, trackName, artistName);
+                },
+                { once: true },
+            );
+        });
     }
 }
