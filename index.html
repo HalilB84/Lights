@@ -17,7 +17,7 @@
             gtag("config", "G-R5E6NEWCY0");
         </script>
 
-      <script type="module" crossorigin src="/assets/index-BBW3cqDo.js"></script>
+      <script type="module" crossorigin src="/assets/index-CrUHodDU.js"></script>
       <link rel="stylesheet" crossorigin href="/assets/index-C1kdoEt7.css">
     </head>
 
@@ -41,9 +41,9 @@
                     <select id="mode">
                         <option value="lyrics">Lyrics</option>
                         <option value="video">Video</option>
+                        <option value="draw">Draw</option>
                         <option value="balls">Balls</option>
                         <option value="holes">Holes</option>
-                        <option value="test">Test</option>
                     </select>
                     <img src="help.svg" />
                     <span class="tooltiptext">Here you can switch between different modes, more to be added.</span>
@@ -186,10 +186,25 @@
                 </div>
 
                 <!---->
-                <!--test panel here-->
-                <div id="test-panel" class="panel">
+                <!--draw panel here-->
+                <div id="draw-panel" class="panel">
                     <div class="row">
-                        <label>Test Mode Settings</label>
+                        <label>Draw Mode Settings</label>
+                        <img src="help.svg" />
+                        <span class="tooltiptext">You can set the opacity (2nd slider) to 0 to use it as an eraser.</span>
+                    </div>
+                    <div class="row">
+                        <div id="picker"></div>
+                    </div>
+
+                    <div class="row">
+                        <label>Brush Size</label>
+                        <input id="brush-size" type="range" min="1" max="10" step="1" />
+                        <span class="range-value" id="bs-value"></span>
+                    </div>
+
+                    <div class="row">
+                        <button id="draw-clear">Clear drawings</button>
                     </div>
                 </div>
             </div>
