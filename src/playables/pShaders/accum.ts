@@ -46,7 +46,7 @@ export function accumulate() {
 
                 fragColor = texture(prev, vUv);
 
-                if(sdSegment(vUv * resolution, pm, m, size) < size) {
+                if(sdSegment(vUv * resolution, pm, m, size) < 0.0) {
                     fragColor = vec4(color, alpha);
                 }
             }

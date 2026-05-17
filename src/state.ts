@@ -69,6 +69,7 @@ export class State {
 
     lastTime = 0;
     isInput = false;
+    matchPos = false;
 
     constructor() {
         //values are actually initialized in ui.ts
@@ -82,6 +83,7 @@ export class State {
 
         this.canvas.addEventListener("mousedown", () => {
             this.isInput = true;
+            this.matchPos = true;
         });
 
         this.canvas.addEventListener("mouseup", () => {
@@ -89,6 +91,23 @@ export class State {
         });
 
         this.canvas.addEventListener("mouseleave", () => {
+            this.isInput = false;
+        });
+
+        this.canvas.addEventListener("touchmove", (e) => {
+            this.mouse.x = e.touches[0].clientX;
+            this.mouse.y = this.canvas.clientHeight - e.touches[0].clientY;
+        });
+
+        this.canvas.addEventListener("touchstart", (e) => {
+            this.isInput = true;
+            this.mouse.x = e.touches[0].clientX;
+            this.mouse.y = this.canvas.clientHeight - e.touches[0].clientY;
+
+            this.matchPos = true;
+        });
+
+        this.canvas.addEventListener("touchend", () => {
             this.isInput = false;
         });
 
@@ -134,6 +153,11 @@ export class State {
             x: mpos.x + this.hrc.fixWidth / 2,
             y: mpos.y + this.hrc.fixHeight / 2,
         };
+
+        if (this.matchPos) {
+            this.pspos = this.mspos;
+            this.matchPos = false;
+        }
 
         if (this.active instanceof Video) {
             this.active.update(this.video.texture, this.video.width, this.video.height, this.ui.videoPanel.exportState());

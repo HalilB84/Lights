@@ -76,13 +76,11 @@ export function hrcv2_cones() {
                 //atp sample sky, get corresponding weight for the upper cone
                 //our dir is going to be the middle of the cone
 
-                float mid = (top + bottom) / 2.0; //this is fine because consecutive rays in c1 and above never jump quadrants
-                vec2 dir = vec2(cos(mid), sin(mid));
-
-                float angle = atan(dir.y, dir.x);
-                angle += 1.5708 * float(frustum);
+                float angle = (top + bottom) / 2.0; //this is fine because consecutive rays in c1 and above never jump quadrants
 
                 if(angle < 0.0) angle += TAU; //cvrt -pi..0 to pi..2pi
+                angle += 1.5708 * float(frustum);
+                angle = mod(angle, TAU);
                 angle = angle / TAU;
 
                 vec4 ss = texture(sky, vec2(angle, 0.5)); //linear

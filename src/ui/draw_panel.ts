@@ -31,7 +31,7 @@ export class DrawPanel {
     should = false;
 
     constructor() {
-        ((this.size.value = "3"), (this.sizeValue.textContent = this.size.value));
+        ((this.size.value = "4"), (this.sizeValue.textContent = this.size.value));
         this.size.addEventListener("input", () => {
             this.sizeValue.textContent = this.size.value;
         });

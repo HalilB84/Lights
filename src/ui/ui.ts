@@ -1,8 +1,8 @@
 import type { State } from "../state.js";
-import { BallsPanel } from "./ballsPanel.js";
-import { VideoPanel } from "./videoPanel.js";
-import { LyricsPanel } from "./lyricsPanel.js";
-import { DrawPanel } from "./drawPanel.js";
+import { BallsPanel } from "./balls_panel.js";
+import { VideoPanel } from "./video_panel.js";
+import { LyricsPanel } from "./lyrics_panel.js";
+import { DrawPanel } from "./draw_panel.js";
 
 //https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions
 export class UI {
